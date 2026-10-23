@@ -27,8 +27,10 @@ The live site sits behind Cloudflare, and the origin only answers requests that 
   - one network block (IPv4 /24, IPv6 /48, after validating and expanding the address): 60 wrong codes, then
     one every 2 s, a short back-off rather than a ban, because mobile carriers put many people behind shared
     addresses;
-  - everyone together: 300 wrong codes, then 5 per second site-wide. At that rate, hitting a live room's
-    code within its 10 minutes is impractical. Floods also raise an ops alert.
+  - everyone together: past 300 wrong codes, then 5 per second site-wide. This only slows networks that have
+    themselves guessed wrong recently, so a family typing the right code first time always gets straight in.
+    Floods also raise an ops alert.
+  - one "address" means an IPv4 address or an IPv6 /64, since a single device can rotate inside its /64.
 
   QR invites use the long token and are never affected, so scanning always works.
 - **Client addresses:** these are only believed from the last trusted proxy hop (`TRUST_PROXY_HOPS`,

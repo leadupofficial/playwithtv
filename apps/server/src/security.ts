@@ -45,6 +45,11 @@ export class Bucket {
 export class KeyedLimiter {
   private buckets = new Map<string, { b: Bucket; seen: number }>();
   constructor(private rate: number, private burst: number) {}
+  /** Whether this key has spent any tokens that have not refilled yet (it was active recently). */
+  used(key: string): boolean {
+    const e = this.buckets.get(key);
+    return !!e && e.b.peek() < this.burst;
+  }
   /** Whether a token is available, without using it. */
   canTake(key: string): boolean {
     const e = this.buckets.get(key);
@@ -106,6 +111,18 @@ export function networkOf(ip: string): string {
   const bare = ip.split("%")[0]!; // drop a zone id (fe80::1%eth0)
   if (!isIPv6(bare)) return `invalid:${ip}`;
   return expandIPv6(bare).slice(0, 3).map((g) => parseInt(g, 16).toString(16)).join(":") + "::/48";
+}
+
+/**
+ * The key for "one client": the IPv4 address, or the IPv6 /64 (one home or phone usually owns a whole /64
+ * and can rotate through its addresses at will).
+ */
+export function addressOf(ip: string): string {
+  const mapped = ip.toLowerCase().startsWith("::ffff:") ? ip.slice(7) : ip;
+  if (isIPv4(mapped)) return mapped;
+  const bare = ip.split("%")[0]!;
+  if (!isIPv6(bare)) return `invalid:${ip}`;
+  return expandIPv6(bare).slice(0, 4).map((g) => parseInt(g, 16).toString(16)).join(":") + "::/64";
 }
 
 /** Eight 16-bit groups of a valid IPv6 address (handles "::" and a trailing dotted IPv4 part). */

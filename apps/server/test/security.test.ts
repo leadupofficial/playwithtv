@@ -3,7 +3,7 @@ import { buildApp, type App } from "../src/app.js";
 import { loadConfig, productionProblems } from "../src/config.js";
 import { MemoryPersistence } from "../src/persistence.js";
 import { MemoryPresence } from "../src/presence.js";
-import { FailureLock, networkOf } from "../src/security.js";
+import { FailureLock, addressOf, networkOf } from "../src/security.js";
 
 let app: App | undefined;
 let base = "";
@@ -134,5 +134,26 @@ describe("join-code guessing can't be turned against everyone", () => {
     expect(networkOf("fe80::1%eth0")).toBe("fe80:0:0::/48");
     expect(networkOf("::1")).toBe("0:0:0::/48");
     expect(networkOf("not-an-ip")).toBe("invalid:not-an-ip");
+  });
+});
+
+describe("site-wide slow-down only reaches networks that guessed wrong", () => {
+  it("during a global flood, a clean network's right code still gets in at once", async () => {
+    await start();
+    const room = await (await fetch(`${base}/api/rooms`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" })).json();
+    const join = (body: object, ip: string) => fetch(`${base}/api/join`, {
+      method: "POST", headers: { "content-type": "application/json", "x-forwarded-for": ip },
+      body: JSON.stringify({ name: "G", avatar: "tiger", ...body }),
+    }).then((r) => r.status);
+    // 320 wrong codes from many networks (one each), draining the site-wide budget
+    for (let i = 0; i < 320; i++) await join({ joinCode: "ZZZZZ" }, `10.${i >> 8}.${i & 255}.1`);
+    expect(await join({ joinCode: "ZZZZZ" }, "10.0.5.9")).toBe(429);           // a guessing network: slowed
+    expect(await join({ joinCode: room.joinCode }, "203.0.113.50")).toBe(200);  // a clean network: straight in
+  });
+
+  it("keys one client as its IPv4 address or IPv6 /64", () => {
+    expect(addressOf("198.51.100.7")).toBe("198.51.100.7");
+    expect(addressOf("2001:db8:1:2:aaaa::1")).toBe("2001:db8:1:2::/64");
+    expect(addressOf("2001:db8:1:2:bbbb::9")).toBe("2001:db8:1:2::/64");
   });
 });
