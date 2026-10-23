@@ -1,0 +1,33 @@
+# dependencies and build output
+node_modules/
+dist/
+*.tsbuildinfo
+
+# secrets and local config: never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.keystore
+*.jks
+keystore.properties
+
+# server-specific deployment lives outside this repo (private ops folder)
+deploy/
+
+# Android TV app build output and machine-local settings
+apps/tv-android/**/build/
+apps/tv-android/.gradle/
+apps/tv-android/local.properties
+*.apk
+*.aab
+
+# test and dev artefacts
+*.log
+test-results/
+playwright-report/
+.certs/
+.run/
+.DS_Store

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff7a59"/><stop offset="0.55" stop-color="#ff4f9a"/><stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g transform="translate(0,-26)">
+  <!-- TV -->
+  <rect x="96" y="104" width="320" height="200" rx="26" fill="#0b0820" opacity="0.92"/>
+  <rect x="226" y="304" width="60" height="26" fill="#0b0820" opacity="0.92"/>
+  <rect x="186" y="326" width="140" height="16" rx="8" fill="#0b0820" opacity="0.92"/>
+  <polygon points="228,160 228,248 302,204" fill="#ffd23f"/>
+  <!-- phone held sideways, with motion arcs -->
+  <rect x="150" y="372" width="212" height="96" rx="20" fill="#ffffff"/>
+  <rect x="166" y="386" width="180" height="68" rx="10" fill="#2a1760"/>
+  <path d="M118 400 q-22 20 0 40" stroke="#ffffff" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <path d="M394 400 q22 20 0 40" stroke="#ffffff" stroke-width="12" fill="none" stroke-linecap="round"/>
+  </g>
+</svg>

@@ -1,0 +1,17 @@
+plugins { id 'com.android.application' }
+// The platform's TV page. Override at build time: ./gradlew assembleDebug -PplatformUrl=https://<your-computer-ip>:5173/tv (LAN dev server)
+def platformUrl = project.findProperty('platformUrl') ?: 'https://playwithtv.leadup.in/tv'
+android {
+    namespace 'com.scanconnectplay.tv'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'com.scanconnectplay.tv'
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+        buildConfigField 'String', 'PLATFORM_URL', "\"${platformUrl}\""
+    }
+    buildFeatures { buildConfig true }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}

@@ -1,0 +1,15 @@
+# Changes to these paths need the maintainers' review before they can be merged.
+# Everything that touches security, money (sponsors) or how code runs on GitHub is here.
+*                               @leadupofficial
+/apps/server/                   @leadupofficial
+/packages/protocol/             @leadupofficial
+/apps/web/src/admin/            @leadupofficial
+/apps/web/src/tv/AdSlot.tsx     @leadupofficial
+/apps/web/src/tv/sponsors.ts    @leadupofficial
+/apps/web/src/rtc.ts            @leadupofficial
+/apps/web/public/sw.js          @leadupofficial
+/apps/tv-android/               @leadupofficial
+/.github/                       @leadupofficial
+/Dockerfile                     @leadupofficial
+/pnpm-lock.yaml                 @leadupofficial
+/package.json                   @leadupofficial

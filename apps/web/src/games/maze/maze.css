@@ -1,0 +1,11 @@
+.maze { position: absolute; inset: 0; background: #0b0820; }
+.maze-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.maze-hud { position: absolute; top: 40px; left: 96px; right: 96px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 30px; }
+.maze-hud .chip { border-width: 2px; background: rgba(11, 8, 32, 0.7); }
+.maze-banner {
+  position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); padding: 0.4em 1.2em; border-radius: 0.6em;
+  background: rgba(11, 8, 32, 0.8); font-size: 72px; font-weight: 800; text-align: center; display: flex; flex-direction: column;
+}
+.maze-banner small { font-size: 28px; color: var(--muted); font-weight: 600; }
+.maze-toast { position: absolute; left: 50%; bottom: 70px; transform: translateX(-50%); font-size: 40px; font-weight: 800; color: var(--warn); text-shadow: 0 2px 10px #000; }
+.maze-tv { background: #0b0820; }

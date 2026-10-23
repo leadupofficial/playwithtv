@@ -1,0 +1,42 @@
+# Checks every push and pull request. Deliberately has NO secrets and read-only permissions: it runs
+# contributors' code, so it must have nothing worth stealing. Deployment is never done from GitHub.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:          # never pull_request_target: that would run fork code with repository secrets
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      # third-party actions are pinned to exact commits, so a re-tagged release cannot change what runs here
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r typecheck
+      - run: pnpm -r test
+      - run: npx playwright install --with-deps chromium
+      # end-to-end against the production build, with every security header active
+      - run: npx playwright test -c playwright.prod.config.ts
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7

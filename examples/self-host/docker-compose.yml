@@ -1,0 +1,33 @@
+# Self-hosting template: copy next to your .env, replace play.example.com, generate your own secrets.
+# Only the app is published, and only on 127.0.0.1: put a TLS proxy (nginx, Caddy, Traefik) in front of it.
+name: playwithtv
+
+services:
+  hub:
+    build: ../..
+    restart: unless-stopped
+    ports: ["127.0.0.1:8080:8080"]
+    environment:
+      PUBLIC_URL: https://play.example.com
+      ALLOWED_ORIGINS: https://play.example.com
+      ADMIN_TOKEN: ${ADMIN_TOKEN:?set ADMIN_TOKEN in .env (openssl rand -hex 24)}
+      DATABASE_URL: postgres://scp:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/scp
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_started }
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment: { POSTGRES_USER: scp, POSTGRES_DB: scp, POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}" }
+    volumes: [db:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U scp -d scp"], interval: 5s, retries: 10 }
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "volatile-ttl"]
+
+volumes:
+  db:

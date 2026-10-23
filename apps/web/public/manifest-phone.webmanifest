@@ -1,0 +1,19 @@
+{
+  "id": "/join",
+  "name": "Scan · Connect · Play controller",
+  "short_name": "Play With TV",
+  "description": "Turn your phone into a motion controller for games on your TV.",
+  "start_url": "/join?source=app",
+  "scope": "/",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#0b0820",
+  "theme_color": "#0b0820",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

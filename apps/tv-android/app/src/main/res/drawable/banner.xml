@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Banner: night-purple gradient, a QR-like block and a game pad. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="320dp" android:height="180dp"
+    android:viewportWidth="320" android:viewportHeight="180">
+    <path android:fillColor="#17113A" android:pathData="M0,0h320v180h-320z" />
+    <path android:fillColor="#3B1F7A" android:pathData="M0,0h320v70h-320z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M40,45h70v70h-70z" />
+    <path android:fillColor="#17113A" android:pathData="M48,53h20v20h-20z M82,53h20v20h-20z M48,87h20v20h-20z M80,85h8v8h-8z M92,97h10v10h-10z M80,99h6v6h-6z" />
+    <path android:fillColor="#FF7A59" android:pathData="M150,70 h110 a30,30 0 0,1 0,60 h-110 a30,30 0 0,1 0,-60z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M170,95h28v10h-28z M179,86h10v28h-10z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M238,92 m-7,0 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0 M255,108 m-7,0 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0" />
+</vector>

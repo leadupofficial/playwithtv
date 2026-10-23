@@ -1,0 +1,23 @@
+.trivia { position: absolute; inset: 0; padding: 43px 96px; display: flex; flex-direction: column; gap: 27px; }
+.trivia-top { display: flex; gap: 0.8em; align-items: center; }
+.trivia-top .timer { margin-left: auto; font-size: 1.3em; font-weight: 800; }
+.timebar { height: 0.55em; border-radius: 999px; background: var(--glass); overflow: hidden; }
+.timebar > div { height: 100%; background: linear-gradient(90deg, #3ee08f, #ffd23f, #ff5d73); transition: width 0.1s linear; }
+.question { text-align: center; display: flex; flex-direction: column; gap: 0.3em; padding: 1em 0; }
+.q-ta { font-size: 2.35em; font-weight: 700; line-height: 1.25; }
+.q-en { font-size: 1.45em; color: var(--muted); }
+.options { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1em; min-height: 0; }
+.option { position: relative; border-radius: 1.2em; padding: 0.9em 0.8em; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 0.5em; font-size: 1.35em; font-weight: 800; color: #fff; transition: opacity 0.3s, transform 0.3s; text-shadow: 0 2px 8px rgba(0,0,0,0.35); }
+.option .shape { font-size: 1.4em; }
+.option .opt-text { display: flex; flex-direction: column; gap: 0.1em; flex: 1; }
+.option .opt-en { font-size: 0.7em; opacity: 0.9; font-weight: 600; }
+.option .pickers { font-size: 1.1em; display: flex; gap: 0.15em; }
+.option.wrong { opacity: 0.28; transform: scale(0.97); }
+.option.right { outline: 0.25em solid #fff; transform: scale(1.03); }
+.answered { display: flex; flex-wrap: wrap; gap: 0.6em; justify-content: center; }
+.answered .chip { border-width: 2px; }
+.answered .chip.in { background: var(--glass-2); }
+.paused-overlay { position: absolute; inset: 0; background: rgba(11, 8, 32, 0.82); display: grid; place-items: center; text-align: center; align-content: center; }
+.answered .chip.off { opacity: 0.45; border-style: dashed; }
+.option .aimers { position: absolute; top: -0.9em; left: 0; right: 0; display: flex; justify-content: center; gap: 0.15em; font-size: 1.1em; }
+.option .aimers span { background: rgba(0,0,0,0.55); border-radius: 999px; padding: 0.05em 0.25em; border: 2px solid; animation: pop 0.2s ease-out; }

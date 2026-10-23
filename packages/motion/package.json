@@ -1,0 +1,10 @@
+{
+  "name": "@scp/motion",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": { "typecheck": "tsc -p .", "test": "vitest run" },
+  "devDependencies": { "vitest": "5.0.5" }
+}

@@ -1,0 +1,11 @@
+**/node_modules
+**/dist
+.env
+.git
+.run
+.certs
+test-results
+playwright-report
+e2e
+apps/tv-android
+deploy
