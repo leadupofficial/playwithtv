@@ -36,13 +36,16 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
   //  - one address: 10 wrong codes in 10 minutes → that address is locked (it is the guesser);
   //  - one network block (/24 or /48), where many people may share addresses (mobile carriers): 60 wrong
   //    codes, then one every 2 s. A short back-off, never a long ban;
-  //  - everyone together: past 300 wrong codes, then 5 per second site-wide, only networks that have
-  //    themselves guessed wrong recently are slowed; a family typing the right code first time always gets in.
+  //  - everyone together: past 300 wrong codes, then 5 per second site-wide, networks that guessed wrong in
+  //    the last 15 minutes are slowed; a family typing the right code first time always gets in. (An attacker
+  //    with many networks gets one free guess per network per 15 min: against 24.3 million codes that each
+  //    expire in 10 minutes this stays impractical, and the TV host can remove an unexpected player.)
   //    Floods also raise an ops alert.
   // QR invites (long random tokens) are never affected, so scanning always works.
   const joinFails = new FailureLock(10, 10 * 60_000);
   const netMisses = new KeyedLimiter(0.5, 60);
   const allMisses = new KeyedLimiter(5, 300);
+  const missedRecently = new FailureLock(1, 15 * 60_000); // any wrong code from a network in the last 15 min
   let lastFloodAlert = 0;
 
   await http.register(cors, {
@@ -105,7 +108,7 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
     const body = JoinRequest.safeParse(req.body);
     if (!body.success) return reply.status(400).send({ error: "bad_request", message: body.error.issues[0]?.message ?? "invalid" });
     const net = networkOf(req.ip);
-    const guesser = netMisses.used(net); // this network has had wrong codes recently
+    const guesser = missedRecently.locked(net); // this network guessed wrong in the last 15 minutes
     if (body.data.joinCode && (joinFails.locked(addressOf(req.ip)) || !netMisses.canTake(net) || (guesser && !allMisses.canTake("all")))) {
       metrics.rateLimited++;
       return reply.status(429).send({ error: "rate_limited", message: "Too many wrong codes right now. Wait a little, or scan the QR code on the TV instead." });
@@ -116,6 +119,7 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
       if (body.data.joinCode && e instanceof HubError && e.code === "invite_expired") {
         joinFails.fail(addressOf(req.ip));
         netMisses.take(net);
+        missedRecently.fail(net);
         if (!allMisses.take("all") && Date.now() - lastFloodAlert > 60_000) {
           lastFloodAlert = Date.now();
           http.log.warn("many wrong join codes from many addresses: possible distributed guessing");

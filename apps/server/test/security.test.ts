@@ -148,6 +148,10 @@ describe("site-wide slow-down only reaches networks that guessed wrong", () => {
     // 320 wrong codes from many networks (one each), draining the site-wide budget
     for (let i = 0; i < 320; i++) await join({ joinCode: "ZZZZZ" }, `10.${i >> 8}.${i & 255}.1`);
     expect(await join({ joinCode: "ZZZZZ" }, "10.0.5.9")).toBe(429);           // a guessing network: slowed
+    await new Promise((r) => setTimeout(r, 2500));                                 // its own budget refills (2 s)…
+    for (let i = 0; i < 20; i++) await join({ joinCode: "ZZZZZ" }, `10.200.${i}.1`); // the flood drains the site budget again
+    expect(await join({ joinCode: "ZZZZZ" }, "10.0.5.9")).toBe(429);           // …but it is still marked as a guesser
+    expect(await join({ joinCode: room.joinCode }, "203.0.113.51")).toBe(200);  // and clean networks still get in
     expect(await join({ joinCode: room.joinCode }, "203.0.113.50")).toBe(200);  // a clean network: straight in
   });
 

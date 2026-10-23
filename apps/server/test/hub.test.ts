@@ -253,7 +253,7 @@ describe("game lifecycle", () => {
     t.send({ type: "game.start" });
     const started = await t.next("game.started");
     expect(started.players).toHaveLength(1);
-    expect((await p.c.next("controller.layout", (m) => m.layout === "motion")).layout).toBe("motion");
+    expect((await p.c.next("controller.layout", (m) => m.layout === "game")).layout).toBe("game");
 
     t.send({ type: "game.finished", results: [{ playerId: "someone-else", score: 9, place: 1 }], durationMs: 1000 });
     expect((await t.next("error")).code).toBe("bad_message");
@@ -352,7 +352,7 @@ describe("TV reconnects mid-game", () => {
     const again = new Client();
     await again.open();
     again.send({ type: "hello", v: 1, role: "controller", roomId: p.roomId, playerToken: p.playerToken });
-    expect((await again.next("controller.layout")).layout).toBe("motion");
+    expect((await again.next("controller.layout")).layout).toBe("game");
   });
 
   it("replays the TV's latest layout (with its data) to a phone that reconnects", async () => {
@@ -363,7 +363,7 @@ describe("TV reconnects mid-game", () => {
     await t.next("game.selected");
     t.send({ type: "game.start" });
     await t.next("game.started");
-    t.send({ type: "controller.layout", to: "all", layout: "motion", data: { round: 2, options: ["a", "b", "c", "d"] } });
+    t.send({ type: "controller.layout", to: "all", layout: "game", data: { round: 2, options: ["a", "b", "c", "d"] } });
     await p.c.next("controller.layout", (m) => m.data?.round === 2);
     p.c.close();
     const again = new Client();
