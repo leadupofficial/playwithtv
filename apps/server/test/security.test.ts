@@ -74,3 +74,26 @@ describe("admin brute-force lock", () => {
     expect(lock.locked("ip", 3001)).toBe(false);
   });
 });
+
+describe("client address behind a proxy", () => {
+  it("a client cannot dodge the admin lock by writing its own X-Forwarded-For", async () => {
+    await start(); // default: one trusted proxy hop
+    const attempt = (i: number) => fetch(`${base}/api/admin/overview`, {
+      // the "proxy" (this test) appends the real address last; the attacker controls everything before it
+      headers: { authorization: "Bearer wrong", "x-forwarded-for": `10.0.0.${i}, 203.0.113.7` },
+    }).then((r) => r.status);
+    for (let i = 0; i < 5; i++) expect(await attempt(i)).toBe(401);
+    expect(await attempt(99)).toBe(429); // still the same client: locked
+  });
+});
+
+describe("join-code guessing", () => {
+  it("locks an address after 10 wrong codes; QR invites keep working", async () => {
+    await start();
+    const room = await (await fetch(`${base}/api/rooms`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" })).json();
+    const join = (body: object) => fetch(`${base}/api/join`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "G", avatar: "tiger", ...body }) }).then((r) => r.status);
+    for (let i = 0; i < 10; i++) expect(await join({ joinCode: "ZZZZ" })).toBe(404);
+    expect(await join({ joinCode: room.joinCode })).toBe(429);          // even the right code, for now
+    expect(await join({ inviteToken: room.inviteToken })).toBe(200);    // unguessable QR invites are unaffected
+  });
+});

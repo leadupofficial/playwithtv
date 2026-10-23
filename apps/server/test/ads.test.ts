@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import WebSocket from "ws";
 import { buildApp, type App } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
@@ -89,32 +89,38 @@ describe("sponsors", () => {
     expect((await fetch(`${base}/api/ads/not-a-uuid/image`)).status).toBe(404);
   });
 
-  it("counts impressions only from a real TV's room connection, at most once per 20 s per room", async () => {
+  it("counts impressions only from a real TV's room connection, capped by what that room really showed", async () => {
     await start();
-    const a = (await call("POST", "/api/admin/ads", sponsor(), ADMIN)).body;
+    const a = (await call("POST", "/api/admin/ads", sponsor(), ADMIN)).body; // booked for lobby-rail and in-game
     expect((await call("POST", "/api/ads/impressions", { items: [{ id: a.id, placement: "lobby-rail", n: 4 }] })).status).toBe(404); // no open endpoint
 
     const room = (await call("POST", "/api/rooms", {})).body;
+    await call("POST", "/api/join", { inviteToken: room.inviteToken, name: "Viewer", avatar: "tiger" }); // someone is watching
     const tv = new WebSocket(base.replace("http", "ws") + "/ws");
     await new Promise((r) => tv.once("open", r));
     tv.send(JSON.stringify({ type: "hello", v: 1, role: "tv", roomId: room.roomId, hostToken: room.hostToken }));
     await new Promise((r) => tv.once("message", r));
-    const report = (n: number) => tv.send(JSON.stringify({ type: "ads.impressions", items: [
-      { id: a.id, placement: "lobby-rail", n }, { id: a.id, placement: "in-game", n: 1 }, { id: crypto.randomUUID(), placement: "lobby-rail", n: 9 },
+    const report = () => tv.send(JSON.stringify({ type: "ads.impressions", items: [
+      { id: a.id, placement: "lobby-rail", n: 9 },               // 25 s of lobby: at most 1 rotation counts
+      { id: a.id, placement: "in-game", n: 3 },                  // no game was started: nothing counts
+      { id: a.id, placement: "results-rail", n: 2 },             // not booked for this slot: ignored
+      { id: crypto.randomUUID(), placement: "lobby-rail", n: 9 }, // unknown sponsor: ignored
     ] }));
-    report(4);
-    report(4); // too soon: ignored
-    await new Promise((r) => setTimeout(r, 150));
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      vi.setSystemTime(Date.now() + 25_000);
+      report();
+      report(); // too soon after the first: dropped
+      await new Promise((r) => setTimeout(r, 150));
+    } finally {
+      vi.useRealTimers();
+    }
     const stats = (await call("GET", "/api/admin/ads", undefined, ADMIN)).body.stats;
-    expect(stats).toEqual(expect.arrayContaining([
-      { id: a.id, placement: "lobby-rail", impressions: 4 },
-      { id: a.id, placement: "in-game", impressions: 1 },
-    ]));
-    expect(stats).toHaveLength(2); // unknown sponsor ignored
+    expect(stats).toEqual([{ id: a.id, placement: "lobby-rail", impressions: 1 }]);
 
     tv.send(JSON.stringify({ type: "ads.impressions", items: [{ id: a.id, placement: "lobby-rail", n: 500 }] }));
     const err = await new Promise<{ code: string }>((r) => tv.on("message", (d) => { const m = JSON.parse(String(d)); if (m.type === "error") r(m); }));
-    expect(err.code).toBe("bad_message"); // per-report cap
+    expect(err.code).toBe("bad_message"); // per-report cap in the protocol
     tv.close();
   });
 

@@ -12,7 +12,7 @@ export interface AdStore {
   image(id: string): Promise<{ type: string; bytes: Buffer } | null>;
   /** Enabled sponsors whose date range includes `today` (YYYY-MM-DD, India time). */
   active(today: string): Promise<AdServed[]>;
-  /** Adds impressions to today's counters; unknown sponsors are ignored. */
+  /** Adds impressions to today's counters; only sponsors live today and booked for that placement count. */
   count(batch: ImpressionBatch, today: string): Promise<void>;
   stats(sinceDay: string): Promise<AdStats[]>;
   close(): Promise<void>;
@@ -76,7 +76,8 @@ export class MemoryAdStore implements AdStore {
   }
   async count(batch: ImpressionBatch, today: string) {
     for (const it of batch.items) {
-      if (!this.ads.has(it.id)) continue;
+      const a = this.ads.get(it.id);
+      if (!a || !a.enabled || a.startsOn > today || today > a.endsOn || !a.placements.includes(it.placement)) continue;
       const k = `${it.id}|${it.placement}|${today}`;
       this.counts.set(k, (this.counts.get(k) ?? 0) + it.n);
     }
@@ -149,7 +150,8 @@ export class PgAdStore implements AdStore {
     for (const it of batch.items) {
       await this.pool.query(
         `INSERT INTO ad_impressions (creative_id, placement, day, count)
-         SELECT id, $2, $3, $4 FROM ad_creatives WHERE id = $1
+         SELECT id, $2, $3, $4 FROM ad_creatives
+         WHERE id = $1 AND enabled AND $2 = ANY(placements) AND starts_on <= $3 AND ends_on >= $3
          ON CONFLICT (creative_id, placement, day) DO UPDATE SET count = ad_impressions.count + EXCLUDED.count`,
         [it.id, it.placement, today, it.n],
       );

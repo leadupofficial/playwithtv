@@ -11,44 +11,11 @@ import type { Persistence } from "./persistence.js";
 import type { Presence } from "./presence.js";
 import { HubError, metrics } from "./errors.js";
 import { type Conn, relaySignal } from "./rtc.js";
+import { takeImpressions } from "./impressions.js";
+import type { Player, Room } from "./room.js";
 
 const PLAYER_COLORS = ["#ff5d73", "#3dd6ff", "#ffd23f", "#7cf29c", "#c084fc", "#ff9f43", "#4ade80", "#f472b6"];
 
-interface Player {
-  id: string;
-  token: string;
-  name: string;
-  avatar: Avatar;
-  color: string;
-  ready: boolean;
-  socket?: WebSocket;
-  lastSeq: number;
-  inputBucket: Bucket;
-  msgBucket: Bucket;
-  disconnectedAt?: number;
-}
-
-interface Room {
-  id: string;
-  hostToken: string;
-  joinCode: string;
-  invite: { token: string; expiresAt: number };
-  status: RoomStatus;
-  gameId: string | null;
-  gameStartedAt: number;
-  players: Map<string, Player>;
-  tv?: WebSocket;
-  tvBucket: Bucket;
-  tvDisconnectedAt?: number;
-  /** The game was paused because the TV dropped (not by a player), so it resumes when the TV is back. */
-  pausedForTv: boolean;
-  lastResults?: GameResult[];
-  /** Latest layout the TV sent to everyone, and per-player overrides: replayed to a phone that reconnects. */
-  layoutAll?: Extract<ServerMessage, { type: "controller.layout" }>;
-  layoutFor: Map<string, Extract<ServerMessage, { type: "controller.layout" }>>;
-  lastActivity: number;
-  lastImpressionsAt: number;
-}
 
 export { HubError, metrics } from "./errors.js";
 
@@ -80,7 +47,8 @@ export class Hub {
       gameStartedAt: 0,
       players: new Map(),
       tvBucket: new Bucket(40, 80),
-      lastImpressionsAt: 0,
+      lastImpressionsAt: Date.now(),
+      gamesSinceReport: 0,
       pausedForTv: false,
       layoutFor: new Map(),
       lastActivity: Date.now(),
@@ -288,6 +256,7 @@ export class Hub {
         }
         room.status = "playing";
         room.gameStartedAt = Date.now();
+        room.gamesSinceReport++;
         room.layoutAll = undefined;
         room.layoutFor.clear();
         for (const p of room.players.values()) p.lastSeq = -1;
@@ -328,11 +297,11 @@ export class Hub {
       case "room.rotateInvite":
         return this.rotateInvite(room);
       case "ads.impressions": {
-        // one report per room per 20 s: only real TVs in real rooms count, and none can inflate the totals
-        const now = Date.now();
-        if (now - room.lastImpressionsAt < 20_000) return void metrics.rateLimited++;
-        room.lastImpressionsAt = now;
-        return this.onImpressions(m.items);
+        // only real TVs in real rooms report, at most every 20 s, capped by what this room actually showed
+        const items = takeImpressions(room, m.items);
+        if (items === null) return void metrics.rateLimited++;
+        if (items.length) this.onImpressions(items);
+        return;
       }
       default:
         throw new HubError("not_allowed", "controllers only");

@@ -33,12 +33,21 @@ export class Bucket {
     this.tokens -= 1;
     return true;
   }
+  /** Tokens available now (refilled for elapsed time), without using one. */
+  peek(now = Date.now()): number {
+    return Math.min(this.burst, this.tokens + ((now - this.last) / 1000) * this.rate);
+  }
 }
 
 /** Per-key buckets (for example per IP) that forget idle keys. */
 export class KeyedLimiter {
   private buckets = new Map<string, { b: Bucket; seen: number }>();
   constructor(private rate: number, private burst: number) {}
+  /** Whether a token is available, without using it. */
+  canTake(key: string): boolean {
+    const e = this.buckets.get(key);
+    return !e || e.b.peek() >= 1;
+  }
   take(key: string): boolean {
     const now = Date.now();
     let e = this.buckets.get(key);

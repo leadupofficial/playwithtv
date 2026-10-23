@@ -10,6 +10,12 @@ export interface Config {
   tvGraceMs: number;
   roomIdleMs: number;
   webDist?: string;
+  /**
+   * How many reverse proxies sit in front of the app (default 1: nginx/Caddy). Only the address added by the
+   * last trusted hop is believed, so a client cannot fake its IP by sending its own X-Forwarded-For.
+   * 0 = no proxy (use the socket address).
+   */
+  trustProxyHops: number;
 }
 
 export function loadConfig(env = process.env): Config {
@@ -24,6 +30,7 @@ export function loadConfig(env = process.env): Config {
     tvGraceMs: Number(env.TV_GRACE_MS ?? 90_000),
     roomIdleMs: Number(env.ROOM_IDLE_MS ?? 2 * 60 * 60_000),
     webDist: env.WEB_DIST || undefined,
+    trustProxyHops: Math.max(0, Math.min(5, Number(env.TRUST_PROXY_HOPS ?? 1) || 0)),
   };
 }
 

@@ -25,11 +25,16 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
     logger: opts.logger ? { level: "info" } : false,
     bodyLimit: 8 * 1024,
     genReqId: (req) => (req.headers["x-request-id"] as string) || randomUUID(),
-    trustProxy: true,
+    // never `true`: that believes the left-most (client-written) X-Forwarded-For entry
+    trustProxy: (_address: string, hop: number) => hop < cfg.trustProxyHops,
   });
   const hub = new Hub(cfg, db, presence, (o, m) => http.log.warn(o, m));
   const createLimiter = new KeyedLimiter(0.2, 10);   // 10 rooms burst, then 1 per 5 s per IP
   const joinLimiter = new KeyedLimiter(0.5, 20);     // 20 joins burst, then 1 per 2 s per IP
+  // Join codes are short (4 characters), so guessing is limited twice: per address (10 wrong codes, then
+  // locked for 10 minutes) and across everyone (a sudden flood of wrong codes slows all code guessing down).
+  const joinFails = new FailureLock(10, 10 * 60_000);
+  const wrongCodes = new KeyedLimiter(1, 60);        // all addresses together: 60 wrong codes burst, then 1/s
 
   await http.register(cors, {
     origin: (origin, cb) => cb(null, originAllowed(cfg, origin ?? undefined) || !origin),
@@ -90,7 +95,19 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
     }
     const body = JoinRequest.safeParse(req.body);
     if (!body.success) return reply.status(400).send({ error: "bad_request", message: body.error.issues[0]?.message ?? "invalid" });
-    return hub.join(body.data);
+    if (body.data.joinCode && (joinFails.locked(req.ip) || !wrongCodes.canTake("all"))) {
+      metrics.rateLimited++;
+      return reply.status(429).send({ error: "rate_limited", message: "Too many wrong codes. Wait a few minutes, or scan the QR code instead." });
+    }
+    try {
+      return hub.join(body.data);
+    } catch (e) {
+      if (body.data.joinCode && e instanceof HubError && e.code === "invite_expired") {
+        joinFails.fail(req.ip);
+        wrongCodes.take("all");
+      }
+      throw e;
+    }
   });
 
   // ---- admin (bearer token) -------------------------------------------------------

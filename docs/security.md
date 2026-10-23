@@ -21,6 +21,14 @@ The live site sits behind Cloudflare, and the origin only answers requests that 
   10 minutes.
 - **Player tokens:** each player gets their own token. Tokens are compared in constant time. Joining and room
   creation are rate-limited per IP.
+- **Join-code guessing:** typed join codes are short, so guessing is limited twice:
+  - per address: after 10 wrong codes in 10 minutes, the address is locked out;
+  - across everyone: a sudden flood of wrong codes slows all code guessing down.
+
+  QR invites use the long token and are unaffected.
+- **Client addresses:** these are only believed from the last trusted proxy hop (`TRUST_PROXY_HOPS`,
+  default 1), never from a client-written `X-Forwarded-For`. That is what keeps per-IP limits and the admin
+  lock from being bypassed.
 - **Who can do what:** a phone can only send input and its own ready/leave; only the TV can run the game. The
   hub enforces this, not the client.
 - **Input limits:** every WebSocket frame is size-capped (4 KB), schema-validated and rate-limited.
@@ -45,8 +53,15 @@ The live site sits behind Cloudflare, and the origin only answers requests that 
 - **Who manages sponsors:** only the admin can create sponsors or upload images. Images are checked by their
   actual bytes (PNG/JPEG/WebP only; disguised SVG or scripts are rejected) and are limited to 300 KB.
 - **Who reports impressions:** only a TV can report them, over its authenticated room connection. There is no
-  open endpoint. Each room can report at most once every 20 s, with small per-report caps, so a script can't
-  inflate a sponsor's numbers.
+  open endpoint.
+- **Server-side caps:** the server caps each report by what it saw in that room:
+  - nothing counts from a room nobody has joined;
+  - each banner slot counts at most one sponsor per 15 s since the last report;
+  - "presented by" and in-game sponsors count at most once per game the server started;
+  - only sponsors live that day and booked for that slot count;
+  - a room can report at most once every 20 s.
+- **Honest numbers:** impressions remain "reported by TVs, capped by the server". They are good for
+  billing-by-booking and trends, not an audited count.
 - **Privacy:** impressions are counts per sponsor, placement and day. No viewer, device or room details are
   stored. Ads never appear on phones or during gameplay.
 
