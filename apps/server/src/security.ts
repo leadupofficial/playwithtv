@@ -92,3 +92,11 @@ export class FailureLock {
     this.fails.delete(key);
   }
 }
+
+/** The network block an address belongs to (IPv4 /24, IPv6 /48), for limits that address-hopping can't dodge. */
+export function networkOf(ip: string): string {
+  const v4 = ip.replace(/^::ffff:/, "");
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(v4)) return v4.split(".").slice(0, 3).join(".") + ".0/24";
+  const parts = ip.split("::")[0]!.split(":");
+  return parts.slice(0, 3).join(":") + "::/48";
+}

@@ -7,7 +7,7 @@ import { existsSync } from "node:fs";
 import { CreateRoomResponse, JoinRequest, MAX_FRAME_BYTES } from "@scp/protocol";
 import { type Config, originAllowed } from "./config.js";
 import { Hub, HubError, metrics } from "./hub.js";
-import { FailureLock, KeyedLimiter, sameToken } from "./security.js";
+import { FailureLock, KeyedLimiter, networkOf, sameToken } from "./security.js";
 import type { Persistence } from "./persistence.js";
 import type { Presence } from "./presence.js";
 import { type AdStore, MemoryAdStore, todayIST } from "./ads.js";
@@ -31,10 +31,14 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
   const hub = new Hub(cfg, db, presence, (o, m) => http.log.warn(o, m));
   const createLimiter = new KeyedLimiter(0.2, 10);   // 10 rooms burst, then 1 per 5 s per IP
   const joinLimiter = new KeyedLimiter(0.5, 20);     // 20 joins burst, then 1 per 2 s per IP
-  // Join codes are short (4 characters), so guessing is limited twice: per address (10 wrong codes, then
-  // locked for 10 minutes) and across everyone (a sudden flood of wrong codes slows all code guessing down).
+  // Join codes are short (4 characters), so guessing is limited per address (10 wrong codes → locked for
+  // 10 minutes) and per network block (/24 or /48: 30 → locked), which stops one network from rotating
+  // through addresses. There is deliberately no global lock: anyone flooding wrong codes would then lock
+  // every family out. A global flood only raises an alert (ops event) for the operator.
   const joinFails = new FailureLock(10, 10 * 60_000);
-  const wrongCodes = new KeyedLimiter(1, 60);        // all addresses together: 60 wrong codes burst, then 1/s
+  const netFails = new FailureLock(30, 10 * 60_000);
+  const missWatch = new KeyedLimiter(1, 60);         // 60 wrong codes burst, then 1/s across everyone: alert only
+  let lastFloodAlert = 0;
 
   await http.register(cors, {
     origin: (origin, cb) => cb(null, originAllowed(cfg, origin ?? undefined) || !origin),
@@ -95,7 +99,7 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
     }
     const body = JoinRequest.safeParse(req.body);
     if (!body.success) return reply.status(400).send({ error: "bad_request", message: body.error.issues[0]?.message ?? "invalid" });
-    if (body.data.joinCode && (joinFails.locked(req.ip) || !wrongCodes.canTake("all"))) {
+    if (body.data.joinCode && (joinFails.locked(req.ip) || netFails.locked(networkOf(req.ip)))) {
       metrics.rateLimited++;
       return reply.status(429).send({ error: "rate_limited", message: "Too many wrong codes. Wait a few minutes, or scan the QR code instead." });
     }
@@ -104,7 +108,12 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
     } catch (e) {
       if (body.data.joinCode && e instanceof HubError && e.code === "invite_expired") {
         joinFails.fail(req.ip);
-        wrongCodes.take("all");
+        netFails.fail(networkOf(req.ip));
+        if (!missWatch.take("all") && Date.now() - lastFloodAlert > 60_000) {
+          lastFloodAlert = Date.now();
+          http.log.warn("many wrong join codes from many addresses: possible distributed guessing");
+          void db.opsEvent("join_code_flood", {}).catch(() => undefined);
+        }
       }
       throw e;
     }

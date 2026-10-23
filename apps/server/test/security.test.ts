@@ -3,7 +3,7 @@ import { buildApp, type App } from "../src/app.js";
 import { loadConfig, productionProblems } from "../src/config.js";
 import { MemoryPersistence } from "../src/persistence.js";
 import { MemoryPresence } from "../src/presence.js";
-import { FailureLock } from "../src/security.js";
+import { FailureLock, networkOf } from "../src/security.js";
 
 let app: App | undefined;
 let base = "";
@@ -95,5 +95,26 @@ describe("join-code guessing", () => {
     for (let i = 0; i < 10; i++) expect(await join({ joinCode: "ZZZZ" })).toBe(404);
     expect(await join({ joinCode: room.joinCode })).toBe(429);          // even the right code, for now
     expect(await join({ inviteToken: room.inviteToken })).toBe(200);    // unguessable QR invites are unaffected
+  });
+});
+
+describe("join-code guessing can't be turned against everyone", () => {
+  it("a flood of wrong codes from one network locks that network, but others still join with their code", async () => {
+    await start();
+    const room = await (await fetch(`${base}/api/rooms`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" })).json();
+    const join = (body: object, ip: string) => fetch(`${base}/api/join`, {
+      method: "POST", headers: { "content-type": "application/json", "x-forwarded-for": ip },
+      body: JSON.stringify({ name: "G", avatar: "tiger", ...body }),
+    }).then((r) => r.status);
+    // an attacker hops across 40 addresses in one /24, 1 wrong code each (under the per-address lock)
+    for (let i = 0; i < 40; i++) await join({ joinCode: "ZZZZ" }, `198.51.100.${i}`);
+    expect(await join({ joinCode: room.joinCode }, "198.51.100.200")).toBe(429);  // that network is locked
+    expect(await join({ joinCode: room.joinCode }, "203.0.113.9")).toBe(200);     // a family elsewhere is not
+  });
+
+  it("groups addresses into network blocks", () => {
+    expect(networkOf("198.51.100.77")).toBe("198.51.100.0/24");
+    expect(networkOf("::ffff:198.51.100.77")).toBe("198.51.100.0/24");
+    expect(networkOf("2001:db8:abcd:12::1")).toBe("2001:db8:abcd::/48");
   });
 });

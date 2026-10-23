@@ -21,9 +21,11 @@ The live site sits behind Cloudflare, and the origin only answers requests that 
   10 minutes.
 - **Player tokens:** each player gets their own token. Tokens are compared in constant time. Joining and room
   creation are rate-limited per IP.
-- **Join-code guessing:** typed join codes are short, so guessing is limited twice:
+- **Join-code guessing:** typed join codes are short, so guessing is limited:
   - per address: after 10 wrong codes in 10 minutes, the address is locked out;
-  - across everyone: a sudden flood of wrong codes slows all code guessing down.
+  - per network block (IPv4 /24, IPv6 /48): after 30 wrong codes, so hopping between addresses doesn't help;
+  - deliberately no global lock, since a flood of wrong codes would otherwise lock every family out. A global
+    flood raises an alert in the admin's ops events instead.
 
   QR invites use the long token and are unaffected.
 - **Client addresses:** these are only believed from the last trusted proxy hop (`TRUST_PROXY_HOPS`,
