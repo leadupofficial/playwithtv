@@ -1,5 +1,5 @@
 /**
- * @scp/motion: the shared motion-control SDK.
+ * @playwithtv/motion: the shared motion-control SDK.
  *
  * Phone side: feed DeviceMotion samples into MotionEngine, send `frame()` as axes and gestures as tap counters
  * (see wire.ts). TV side: read them back with MotionReader and build mechanics from tilt, holds and gestures.

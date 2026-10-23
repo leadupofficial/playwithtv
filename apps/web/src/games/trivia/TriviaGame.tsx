@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { zoneOf } from "@scp/motion";
+import { zoneOf } from "@playwithtv/motion";
 import type { GameProps } from "../types";
 import { AVATARS } from "../../avatars";
 import { QUESTIONS } from "./questions";

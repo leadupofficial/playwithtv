@@ -13,7 +13,7 @@ export default defineConfig({
   reporter: [["list"]],
   use: { baseURL: "http://localhost:8080", trace: "retain-on-failure", actionTimeout: 10_000 },
   webServer: {
-    command: "pnpm --filter @scp/web build && pnpm --filter @scp/server start",
+    command: "pnpm --filter @playwithtv/web build && pnpm --filter @playwithtv/server start",
     url: "http://localhost:8080/healthz",
     env: { PORT: "8080", PUBLIC_URL: "http://localhost:8080", ALLOWED_ORIGINS: "http://localhost:8080", ADMIN_TOKEN: "e2e-admin" },
     reuseExistingServer: false,

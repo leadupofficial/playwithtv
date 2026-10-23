@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { AdServed, GameManifest } from "@scp/protocol";
+import type { AdServed, GameManifest } from "@playwithtv/protocol";
 import { countImpression, forPlacement } from "./sponsors";
 
 /**

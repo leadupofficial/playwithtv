@@ -1,5 +1,5 @@
 import { Redis } from "ioredis";
-import type { RoomView } from "@scp/protocol";
+import type { RoomView } from "@playwithtv/protocol";
 
 /**
  * Ephemeral presence mirror. The hub that owns a room keeps the live sockets; this mirror publishes
@@ -28,12 +28,12 @@ export class RedisPresence implements Presence {
   async publish(room: RoomView) {
     const summary = JSON.stringify({ status: room.status, gameId: room.gameId, players: room.players.length, tv: room.tvConnected });
     await this.r.multi()
-      .set(`scp:room:${room.roomId}`, summary, "EX", 3600)
-      .set(`scp:code:${room.joinCode}`, room.roomId, "EX", 900)
+      .set(`pwtv:room:${room.roomId}`, summary, "EX", 3600)
+      .set(`pwtv:code:${room.joinCode}`, room.roomId, "EX", 900)
       .exec();
   }
   async remove(roomId: string, joinCode: string) {
-    await this.r.del(`scp:room:${roomId}`, `scp:code:${joinCode}`);
+    await this.r.del(`pwtv:room:${roomId}`, `pwtv:code:${joinCode}`);
   }
   async close() {
     this.r.disconnect();

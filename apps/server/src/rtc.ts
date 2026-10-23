@@ -1,5 +1,5 @@
 import type { WebSocket } from "ws";
-import type { ClientMessage, ServerMessage } from "@scp/protocol";
+import type { ClientMessage, ServerMessage } from "@playwithtv/protocol";
 import { HubError, metrics } from "./errors.js";
 import { Bucket } from "./security.js";
 

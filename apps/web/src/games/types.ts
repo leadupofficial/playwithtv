@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import type { ControllerType, GameResult, InputState, PlayerView } from "@scp/protocol";
+import type { ControllerType, GameResult, InputState, PlayerView } from "@playwithtv/protocol";
 
 /** What a game running on the TV can do with the room. Games never touch the socket directly. */
 export interface GameBridge {

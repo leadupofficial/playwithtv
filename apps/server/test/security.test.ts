@@ -92,29 +92,47 @@ describe("join-code guessing", () => {
     await start();
     const room = await (await fetch(`${base}/api/rooms`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" })).json();
     const join = (body: object) => fetch(`${base}/api/join`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "G", avatar: "tiger", ...body }) }).then((r) => r.status);
-    for (let i = 0; i < 10; i++) expect(await join({ joinCode: "ZZZZ" })).toBe(404);
+    for (let i = 0; i < 10; i++) expect(await join({ joinCode: "ZZZZZ" })).toBe(404);
     expect(await join({ joinCode: room.joinCode })).toBe(429);          // even the right code, for now
     expect(await join({ inviteToken: room.inviteToken })).toBe(200);    // unguessable QR invites are unaffected
   });
 });
 
 describe("join-code guessing can't be turned against everyone", () => {
-  it("a flood of wrong codes from one network locks that network, but others still join with their code", async () => {
+  const setup = async () => {
     await start();
     const room = await (await fetch(`${base}/api/rooms`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" })).json();
     const join = (body: object, ip: string) => fetch(`${base}/api/join`, {
       method: "POST", headers: { "content-type": "application/json", "x-forwarded-for": ip },
       body: JSON.stringify({ name: "G", avatar: "tiger", ...body }),
     }).then((r) => r.status);
-    // an attacker hops across 40 addresses in one /24, 1 wrong code each (under the per-address lock)
-    for (let i = 0; i < 40; i++) await join({ joinCode: "ZZZZ" }, `198.51.100.${i}`);
-    expect(await join({ joinCode: room.joinCode }, "198.51.100.200")).toBe(429);  // that network is locked
-    expect(await join({ joinCode: room.joinCode }, "203.0.113.9")).toBe(200);     // a family elsewhere is not
+    return { room, join };
+  };
+
+  it("an attacker hopping addresses in one network is slowed down; families elsewhere still join", async () => {
+    const { room, join } = await setup();
+    for (let i = 0; i < 70; i++) await join({ joinCode: "ZZZZZ" }, `198.51.100.${i}`); // 1 miss per address
+    expect(await join({ joinCode: room.joinCode }, "198.51.100.200")).toBe(429); // that network must wait a moment
+    expect(await join({ joinCode: room.joinCode }, "203.0.113.9")).toBe(200);    // other networks: unaffected
+    expect(await join({ inviteToken: room.inviteToken }, "198.51.100.201")).toBe(200); // QR always works
   });
 
-  it("groups addresses into network blocks", () => {
+  it("network back-off is short (a 2 s refill), not a long ban", async () => {
+    const { room, join } = await setup();
+    for (let i = 0; i < 70; i++) await join({ joinCode: "ZZZZZ" }, `192.0.2.${i}`);
+    expect(await join({ joinCode: room.joinCode }, "192.0.2.250")).toBe(429);
+    await new Promise((r) => setTimeout(r, 2100));
+    expect(await join({ joinCode: room.joinCode }, "192.0.2.250")).toBe(200);
+  });
+
+  it("groups addresses into network blocks, whatever their spelling", () => {
     expect(networkOf("198.51.100.77")).toBe("198.51.100.0/24");
     expect(networkOf("::ffff:198.51.100.77")).toBe("198.51.100.0/24");
     expect(networkOf("2001:db8:abcd:12::1")).toBe("2001:db8:abcd::/48");
+    expect(networkOf("2001:0db8:abcd:0012:0000:0000:0000:0001")).toBe("2001:db8:abcd::/48");
+    expect(networkOf("2001:db8::1")).toBe("2001:db8:0::/48");
+    expect(networkOf("fe80::1%eth0")).toBe("fe80:0:0::/48");
+    expect(networkOf("::1")).toBe("0:0:0::/48");
+    expect(networkOf("not-an-ip")).toBe("invalid:not-an-ip");
   });
 });

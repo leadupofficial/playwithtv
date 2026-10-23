@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { InstallBanner } from "../InstallBanner";
-import type { Avatar, JoinResponse } from "@scp/protocol";
+import { JOIN_CODE_LENGTH, type Avatar, type JoinResponse } from "@playwithtv/protocol";
 import { api } from "../net";
 import { AVATARS } from "../avatars";
 import { Controller } from "./Controller";
 
-const SESSION_KEY = "scp.phone.session";
-const PROFILE_KEY = "scp.phone.profile";
+const SESSION_KEY = "pwtv.phone.session";
+const PROFILE_KEY = "pwtv.phone.profile";
 
 export interface PhoneSession { roomId: string; playerId: string; playerToken: string }
 
@@ -19,7 +19,7 @@ function load<T>(key: string): T | null {
   }
 }
 
-/** Guest join: the invite comes from the QR (?i=…) or a typed 4-letter code. No account, no app. */
+/** Guest join: the invite comes from the QR (?i=…) or a typed join code. No account, no app. */
 export function JoinApp() {
   const [params, setParams] = useSearchParams();
   const invite = params.get("i") ?? undefined;
@@ -33,7 +33,7 @@ export function JoinApp() {
   const [session, setSession] = useState<PhoneSession | null>(() => (invite ? null : load<PhoneSession>(SESSION_KEY)));
 
   useEffect(() => {
-    document.title = "Join · Scan Connect Play";
+    document.title = "Join · Play With TV";
   }, []);
 
   async function join(e: React.FormEvent) {
@@ -80,8 +80,8 @@ export function JoinApp() {
       {!invite && (
         <div className="field">
           <label htmlFor="code">TV code</label>
-          <input id="code" className="input code-input" value={code} maxLength={4} autoCapitalize="characters" autoComplete="off"
-            inputMode="text" onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z2-9]/g, ""))} placeholder="ABCD" required />
+          <input id="code" className="input code-input" value={code} maxLength={JOIN_CODE_LENGTH} autoCapitalize="characters" autoComplete="off"
+            inputMode="text" onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z2-9]/g, ""))} placeholder="ABCDE" required />
         </div>
       )}
       <div className="field">
@@ -99,10 +99,11 @@ export function JoinApp() {
         </div>
       </div>
       {error && <div className="notice" role="alert">{error}</div>}
-      <button className="btn" type="submit" disabled={busy || !name.trim() || (!invite && code.length !== 4)}>
+      <button className="btn" type="submit" disabled={busy || !name.trim() || (!invite && code.length !== JOIN_CODE_LENGTH)}>
         {busy ? "Joining…" : "Join as guest"}
       </button>
       <p className="hint" style={{ margin: 0, fontSize: 13 }}>No account or app needed. Your name is only shown on this TV.</p>
+      <p className="credit">Play With TV · by <b>Leadup Technologies</b></p>
     </form>
   );
 }

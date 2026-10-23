@@ -1,4 +1,4 @@
-import type { ErrorCode } from "@scp/protocol";
+import type { ErrorCode } from "@playwithtv/protocol";
 
 export class HubError extends Error {
   constructor(public code: ErrorCode, message: string, public status = 400) {

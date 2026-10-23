@@ -1,4 +1,4 @@
-import { MotionReader, type Gesture, type GestureKind } from "@scp/motion";
+import { MotionReader, type Gesture, type GestureKind } from "@playwithtv/motion";
 import type { GameBridge } from "./types";
 import { t } from "../i18n";
 

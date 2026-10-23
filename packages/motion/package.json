@@ -1,10 +1,16 @@
 {
-  "name": "@scp/motion",
+  "name": "@playwithtv/motion",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
-  "scripts": { "typecheck": "tsc -p .", "test": "vitest run" },
-  "devDependencies": { "vitest": "5.0.5" }
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "5.0.5"
+  },
+  "author": "Leadup Technologies \u2013 Abishek Sivakumar"
 }

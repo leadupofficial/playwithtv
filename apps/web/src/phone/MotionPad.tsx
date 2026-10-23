@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { STRONG, frameAxes, strongKey, type GestureKind } from "@scp/motion";
+import { STRONG, frameAxes, strongKey, type GestureKind } from "@playwithtv/motion";
 import type { InputSender } from "./inputSender";
 import type { PhoneMotion } from "./motion";
 import { t } from "../i18n";

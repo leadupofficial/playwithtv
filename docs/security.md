@@ -17,17 +17,20 @@ The live site sits behind Cloudflare, and the origin only answers requests that 
 ## Rooms and players
 
 - **Room secrets:** a room has an unguessable host token (TV) and invite token (QR), both 24 random bytes.
-  It also has a short join code, made from an alphabet without look-alike characters, that expires after
-  10 minutes.
+  It also has a 5-character join code (30 look-alike-free characters, so 24.3 million codes) that expires
+  after 10 minutes.
 - **Player tokens:** each player gets their own token. Tokens are compared in constant time. Joining and room
   creation are rate-limited per IP.
-- **Join-code guessing:** typed join codes are short, so guessing is limited:
-  - per address: after 10 wrong codes in 10 minutes, the address is locked out;
-  - per network block (IPv4 /24, IPv6 /48): after 30 wrong codes, so hopping between addresses doesn't help;
-  - deliberately no global lock, since a flood of wrong codes would otherwise lock every family out. A global
-    flood raises an alert in the admin's ops events instead.
+- **Join-code guessing:** typed join codes are guarded in layers that slow guessing down without letting an
+  attacker lock real families out for long:
+  - one address: 10 wrong codes in 10 minutes locks that address;
+  - one network block (IPv4 /24, IPv6 /48, after validating and expanding the address): 60 wrong codes, then
+    one every 2 s, a short back-off rather than a ban, because mobile carriers put many people behind shared
+    addresses;
+  - everyone together: 300 wrong codes, then 5 per second site-wide. At that rate, hitting a live room's
+    code within its 10 minutes is impractical. Floods also raise an ops alert.
 
-  QR invites use the long token and are unaffected.
+  QR invites use the long token and are never affected, so scanning always works.
 - **Client addresses:** these are only believed from the last trusted proxy hop (`TRUST_PROXY_HOPS`,
   default 1), never from a client-written `X-Forwarded-For`. That is what keeps per-IP limits and the admin
   lock from being bypassed.

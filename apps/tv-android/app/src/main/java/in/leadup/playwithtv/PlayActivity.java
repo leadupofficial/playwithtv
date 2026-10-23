@@ -1,4 +1,4 @@
-package com.scanconnectplay.tv;
+package in.leadup.playwithtv;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -42,7 +42,7 @@ public class PlayActivity extends Activity {
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);               // the TV keeps its room across reloads (sessionStorage)
         s.setMediaPlaybackRequiresUserGesture(false); // game sounds without a click
-        s.setUserAgentString(s.getUserAgentString() + " ScanConnectPlayTV/1"); // the page knows it is already the TV app
+        s.setUserAgentString(s.getUserAgentString() + " PlayWithTV/1"); // the page knows it is already the TV app
         web.setBackgroundColor(Color.parseColor("#0b0820"));
         web.setWebViewClient(new WebViewClient() {
             @Override

@@ -94,7 +94,7 @@ export async function gesture(page: Page, kind: keyof typeof DIRS, peak = 18) {
 /** The TV's join code, once it has arrived (the page shows a placeholder until then). */
 export async function tvCode(tv: Page) {
   const el = tv.getByLabel("Join code");
-  await expect(el).toHaveText(/^[A-Z2-9]{4}$/, { timeout: 15_000 });
+  await expect(el).toHaveText(/^[A-Z2-9]{5}$/, { timeout: 15_000 });
   return (await el.textContent())!.trim();
 }
 

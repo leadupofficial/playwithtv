@@ -1,4 +1,4 @@
-import { type ClientMessage, type ServerMessage } from "@scp/protocol";
+import { type ClientMessage, type ServerMessage } from "@playwithtv/protocol";
 
 export type SocketStatus = "connecting" | "open" | "reconnecting" | "closed";
 type Handler = (m: ServerMessage) => void;

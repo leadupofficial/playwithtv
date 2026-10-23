@@ -4,7 +4,7 @@
  * - Pages: always from the network (a new deploy is picked up immediately); the offline page if there is none.
  * - API, WebSocket and everything else: never touched.
  */
-const CACHE = "scp-static-v2";
+const CACHE = "pwtv-static-v3";
 const OFFLINE = "/offline.html";
 
 self.addEventListener("install", (e) => {

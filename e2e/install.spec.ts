@@ -54,7 +54,7 @@ test("TV browsers get a Save this page chip the remote can reach; the TV app nev
 
   const app = await (await browser.newContext({
     viewport: { width: 1280, height: 720 }, ignoreHTTPSErrors: true,
-    userAgent: "Mozilla/5.0 (Linux; Android 14; MiTV-AXFU0; wv) AppleWebKit/537.36 Chrome/155.0 Mobile Safari/537.36 ScanConnectPlayTV/1",
+    userAgent: "Mozilla/5.0 (Linux; Android 14; MiTV-AXFU0; wv) AppleWebKit/537.36 Chrome/155.0 Mobile Safari/537.36 PlayWithTV/1",
   })).newPage();
   await app.addInitScript(fakeInstallEvent);
   await app.goto("/tv");

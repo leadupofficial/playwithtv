@@ -1,6 +1,6 @@
 import type { FastifyInstance, onRequestHookHandler } from "fastify";
 import { z } from "zod";
-import { AD_IMAGE_MAX_BYTES, AD_IMAGE_TYPES, AdInput } from "@scp/protocol";
+import { AD_IMAGE_MAX_BYTES, AD_IMAGE_TYPES, AdInput } from "@playwithtv/protocol";
 import { type AdStore, daysAgo, imageMatches, todayIST } from "./ads.js";
 
 const Id = z.uuid();

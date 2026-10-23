@@ -23,7 +23,7 @@ importers:
       '@fastify/static':
         specifier: 10.1.7
         version: 10.1.7
-      '@scp/protocol':
+      '@playwithtv/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
       fastify:
@@ -60,10 +60,10 @@ importers:
 
   apps/web:
     dependencies:
-      '@scp/motion':
+      '@playwithtv/motion':
         specifier: workspace:*
         version: link:../../packages/motion
-      '@scp/protocol':
+      '@playwithtv/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
       qrcode:

@@ -14,12 +14,14 @@ function Home() {
     <div className="tv">
       <div className="center-screen">
         <div style={{ display: "flex", flexDirection: "column", gap: "1.2em", alignItems: "center" }}>
-          <h1 className="big-title">Scan · Connect · Play</h1>
+          <img src="/icons/icon-192.png" alt="" width={120} height={120} style={{ borderRadius: 28 }} />
+          <h1 className="big-title">Play With TV</h1>
           <p className="hint">Open this page on the TV, then scan the code with your phone. No app needed.</p>
           <div className="row">
             <Link className="btn" to="/tv" autoFocus>This is the TV</Link>
             <Link className="btn secondary" to="/join">Join with my phone</Link>
           </div>
+          <p className="credit" style={{ fontSize: "0.7em" }}>Play With TV · by <b>Leadup Technologies</b> · Abishek Sivakumar</p>
         </div>
       </div>
     </div>

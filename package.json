@@ -1,16 +1,16 @@
 {
-  "name": "scan-connect-play",
+  "name": "playwithtv",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.33.2",
   "scripts": {
-    "dev": "pnpm -r --parallel --filter @scp/server --filter @scp/web dev",
+    "dev": "pnpm -r --parallel --filter @playwithtv/server --filter @playwithtv/web dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "e2e": "playwright test",
-    "start": "pnpm --filter @scp/server start",
-    "docs:catalogue": "pnpm --filter @scp/server exec tsx ../../scripts/catalogue-doc.ts",
+    "start": "pnpm --filter @playwithtv/server start",
+    "docs:catalogue": "pnpm --filter @playwithtv/server exec tsx ../../scripts/catalogue-doc.ts",
     "hooks:install": "git config core.hooksPath scripts/git-hooks",
     "e2e:prod": "playwright test -c playwright.prod.config.ts",
     "ship": "sh scripts/deploy.sh"
@@ -23,5 +23,7 @@
     "onlyBuiltDependencies": [
       "esbuild"
     ]
-  }
+  },
+  "description": "Play With TV: party games on your TV with phones as motion controllers.",
+  "author": "Leadup Technologies \u2013 Abishek Sivakumar"
 }

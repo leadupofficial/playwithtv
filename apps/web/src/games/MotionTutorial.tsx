@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import type { GestureKind } from "@scp/motion";
-import type { PlayerView } from "@scp/protocol";
+import type { GestureKind } from "@playwithtv/motion";
+import type { PlayerView } from "@playwithtv/protocol";
 import { AVATARS } from "../avatars";
 import { t } from "../i18n";
 import { type MotionControl, type MotionPlayers, motionLabel } from "./motionKit";

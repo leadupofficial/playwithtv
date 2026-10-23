@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import pg from "pg";
-import type { AdInput, AdPlacement, AdRecord, AdServed, AdStats, ImpressionBatch } from "@scp/protocol";
+import type { AdInput, AdPlacement, AdRecord, AdServed, AdStats, ImpressionBatch } from "@playwithtv/protocol";
 
 /** Sponsor storage. Images live beside the record so a sponsor is one row to back up or delete. */
 export interface AdStore {

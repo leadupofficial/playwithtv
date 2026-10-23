@@ -1,4 +1,4 @@
-import type { ClientMessage } from "@scp/protocol";
+import type { ClientMessage } from "@playwithtv/protocol";
 
 type Items = Extract<ClientMessage, { type: "ads.impressions" }>["items"];
 

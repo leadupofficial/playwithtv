@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import type { GameManifest } from "@scp/protocol";
+import type { GameManifest } from "@playwithtv/protocol";
 import { api } from "../net";
 import { SponsorsAdmin } from "./SponsorsAdmin";
 
-const KEY = "scp.admin.token";
+const KEY = "pwtv.admin.token";
 
 interface Overview {
   stats: { rooms: number; players: number; connected: number };
@@ -102,6 +102,7 @@ export function AdminApp() {
             ))}</tbody></table>
         </>
       )}
+      <p className="credit">Play With TV · by <b>Leadup Technologies</b></p>
     </div>
   );
 }

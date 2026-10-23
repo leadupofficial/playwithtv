@@ -7,7 +7,7 @@
  * public IP address is ever shared with a third party. If a direct link cannot open, input simply keeps
  * flowing through the server as before.
  */
-import { InputState, type RtcSignal } from "@scp/protocol";
+import { InputState, type RtcSignal } from "@playwithtv/protocol";
 import type { HubSocket } from "./net";
 
 const ICE: RTCConfiguration = { iceServers: [] };
@@ -21,9 +21,9 @@ export function p2pEnabled(): boolean {
   if (typeof RTCPeerConnection === "undefined") return false;
   try {
     const q = new URLSearchParams(location.search).get("p2p");
-    if (q === "0") localStorage.setItem("scp.p2p", "off");
-    if (q === "1") localStorage.removeItem("scp.p2p");
-    return localStorage.getItem("scp.p2p") !== "off";
+    if (q === "0") localStorage.setItem("pwtv.p2p", "off");
+    if (q === "1") localStorage.removeItem("pwtv.p2p");
+    return localStorage.getItem("pwtv.p2p") !== "off";
   } catch {
     return true;
   }

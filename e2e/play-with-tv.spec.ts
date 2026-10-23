@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { gesture, newPhonePage, pose, practiseUntilReady, startController, tvCode, upright } from "./helpers";
 
 async function tvInvite(tv: Page) {
-  return tv.evaluate(() => JSON.parse(sessionStorage.getItem("scp.tv.room") ?? "{}")) as Promise<{ joinCode: string; inviteToken: string }>;
+  return tv.evaluate(() => JSON.parse(sessionStorage.getItem("pwtv.tv.room") ?? "{}")) as Promise<{ joinCode: string; inviteToken: string }>;
 }
 
 /** Each phone turns to its answer (Priya far left, Karthik far right) and pushes towards the TV to lock it. */
@@ -23,7 +23,7 @@ test("scan, connect, play: two phones play a full Tamil Trivia match, rematch an
   await tv.goto("/tv?quick=1");
   await expect(tv.getByAltText("QR code to join this TV")).toBeVisible();
   const code = await tvCode(tv);
-  expect(code).toMatch(/^[A-Z2-9]{4}$/);
+  expect(code).toMatch(/^[A-Z2-9]{5}$/);
   const invite = await tvInvite(tv);
   expect(invite.joinCode).toBe(code);
 
@@ -90,7 +90,7 @@ test("scan, connect, play: two phones play a full Tamil Trivia match, rematch an
 
 test("wrong and expired codes are explained on the phone", async ({ page }) => {
   await page.goto("/join");
-  await page.getByLabel("TV code").fill("ZZZZ");
+  await page.getByLabel("TV code").fill("ZZZZZ");
   await page.getByLabel("Your name").fill("Test");
   await page.getByRole("button", { name: "Join as guest" }).click();
   await expect(page.getByRole("alert")).toContainText(/expired or is wrong/);

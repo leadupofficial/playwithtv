@@ -2,7 +2,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 import {
   type AdServed, CreateRoomResponse, type GameManifest, type GameResult, type InputState, type RoomView, type ServerMessage,
-} from "@scp/protocol";
+} from "@playwithtv/protocol";
 import { HubSocket, api, type SocketStatus } from "../net";
 import { AVATARS } from "../avatars";
 import { GAMES } from "../games/registry";
@@ -13,7 +13,7 @@ import { countImpression, pickSponsor, setImpressionSink, useSponsors } from "./
 import { TvInputs } from "../rtc";
 import { TvInstallChip } from "../InstallBanner";
 
-const ROOM_KEY = "scp.tv.room";
+const ROOM_KEY = "pwtv.tv.room";
 
 interface Invite { joinCode: string; joinUrl: string; expiresAt: number }
 
@@ -187,7 +187,7 @@ export function TvApp() {
   return (
     <div className="tv">
       <div className="tv-header">
-        <div className="brand">🎮 <b>Scan · Connect · Play</b></div>
+        <div className="brand"><img src="/icons/icon-192.png" alt="" className="brand-icon" /><b>Play With TV</b></div>
         <div className="row">
           <span className="chip"><span className={`dot ${status === "open" ? "on" : ""}`} />{status === "open" ? "Online" : "Connecting…"}</span>
           <span className="chip">{connected.length} / 8 players</span>

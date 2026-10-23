@@ -2,7 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import pg from "pg";
-import { CATALOG, type GameManifest, type GameResult } from "@scp/protocol";
+import { CATALOG, type GameManifest, type GameResult } from "@playwithtv/protocol";
 
 export interface MatchRecord {
   sessionId: string;

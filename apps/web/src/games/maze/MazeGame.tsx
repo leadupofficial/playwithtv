@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { PlayerView } from "@scp/protocol";
+import type { PlayerView } from "@playwithtv/protocol";
 import type { GameProps } from "../types";
 import { MotionPlayers, type MotionControl } from "../motionKit";
 import { MotionTutorial } from "../MotionTutorial";

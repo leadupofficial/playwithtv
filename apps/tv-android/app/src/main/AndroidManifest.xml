@@ -3,10 +3,10 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
-    <!-- usesCleartextTraffic: the local-network development hub is plain http; production uses https. -->
-    <application android:label="Scan Connect Play" android:banner="@drawable/banner" android:icon="@drawable/banner"
+    <!-- usesCleartextTraffic comes from the build type: debug allows the plain-http dev hub, release is HTTPS-only. -->
+    <application android:label="Play With TV" android:banner="@drawable/banner" android:icon="@drawable/banner"
         android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen" android:allowBackup="false"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="${cleartext}">
         <activity android:name=".PlayActivity" android:exported="true" android:screenOrientation="landscape"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|uiMode">
             <intent-filter>

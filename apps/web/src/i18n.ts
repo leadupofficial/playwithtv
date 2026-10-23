@@ -121,9 +121,9 @@ const DICTS: Record<Lang, Partial<Record<Key, string>>> = { en, ta, hi };
 export function currentLang(): Lang {
   try {
     const q = new URLSearchParams(location.search).get("lang");
-    const saved = localStorage.getItem("scp.lang");
+    const saved = localStorage.getItem("pwtv.lang");
     const pick = (q ?? saved ?? navigator.language.slice(0, 2)) as Lang;
-    if (q && q in LANGS) localStorage.setItem("scp.lang", q);
+    if (q && q in LANGS) localStorage.setItem("pwtv.lang", q);
     return pick in LANGS ? pick : "en";
   } catch {
     return "en";

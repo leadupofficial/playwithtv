@@ -1,5 +1,5 @@
 /**
- * Scan-Connect-Play wire protocol, version 1.
+ * Play With TV wire protocol, version 1.
  *
  * Transport: JSON text frames over one WebSocket per device (TV or phone) to the room hub.
  * Lifecycle messages are reliable (TCP) and acknowledged through room.state broadcasts.
@@ -14,10 +14,16 @@ import { ImpressionItems } from "./ads.js";
 export const PROTOCOL_VERSION = 1;
 export const MAX_FRAME_BYTES = 4096;
 export const MAX_PLAYERS_PER_ROOM = 8;
+/**
+ * Typed join codes: 5 characters from 30 look-alike-free letters/digits = 24.3 million codes, and each
+ * expires after 10 minutes. QR invites use a long random token instead.
+ */
+export const JOIN_CODE_LENGTH = 5;
+export const JOIN_CODE_PATTERN = new RegExp(`^[A-Z2-9]{${JOIN_CODE_LENGTH}}$`);
 
 // ---- shared shapes ----------------------------------------------------------------
 
-/** "motion" is the one in-game controller: tilt + gestures, no touch (see @scp/motion). "lobby" is setup. */
+/** "motion" is the one in-game controller: tilt + gestures, no touch (see @playwithtv/motion). "lobby" is setup. */
 export const ControllerType = z.enum(["lobby", "motion"]);
 export type ControllerType = z.infer<typeof ControllerType>;
 
@@ -173,7 +179,7 @@ export type CreateRoomResponse = z.infer<typeof CreateRoomResponse>;
 export const JoinRequest = z
   .object({
     inviteToken: z.string().max(128).optional(),
-    joinCode: z.string().trim().toUpperCase().regex(/^[A-Z2-9]{4}$/).optional(),
+    joinCode: z.string().trim().toUpperCase().regex(JOIN_CODE_PATTERN).optional(),
     name: PlayerName,
     avatar: Avatar,
     playerToken: z.string().max(128).optional(), // rejoin with the same identity

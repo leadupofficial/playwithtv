@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { ControllerType, GameResult, PlayerView, RoomView } from "@scp/protocol";
+import type { ControllerType, GameResult, PlayerView, RoomView } from "@playwithtv/protocol";
 import { HubSocket, type SocketStatus } from "../net";
 import { AVATARS } from "../avatars";
 import type { PhoneSession } from "./JoinApp";

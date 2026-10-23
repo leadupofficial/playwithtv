@@ -1,4 +1,4 @@
-import type { InputState } from "@scp/protocol";
+import type { InputState } from "@playwithtv/protocol";
 import type { HubSocket } from "../net";
 
 /**

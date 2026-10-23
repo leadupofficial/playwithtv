@@ -1,6 +1,6 @@
 {
   "id": "/join",
-  "name": "Scan · Connect · Play controller",
+  "name": "Play With TV – Controller",
   "short_name": "Play With TV",
   "description": "Turn your phone into a motion controller for games on your TV.",
   "start_url": "/join?source=app",

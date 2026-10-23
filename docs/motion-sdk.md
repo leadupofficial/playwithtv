@@ -29,7 +29,7 @@ DeviceMotion ─► PhoneMotion ─► MotionEngine ─► InputSender ══ di
   players.
 - **Turning it off:** `?p2p=0` disables direct links on a device (remembered); `?p2p=1` re-enables them.
 
-- **`packages/motion`** (`@scp/motion`) is pure TypeScript: no DOM, no timers. It runs the same in the phone,
+- **`packages/motion`** (`@playwithtv/motion`) is pure TypeScript: no DOM, no timers. It runs the same in the phone,
   the TV and the tests.
 - **Phone:** `apps/web/src/phone/motion.ts` adapts browser events, and `MotionPad.tsx` is the one controller
   every game uses.

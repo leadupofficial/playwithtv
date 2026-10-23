@@ -44,6 +44,7 @@ button { font-family: inherit; color: inherit; }
 }
 .tv-header { display: flex; align-items: center; justify-content: space-between; }
 .brand { font-weight: 800; font-size: 1.7em; letter-spacing: 0.02em; display: flex; gap: 0.4em; align-items: center; }
+.brand-icon { width: 1.5em; height: 1.5em; border-radius: 0.35em; }
 .brand b { background: linear-gradient(90deg, #ffb86b, #ff6fb5, #8b7bff); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .chip { display: inline-flex; align-items: center; gap: 0.45em; padding: 0.35em 0.9em; border-radius: 999px; background: var(--glass); border: 1px solid var(--line); font-size: 0.85em; }
 .dot { width: 0.6em; height: 0.6em; border-radius: 50%; background: var(--bad); }
@@ -233,3 +234,5 @@ button { font-family: inherit; color: inherit; }
 .tv-install:focus { outline: 0.15em solid #fff; }
 .tv-install-help { position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(11, 8, 32, 0.88); text-align: center; }
 .tv-install-help > div { max-width: 1100px; padding: 1.2em 1.6em; border-radius: 1em; background: var(--bg-1); border: 1px solid var(--line); }
+.credit { color: var(--muted); font-size: 13px; text-align: center; }
+.credit b { color: var(--ink); font-weight: 600; }

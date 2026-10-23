@@ -1,5 +1,5 @@
 {
-  "name": "@scp/web",
+  "name": "@playwithtv/web",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -11,12 +11,12 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@scp/protocol": "workspace:*",
+    "@playwithtv/protocol": "workspace:*",
     "qrcode": "1.5.4",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "react-router-dom": "7.18.4",
-    "@scp/motion": "workspace:*",
+    "@playwithtv/motion": "workspace:*",
     "three": "0.186.1"
   },
   "devDependencies": {
@@ -28,5 +28,6 @@
     "vite": "8.3.5",
     "vitest": "5.0.5",
     "@types/three": "0.186.0"
-  }
+  },
+  "author": "Leadup Technologies \u2013 Abishek Sivakumar"
 }

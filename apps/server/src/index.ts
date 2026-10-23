@@ -21,7 +21,7 @@ const ads: AdStore = cfg.databaseUrl ? new PgAdStore(cfg.databaseUrl) : new Memo
 
 const app = await buildApp(cfg, db, presence, { logger: true, ads });
 await app.http.listen({ port: cfg.port, host: "0.0.0.0" });
-app.http.log.info({ db: db.kind, presence: presence.kind, publicUrl: cfg.publicUrl }, "scan-connect-play hub ready");
+app.http.log.info({ db: db.kind, presence: presence.kind, publicUrl: cfg.publicUrl }, "Play With TV hub ready");
 
 for (const sig of ["SIGINT", "SIGTERM"] as const) {
   process.once(sig, async () => {

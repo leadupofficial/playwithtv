@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { Gesture, MotionFrame } from "@scp/motion";
+import type { Gesture, MotionFrame } from "@playwithtv/motion";
 import { PhoneMotion, motionSupported, requestMotionPermission, savedSensitivity } from "./motion";
 
 /**

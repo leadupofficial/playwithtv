@@ -1,12 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Banner: night-purple gradient, a QR-like block and a game pad. -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="320dp" android:height="180dp"
-    android:viewportWidth="320" android:viewportHeight="180">
-    <path android:fillColor="#17113A" android:pathData="M0,0h320v180h-320z" />
-    <path android:fillColor="#3B1F7A" android:pathData="M0,0h320v70h-320z" />
-    <path android:fillColor="#FFFFFF" android:pathData="M40,45h70v70h-70z" />
-    <path android:fillColor="#17113A" android:pathData="M48,53h20v20h-20z M82,53h20v20h-20z M48,87h20v20h-20z M80,85h8v8h-8z M92,97h10v10h-10z M80,99h6v6h-6z" />
-    <path android:fillColor="#FF7A59" android:pathData="M150,70 h110 a30,30 0 0,1 0,60 h-110 a30,30 0 0,1 0,-60z" />
-    <path android:fillColor="#FFFFFF" android:pathData="M170,95h28v10h-28z M179,86h10v28h-10z" />
-    <path android:fillColor="#FFFFFF" android:pathData="M238,92 m-7,0 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0 M255,108 m-7,0 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0" />
+<!-- Play With TV launcher banner (320x180): the app icon's TV with a play button, and a phone held sideways. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="320dp" android:height="180dp" android:viewportWidth="320" android:viewportHeight="180">
+    <path android:pathData="M0,0h320v180h-320z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="0" android:startY="0" android:endX="320" android:endY="180">
+                <item android:offset="0" android:color="#FFFF7A59" />
+                <item android:offset="0.55" android:color="#FFFF4F9A" />
+                <item android:offset="1" android:color="#FF7C3AED" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- TV -->
+    <path android:fillColor="#EB0B0820" android:pathData="M100,22h120a12,12 0 0,1 12,12v70a12,12 0 0,1 -12,12h-120a12,12 0 0,1 -12,-12v-70a12,12 0 0,1 12,-12z" />
+    <path android:fillColor="#EB0B0820" android:pathData="M148,116h24v10h-24z M132,124h56a4,4 0 0,1 0,8h-56a4,4 0 0,1 0,-8z" />
+    <path android:fillColor="#FFFFD23F" android:pathData="M148,46 L148,92 L184,69 Z" />
+    <!-- phone held sideways, with motion arcs -->
+    <path android:fillColor="#FFFFFFFF" android:pathData="M120,140h80a8,8 0 0,1 8,8v24a8,8 0 0,1 -8,8h-80a8,8 0 0,1 -8,-8v-24a8,8 0 0,1 8,-8z" />
+    <path android:fillColor="#FF2A1760" android:pathData="M126,146h68v26h-68z" />
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="4" android:strokeLineCap="round" android:pathData="M100,150 q-8,10 0,20 M220,150 q8,10 0,20" />
 </vector>

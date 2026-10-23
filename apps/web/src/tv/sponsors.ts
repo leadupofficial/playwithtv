@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { AdPlacement, AdServed } from "@scp/protocol";
+import type { AdPlacement, AdServed } from "@playwithtv/protocol";
 
 const REFRESH_MS = 10 * 60_000;
 const FLUSH_MS = 60_000;

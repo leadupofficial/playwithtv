@@ -15,11 +15,11 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-const DISMISS_KEY = "scp.install.dismissed";
+const DISMISS_KEY = "pwtv.install.dismissed";
 const DISMISS_DAYS = 7;
 
 export function detectPlatform(ua: string, touchPoints = 0): Platform {
-  if (/ScanConnectPlayTV/.test(ua)) return "tv-app";
+  if (/PlayWithTV\//.test(ua)) return "tv-app";
   if (/SMART-TV|SmartTV|Tizen|Web0S|webOS|NetCast|BRAVIA|HbbTV|CrKey|AFT[A-Z]|Android TV|GoogleTV/i.test(ua)) return "tv-browser";
   if (/FBAN|FBAV|Instagram|Line\/|Snapchat|; wv\)|WhatsApp/i.test(ua)) return "in-app";
   if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && touchPoints > 1)) return "ios";

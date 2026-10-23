@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import type { GameResult } from "@scp/protocol";
-import { STRONG } from "@scp/motion";
+import type { GameResult } from "@playwithtv/protocol";
+import { STRONG } from "@playwithtv/motion";
 import type { GameProps } from "../types";
 import { AVATARS } from "../../avatars";
 import {

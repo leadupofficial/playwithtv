@@ -1,5 +1,5 @@
 import type { WebSocket } from "ws";
-import type { Avatar, GameResult, RoomStatus, ServerMessage } from "@scp/protocol";
+import type { Avatar, GameResult, RoomStatus, ServerMessage } from "@playwithtv/protocol";
 import type { Bucket } from "./security.js";
 
 /** A phone in a room. */

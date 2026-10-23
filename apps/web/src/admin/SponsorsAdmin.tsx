@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { AD_IMAGE_MAX_BYTES, AD_IMAGE_TYPES, AD_PLACEMENTS, type AdPlacement, type AdRecord, type AdStats } from "@scp/protocol";
+import { AD_IMAGE_MAX_BYTES, AD_IMAGE_TYPES, AD_PLACEMENTS, type AdPlacement, type AdRecord, type AdStats } from "@playwithtv/protocol";
 
 const LABELS: Record<AdPlacement, string> = {
   "lobby-rail": "Lobby banner",

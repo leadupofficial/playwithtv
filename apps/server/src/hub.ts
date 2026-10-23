@@ -4,7 +4,7 @@ import {
   ClientMessage, MAX_PLAYERS_PER_ROOM, PROTOCOL_VERSION, findGame,
   type Avatar, type ErrorCode, type JoinRequest, type JoinResponse, type PlayerView, type RoomStatus,
   type RoomView, type ServerMessage, type GameResult,
-} from "@scp/protocol";
+} from "@playwithtv/protocol";
 import type { Config } from "./config.js";
 import { Bucket, joinCode, sameToken, token } from "./security.js";
 import type { Persistence } from "./persistence.js";

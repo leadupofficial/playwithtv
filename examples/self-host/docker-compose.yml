@@ -11,7 +11,7 @@ services:
       PUBLIC_URL: https://play.example.com
       ALLOWED_ORIGINS: https://play.example.com
       ADMIN_TOKEN: ${ADMIN_TOKEN:?set ADMIN_TOKEN in .env (openssl rand -hex 24)}
-      DATABASE_URL: postgres://scp:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/scp
+      DATABASE_URL: postgres://playwithtv:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/playwithtv
       REDIS_URL: redis://redis:6379
     depends_on:
       db: { condition: service_healthy }
@@ -20,9 +20,9 @@ services:
   db:
     image: postgres:17-alpine
     restart: unless-stopped
-    environment: { POSTGRES_USER: scp, POSTGRES_DB: scp, POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}" }
+    environment: { POSTGRES_USER: playwithtv, POSTGRES_DB: playwithtv, POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}" }
     volumes: [db:/var/lib/postgresql/data]
-    healthcheck: { test: ["CMD-SHELL", "pg_isready -U scp -d scp"], interval: 5s, retries: 10 }
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U playwithtv -d playwithtv"], interval: 5s, retries: 10 }
 
   redis:
     image: redis:7-alpine

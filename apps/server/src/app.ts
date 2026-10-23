@@ -4,7 +4,7 @@ import fastifyStatic from "@fastify/static";
 import { WebSocketServer } from "ws";
 import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
-import { CreateRoomResponse, JoinRequest, MAX_FRAME_BYTES } from "@scp/protocol";
+import { CreateRoomResponse, JoinRequest, MAX_FRAME_BYTES } from "@playwithtv/protocol";
 import { type Config, originAllowed } from "./config.js";
 import { Hub, HubError, metrics } from "./hub.js";
 import { FailureLock, KeyedLimiter, networkOf, sameToken } from "./security.js";
@@ -31,13 +31,17 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
   const hub = new Hub(cfg, db, presence, (o, m) => http.log.warn(o, m));
   const createLimiter = new KeyedLimiter(0.2, 10);   // 10 rooms burst, then 1 per 5 s per IP
   const joinLimiter = new KeyedLimiter(0.5, 20);     // 20 joins burst, then 1 per 2 s per IP
-  // Join codes are short (4 characters), so guessing is limited per address (10 wrong codes → locked for
-  // 10 minutes) and per network block (/24 or /48: 30 → locked), which stops one network from rotating
-  // through addresses. There is deliberately no global lock: anyone flooding wrong codes would then lock
-  // every family out. A global flood only raises an alert (ops event) for the operator.
+  // Typed join codes (24.3 million, each valid 10 minutes) are guarded in layers that slow guessing down
+  // without letting an attacker lock real families out for long:
+  //  - one address: 10 wrong codes in 10 minutes → that address is locked (it is the guesser);
+  //  - one network block (/24 or /48), where many people may share addresses (mobile carriers): 60 wrong
+  //    codes, then one every 2 s. A short back-off, never a long ban;
+  //  - everyone together: 300 wrong codes, then 5 per second site-wide, which caps distributed guessing at a
+  //    rate that makes hitting a live room's code impractical; floods also raise an ops alert.
+  // QR invites (long random tokens) are never affected, so scanning always works.
   const joinFails = new FailureLock(10, 10 * 60_000);
-  const netFails = new FailureLock(30, 10 * 60_000);
-  const missWatch = new KeyedLimiter(1, 60);         // 60 wrong codes burst, then 1/s across everyone: alert only
+  const netMisses = new KeyedLimiter(0.5, 60);
+  const allMisses = new KeyedLimiter(5, 300);
   let lastFloodAlert = 0;
 
   await http.register(cors, {
@@ -99,17 +103,18 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
     }
     const body = JoinRequest.safeParse(req.body);
     if (!body.success) return reply.status(400).send({ error: "bad_request", message: body.error.issues[0]?.message ?? "invalid" });
-    if (body.data.joinCode && (joinFails.locked(req.ip) || netFails.locked(networkOf(req.ip)))) {
+    const net = networkOf(req.ip);
+    if (body.data.joinCode && (joinFails.locked(req.ip) || !netMisses.canTake(net) || !allMisses.canTake("all"))) {
       metrics.rateLimited++;
-      return reply.status(429).send({ error: "rate_limited", message: "Too many wrong codes. Wait a few minutes, or scan the QR code instead." });
+      return reply.status(429).send({ error: "rate_limited", message: "Too many wrong codes right now. Wait a little, or scan the QR code on the TV instead." });
     }
     try {
       return hub.join(body.data);
     } catch (e) {
       if (body.data.joinCode && e instanceof HubError && e.code === "invite_expired") {
         joinFails.fail(req.ip);
-        netFails.fail(networkOf(req.ip));
-        if (!missWatch.take("all") && Date.now() - lastFloodAlert > 60_000) {
+        netMisses.take(net);
+        if (!allMisses.take("all") && Date.now() - lastFloodAlert > 60_000) {
           lastFloodAlert = Date.now();
           http.log.warn("many wrong join codes from many addresses: possible distributed guessing");
           void db.opsEvent("join_code_flood", {}).catch(() => undefined);
@@ -157,7 +162,7 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
   http.get("/metrics", { onRequest: adminGuard }, async (req, reply) => {
     const s = hub.stats();
     const lines = Object.entries({ ...metrics, active_rooms: s.rooms, players: s.players, connected_players: s.connected })
-      .map(([k, v]) => `scp_${k.replace(/[A-Z]/g, (c) => "_" + c.toLowerCase())} ${v}`);
+      .map(([k, v]) => `pwtv_${k.replace(/[A-Z]/g, (c) => "_" + c.toLowerCase())} ${v}`);
     reply.type("text/plain").send(lines.join("\n") + "\n");
   });
 

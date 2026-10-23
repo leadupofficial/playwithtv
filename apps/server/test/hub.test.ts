@@ -4,7 +4,7 @@ import { buildApp, type App } from "../src/app.js";
 import { loadConfig, type Config } from "../src/config.js";
 import { MemoryPersistence } from "../src/persistence.js";
 import { MemoryPresence } from "../src/presence.js";
-import type { ServerMessage } from "@scp/protocol";
+import type { ServerMessage } from "@playwithtv/protocol";
 
 let app: App | undefined;
 let base = "";
@@ -95,11 +95,11 @@ async function phone(join: { inviteToken?: string; joinCode?: string }, name = "
 }
 
 describe("rooms and invitations", () => {
-  it("creates a room with an unguessable invite, a 4-letter code and a join URL", async () => {
+  it("creates a room with an unguessable invite, a 5-character code and a join URL", async () => {
     await start();
     const r = await post("/api/rooms", {});
     expect(r.status).toBe(200);
-    expect(r.body.joinCode).toMatch(/^[A-HJ-NP-Z2-9]{4}$/);
+    expect(r.body.joinCode).toMatch(/^[A-HJ-NP-Z2-9]{5}$/);
     expect(r.body.inviteToken.length).toBeGreaterThanOrEqual(32);
     expect(r.body.joinUrl).toBe(`http://tv.test/join?i=${r.body.inviteToken}`);
     expect(r.body.expiresAt).toBeGreaterThan(Date.now());
@@ -117,7 +117,7 @@ describe("rooms and invitations", () => {
   it("rejects wrong codes, bad names and expired invites", async () => {
     await start({ inviteTtlMs: 50 });
     const r = await post("/api/rooms", {});
-    expect((await post("/api/join", { joinCode: "ZZZZ", name: "A", avatar: "tiger" })).status).toBe(404);
+    expect((await post("/api/join", { joinCode: "ZZZZZ", name: "A", avatar: "tiger" })).status).toBe(404);
     expect((await post("/api/join", { inviteToken: r.body.inviteToken, name: "<script>", avatar: "tiger" })).status).toBe(400);
     await new Promise((res) => setTimeout(res, 80));
     const late = await post("/api/join", { inviteToken: r.body.inviteToken, name: "Late", avatar: "tiger" });

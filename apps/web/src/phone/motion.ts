@@ -1,12 +1,12 @@
 /**
- * Browser adapter for the shared motion SDK (@scp/motion): reads DeviceMotion events, converts them to
+ * Browser adapter for the shared motion SDK (@playwithtv/motion): reads DeviceMotion events, converts them to
  * screen axes for the current orientation and feeds the MotionEngine. Requirements: a secure context (HTTPS)
  * and, on iPhone, a permission prompt triggered by a tap. Only motion sensors are read: never the camera,
  * microphone or location.
  */
-import { DEFAULT_SETTINGS, MotionEngine, type Gesture, type MotionFrame, type MotionTrace, type RawSample, toScreen, v } from "@scp/motion";
+import { DEFAULT_SETTINGS, MotionEngine, type Gesture, type MotionFrame, type MotionTrace, type RawSample, toScreen, v } from "@playwithtv/motion";
 
-const SENS_KEY = "scp.motion.sensitivity";
+const SENS_KEY = "pwtv.motion.sensitivity";
 const IOS = typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent);
 
 export function motionSupported(): boolean {

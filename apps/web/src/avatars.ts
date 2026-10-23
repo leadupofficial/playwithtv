@@ -1,4 +1,4 @@
-import type { Avatar } from "@scp/protocol";
+import type { Avatar } from "@playwithtv/protocol";
 
 /** Avatars are emoji (rendered by the device's own emoji font), so there are no image assets to license. */
 export const AVATARS: Record<Avatar, { emoji: string; label: string }> = {

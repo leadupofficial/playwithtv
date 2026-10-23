@@ -1,6 +1,6 @@
 {
   "id": "/tv",
-  "name": "Scan · Connect · Play TV",
+  "name": "Play With TV – TV screen",
   "short_name": "Play With TV",
   "description": "Party games on your TV. Phones join by scanning the code.",
   "start_url": "/tv?source=app",

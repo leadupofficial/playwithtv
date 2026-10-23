@@ -1,4 +1,4 @@
-import type { GameResult } from "@scp/protocol";
+import type { GameResult } from "@playwithtv/protocol";
 
 /** Standard competition ranking, highest score first: equal scores share a place (1, 2, 2, 4). */
 export function placings(scores: Map<string, number>): GameResult[] {
