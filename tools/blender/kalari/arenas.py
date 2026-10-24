@@ -93,7 +93,7 @@ def world(a, arena: str):
 def courtyard(a, M, hx, hz):
     col = K.collection("scenery")
     K.box("pond", (-30, -20, -0.95), (30, 9, -0.9), K.water("water", "#10303a"), col=col)
-    K.box("floor", (-hx, -hz, -0.9), (hx, hz, 0), M["laterite"], bevel=0.04, uv=3.2, col=col)
+    K.box("floor", (-hx, -hz, -0.9), (hx, hz, 0), M["laterite"], bevel=0.04, uv=1.9, col=col)
     K.box("floor_rim", (-hx - 0.18, -hz - 0.18, -0.95), (hx + 0.18, hz + 0.18, -0.12), M["granite"], bevel=0.05, uv=1.2, col=col)
     for i, x in enumerate((-1.6, 0, 1.6)):  # steps down into the pond at the front
         K.box(f"step{i}", (x - 0.7, -hz - 0.9, -0.55), (x + 0.7, -hz - 0.2, -0.3), M["granite"], bevel=0.03, uv=1.0, col=col)

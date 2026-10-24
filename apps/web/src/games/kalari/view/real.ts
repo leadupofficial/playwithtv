@@ -132,9 +132,20 @@ export class RealView implements StageView {
   podium(order: string[]) {
     this.podiumGroup = new Podium(2.2);
     this.podiumGroup.group.position.set(0, 0, -1);
+    // brass, silver and bronze steps that catch the HDRI, instead of the kit's flat Lambert
+    const metals = ["#d9a441", "#c9d3e0", "#b8733a"];
+    let k = 0;
+    this.podiumGroup.group.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (mesh.isMesh && (mesh.geometry as THREE.BufferGeometry).type === "BoxGeometry") {
+        mesh.material = new THREE.MeshStandardMaterial({ color: metals[k++ % 3], metalness: 0.85, roughness: 0.32 });
+      }
+    });
     this.scene.add(this.podiumGroup.group);
     order.forEach((id, i) => {
       const ch = this.chars.get(id)!;
+      ch.c.root.visible = true;
+      ch.c.body.scale.setScalar(1);
       this.podiumGroup!.place(ch.c.root, i + 1);
       prepareModel(this.podiumGroup!.group, this.profile);
       ch.c.play(ACTIONS[ch.look.char][i < 2 ? "cheer" : i === 2 ? "idle" : "ko"], { fade: 0.3, once: i > 2 });

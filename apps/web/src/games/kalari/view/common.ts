@@ -9,9 +9,9 @@ import type { Effects } from "./effects";
 
 export const A = "/assets/kalari-clash/";
 export const HDRI_URL: Record<string, string> = {
-  dusk: `${A}qwantani_dusk_2_puresky_1k.hdr`,
+  dusk: `${A}qwantani_dusk_2_puresky_512.hdr`,
   overcast: "/assets/cinematic/showroom/kloofendal_overcast_puresky_1k.hdr",
-  golden: `${A}kloppenheim_06_puresky_1k.hdr`,
+  golden: `${A}kloppenheim_06_puresky_512.hdr`,
 };
 /** Lite camera: must match tools/blender/kalari/arenas.py (VIEW_W, PITCH, LOOK). */
 export const LITE = { viewW: 24, pitchDeg: 30, look: new THREE.Vector3(0, 1.5, -3.5) };

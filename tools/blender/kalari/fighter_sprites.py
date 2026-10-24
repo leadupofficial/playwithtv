@@ -32,10 +32,15 @@ import render_sprites as RS  # noqa: E402
 
 # game clip -> (frames, fps, loop); the action per fighter is in ACTIONS
 CLIPS = [
-    ("idle", 4, 6, True), ("run", 6, 12, True), ("jab", 4, 16, False), ("cross", 4, 16, False), ("kick", 5, 14, False),
-    ("heavy", 5, 12, False), ("guard", 1, 4, True), ("hit", 3, 12, False), ("roll", 5, 14, False), ("special", 7, 10, False),
-    ("cheer", 4, 8, True), ("ko", 4, 10, False),
+    ("idle", 4, 6, True), ("run", 6, 12, True), ("jab", 3, 16, False), ("cross", 3, 16, False), ("kick", 4, 14, False),
+    ("heavy", 4, 12, False), ("guard", 1, 4, True), ("hit", 3, 12, False), ("roll", 5, 14, False), ("special", 6, 10, False),
+    ("cheer", 4, 8, True), ("ko", 3, 10, False),
 ]
+# two sheets per fighter so the common moves get sharp, tightly framed cells (one draw call per sheet)
+SETS = {
+    "a": {"clips": ("idle", "run", "jab", "cross", "kick", "heavy", "guard", "hit"), "ortho": 3.0},
+    "b": {"clips": ("roll", "special", "cheer", "ko"), "ortho": 4.2},
+}
 BASE = {
     "idle": "Unarmed_Idle", "run": "Running_A", "jab": "Unarmed_Melee_Attack_Punch_A", "cross": "Unarmed_Melee_Attack_Punch_B",
     "kick": "Unarmed_Melee_Attack_Kick", "heavy": "2H_Melee_Attack_Chop", "guard": "Blocking", "hit": "Hit_A",
@@ -56,13 +61,14 @@ def args():
     p.add_argument("--fighter", required=True, choices=sorted(ACTIONS))
     p.add_argument("--out", required=True)
     p.add_argument("--directions", type=int, default=8)
-    p.add_argument("--size", type=int, default=200)
+    p.add_argument("--set", default="a", choices=sorted(SETS), help="a: standing moves (tight, sharp); b: rolls, specials, cheers, KOs (wide)")
+    p.add_argument("--size", type=int, default=256)
     p.add_argument("--samples", type=int, default=24)
-    p.add_argument("--engine", default="cycles")
+    p.add_argument("--engine", default="eevee", choices=["eevee", "cycles"])
     p.add_argument("--preset", default="studio")
     p.add_argument("--elevation", type=float, default=30)
-    p.add_argument("--ortho", type=float, default=3.4, help="metres across a cell before cropping (fixed, so the fighter fills it)")
-    p.add_argument("--quality", type=int, default=86)
+    p.add_argument("--ortho", type=float, default=0, help="metres across a cell before cropping (default: the set's)")
+    p.add_argument("--quality", type=int, default=66)
     p.add_argument("--preview")
     p.add_argument("--only-clips", default="", help="debug: render only these clips")
     a = C.parse(p)
@@ -94,7 +100,8 @@ def main() -> None:
     rig = next(o for o in s.objects if o.type == "ARMATURE")
     roots = [o for o in s.objects if o.parent is None]
     meshes = [o for o in rig.children_recursive if o.type == "MESH"]
-    clips = [c for c in CLIPS if not a.only_clips or c[0] in a.only_clips.split(",")]
+    clips = [c for c in CLIPS if c[0] in SETS[a.set]["clips"] and (not a.only_clips or c[0] in a.only_clips.split(","))]
+    a.ortho = a.ortho or SETS[a.set]["ortho"]
     acts = {name: bpy.data.actions[ACTIONS[a.fighter][name]] for name, *_ in clips}
     root = C.pivot_root(roots)
     # bounds over every sampled pose, so kicks and leaps stay inside the shared cell
@@ -110,7 +117,8 @@ def main() -> None:
     cam = RS.camera(a, lo, hi)
     cam.data.ortho_scale = a.ortho  # frame the standing fighter tightly; leaps and falls may touch the edge
     C.light_rig(a.preset, None, max(1.6, hi.z))
-    C.shadow_catcher(size)
+    if a.engine == "cycles":  # EEVEE has no shadow catcher: the game draws a soft blob under the sprite instead
+        C.shadow_catcher(size)
     C.setup_render(a.engine, a.samples, a.size, a.size, transparent=True, look="AgX - Punchy")
     tmp = tempfile.mkdtemp(prefix="kalari_sprites_")
     paths, meta, start = [], {}, 0
@@ -137,7 +145,7 @@ def main() -> None:
         atlas.save_rgba(atlas.preview(sheet), a.preview, "PNG")
     sheet = atlas.bleed_edges(sheet)
     os.makedirs(a.out, exist_ok=True)
-    name = f"{a.fighter}-sprites"
+    name = f"{a.fighter}-sprites" + ("" if a.set == "a" else f"-{a.set}")
     atlas.save_rgba(sheet, os.path.join(a.out, f"{name}.webp"), "WEBP", a.quality)
     x0, y0, x1, y1 = box
     cw, ch = x1 - x0, y1 - y0
@@ -147,7 +155,7 @@ def main() -> None:
         "directions": a.directions, "framesPerDirection": start, "fps": 12, "angle0": a.angle0,
         "pivot": {"x": round((pivot_px[0] - x0) / cw, 4), "y": round((pivot_px[1] - y0) / ch, 4)},
         "pixelsPerMetre": round(a.size / cam.data.ortho_scale, 3),
-        "camera": {"type": "ortho", "elevationDeg": a.elevation, "fovDeg": None}, "shadow": True, "frames": rects,
+        "camera": {"type": "ortho", "elevationDeg": a.elevation, "fovDeg": None}, "shadow": a.engine == "cycles", "frames": rects,
         "clips": meta,
         "source": {"model": f"{a.fighter} (restyled KayKit Adventurers, CC0)", "actions": {k: acts[k].name for k in acts},
                    "preset": a.preset, "engine": a.engine, "samples": a.samples, "licence": "CC0 1.0 (KayKit by Kay Lousberg)"},

@@ -27,12 +27,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 import pwtv_common as C  # noqa: E402
 
 # clips the game plays (high/ultra) and renders into sprite sheets (lite)
-CLIPS = [
+CLIPS = [  # keep in step with apps/web/src/games/kalari/anim.ts ACTIONS
     "Unarmed_Idle", "2H_Melee_Idle", "Running_A", "Running_B", "Unarmed_Melee_Attack_Punch_A", "Unarmed_Melee_Attack_Punch_B",
     "Unarmed_Melee_Attack_Kick", "1H_Melee_Attack_Slice_Diagonal", "1H_Melee_Attack_Stab", "2H_Melee_Attack_Chop",
-    "2H_Melee_Attack_Slice", "2H_Melee_Attack_Spin", "2H_Melee_Attack_Spinning", "Blocking", "Block_Hit", "Block_Attack",
-    "Dodge_Forward", "Dodge_Backward", "Dodge_Left", "Dodge_Right", "Hit_A", "Hit_B", "Jump_Full_Long", "Jump_Full_Short",
-    "Jump_Idle", "Death_A", "Death_A_Pose", "Cheer", "Sit_Floor_Idle", "Spellcast_Raise", "Lie_StandUp",
+    "2H_Melee_Attack_Slice", "2H_Melee_Attack_Spin", "2H_Melee_Attack_Spinning", "Blocking", "Dodge_Forward", "Hit_A",
+    "Jump_Full_Long", "Jump_Full_Short", "Death_A", "Cheer",
 ]
 
 KEEP = ("_ArmLeft", "_ArmRight", "_Body", "_Head", "_LegLeft", "_LegRight")

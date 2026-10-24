@@ -1,0 +1,13 @@
+Poly Haven HDRIs used by Kalari Clash
+
+qwantani_dusk_2_puresky_512.hdr  (shipped; 2k used to light courtyard-lite.webp / courtyard-card.webp, not shipped)
+  "Qwantani Dusk 2 (Pure Sky)" by Greg Zaal, https://polyhaven.com/a/qwantani_dusk_2_puresky
+
+kloppenheim_06_puresky_512.hdr  (shipped; 2k used to light rooftop-lite.webp / rooftop-card.webp, not shipped)
+  "Kloppenheim 06 (Pure Sky)" by Greg Zaal, https://polyhaven.com/a/kloppenheim_06_puresky
+
+kloofendal_overcast_puresky (the 1k file is shared from ../cinematic/showroom/; 2k lit docks-lite.webp, not shipped)
+  "Kloofendal Overcast (Pure Sky)" by Greg Zaal, https://polyhaven.com/a/kloofendal_overcast_puresky
+
+Licence: CC0 1.0 Universal (public domain dedication), https://creativecommons.org/publicdomain/zero/1.0/
+See https://polyhaven.com/license. No attribution required; we credit the authors anyway.

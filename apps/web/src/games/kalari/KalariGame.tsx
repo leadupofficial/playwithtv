@@ -208,7 +208,7 @@ function Clash({ humans, kit, controls, bridge, paused, onFinish, picks, profile
         }
         if (m.phase === "podium") {
           podiumAt ||= now;
-          if (!reported && now - podiumAt > (QUICK ? 7000 : 11000)) finish();
+          if (!reported && now - podiumAt > (QUICK ? 10000 : 12000)) finish();
         }
       };
       raf = requestAnimationFrame(frame);

@@ -14,11 +14,13 @@ import type { FighterId, KalariEvent, Match } from "../rules";
 import { A, LITE, glowTexture, playerRing, type Look, type StageView } from "./common";
 import { Effects } from "./effects";
 
-export interface LiteAssets { backdrop: THREE.Texture; sheets: Map<FighterId, SpriteSheet> }
+/** Two sheets per fighter: a (standing moves, tightly framed) and b (rolls, specials, cheers, KOs). */
+export interface LiteAssets { backdrop: THREE.Texture; sheets: Map<FighterId, SpriteSheet[]> }
 
 export async function loadLite(arena: ArenaDef, chars: FighterId[], onProgress?: (p: number) => void): Promise<LiteAssets> {
   let done = 0;
-  const tick = () => onProgress?.(++done / (chars.length + 1));
+  const uniq = [...new Set(chars)];
+  const tick = () => onProgress?.(++done / (uniq.length * 2 + 1));
   const backdrop = new THREE.TextureLoader().loadAsync(`${A}${arena.id}-lite.webp`).then((t) => {
     t.colorSpace = THREE.SRGBColorSpace;
     t.generateMipmaps = false;
@@ -26,8 +28,8 @@ export async function loadLite(arena: ArenaDef, chars: FighterId[], onProgress?:
     tick();
     return t;
   });
-  const uniq = [...new Set(chars)];
-  const sheets = await Promise.all(uniq.map((c) => loadSpriteSheet(`${A}${c}-sprites.json`).then((s) => { tick(); return [c, s] as const; })));
+  const sheet = (url: string) => loadSpriteSheet(url).then((s) => { tick(); return s; });
+  const sheets = await Promise.all(uniq.map(async (c) => [c, await Promise.all([sheet(`${A}${c}-sprites.json`), sheet(`${A}${c}-sprites-b.json`)])] as const));
   return { backdrop: await backdrop, sheets: new Map(sheets) };
 }
 
@@ -42,8 +44,10 @@ export class LiteView implements StageView {
   readonly camera = new THREE.OrthographicCamera(-8, 8, 4.5, -4.5, 1, 200);
   readonly director = new Director();
   readonly fx: Effects;
-  private batches = new Map<FighterId, SpriteBatch>();
-  private slot = new Map<string, { batch: SpriteBatch; i: number; ring: THREE.Mesh; look: Look }>();
+  private batches = new Map<FighterId, SpriteBatch[]>();
+  private slot = new Map<string, { sets: SpriteBatch[]; i: number; ring: THREE.Mesh; look: Look }>();
+  private shadows: THREE.InstancedMesh;
+  private m4 = new THREE.Matrix4();
   private glows: THREE.Points;
   private glowBase: Float32Array;
   private time = 0;
@@ -71,21 +75,30 @@ export class LiteView implements StageView {
     this.glows = new THREE.Points(g, new THREE.PointsMaterial({ color: "#ffb35a", size: 1.6, map: glowTexture(), transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false }));
     this.glows.renderOrder = -5;
     this.scene.add(this.glows);
-    for (const [c, sheet] of assets.sheets) {
-      const b = new SpriteBatch(sheet, 4);
-      b.mesh.renderOrder = 2;
-      this.batches.set(c, b);
-      this.scene.add(b.mesh);
+    // soft contact shadows under every fighter (the EEVEE-rendered sheets carry none): one draw call
+    this.shadows = new THREE.InstancedMesh(new THREE.CircleGeometry(0.62, 20).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: "#000000", alphaMap: glowTexture(), transparent: true, opacity: 0.55, depthWrite: false, depthTest: false }), looks.length);
+    this.shadows.renderOrder = 1;
+    this.shadows.frustumCulled = false;
+    this.scene.add(this.shadows);
+    for (const [c, sheets] of assets.sheets) {
+      const list = sheets.map((sheet) => {
+        const b = new SpriteBatch(sheet, 4);
+        b.mesh.renderOrder = 2;
+        this.scene.add(b.mesh);
+        return b;
+      });
+      this.batches.set(c, list);
     }
     const used = new Map<FighterId, number>();
     for (const l of looks) {
-      const batch = this.batches.get(l.char)!;
+      const sets = this.batches.get(l.char)!;
       const i = used.get(l.char) ?? 0;
       used.set(l.char, i + 1);
       const ring = playerRing(l.color);
       (ring.material as THREE.Material).depthTest = false;
       this.scene.add(ring);
-      this.slot.set(l.id, { batch, i, ring, look: l });
+      this.slot.set(l.id, { sets, i, ring, look: l });
     }
     this.fx = new Effects(this.scene, arena.weather, profile.particleBudget, arena.rules);
     for (const m of [this.fx.sparks.mesh, this.fx.dust.mesh]) m.renderOrder = 3;
@@ -137,7 +150,6 @@ export class LiteView implements StageView {
     const order = this.podiumOrder;
     m.fighters.forEach((f) => {
       const s = this.slot.get(f.id)!;
-      const sheet = s.batch.sheet.manifest as unknown as { clips: Record<string, SheetClip> };
       const p = this.pos(f.id);
       let x = f.x, y = Math.max(0, f.y), z = f.z, face = f.face, visible = f.state !== "out";
       let pick = pickAnim(f, m, cheer.has(f.id));
@@ -152,18 +164,26 @@ export class LiteView implements StageView {
       }
       if (f.state === "fall") y = f.y;
       p.set(x, y, z);
-      const frame = sheetFrame(pick, sheet.clips, this.time + f.slot * 0.37);
       const fl = Math.max(0, (this.flash.get(f.id) ?? 0) - realDt);
       this.flash.set(f.id, fl);
-      s.batch.set(s.i, {
-        x, y, z, heading: face, scale: 0.85, time: (frame + 0.5) / s.batch.sheet.manifest.fps, visible,
-        tint: fl > 0 ? "#ffffff" : null, tintStrength: fl > 0 ? 0.6 : 0,
-        opacity: f.state === "fall" ? Math.max(0, 1 - f.t / 1.2) : 1,
-      });
+      // the clip lives in one of the fighter's two sheets: draw it there, hide it in the other
+      for (const b of s.sets) {
+        const clips = (b.sheet.manifest as unknown as { clips: Record<string, SheetClip> }).clips;
+        if (!clips[pick.clip]) { b.set(s.i, null); continue; }
+        const frame = sheetFrame(pick, clips, this.time + f.slot * 0.37);
+        b.set(s.i, {
+          x, y, z, heading: face, scale: 0.85, time: (frame + 0.5) / b.sheet.manifest.fps, visible,
+          tint: fl > 0 ? "#ffffff" : null, tintStrength: fl > 0 ? 0.6 : 0,
+          opacity: f.state === "fall" ? Math.max(0, 1 - f.t / 1.2) : 1,
+        });
+      }
+      const k = visible && f.state !== "fall" ? Math.max(0.4, 1 - y * 0.25) : 0;
+      this.shadows.setMatrixAt(f.slot, this.m4.makeScale(k, 1, k).setPosition(x, 0.02, z));
       s.ring.visible = visible && (f.alive || !!order) && f.y < 2;
       s.ring.position.set(x, 0.03, z);
     });
-    for (const b of this.batches.values()) b.update(this.camera, this.time);
+    this.shadows.instanceMatrix.needsUpdate = true;
+    for (const list of this.batches.values()) for (const b of list) b.update(this.camera, this.time);
     // flickering lamp halos
     const gp = this.glows.geometry.getAttribute("position") as THREE.BufferAttribute;
     for (let i = 0; i < gp.count; i++) gp.setY(i, this.glowBase[i * 3 + 1]! + Math.sin(this.time * 9 + i * 1.7) * 0.03);
@@ -175,7 +195,7 @@ export class LiteView implements StageView {
 
   dispose() {
     this.fx.dispose();
-    for (const b of this.batches.values()) b.dispose();
+    for (const list of this.batches.values()) for (const b of list) b.dispose();
     this.renderer.dispose();
   }
 }

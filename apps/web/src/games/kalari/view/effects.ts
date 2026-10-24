@@ -22,7 +22,7 @@ export class Effects {
 
   constructor(private scene: THREE.Scene, private weather: "embers" | "rain" | "leaves", budget: number, private area: { hx: number; hz: number }) {
     this.sparks = new Particles(sparkleGeometry(), new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, vertexColors: false }), Math.min(160, budget));
-    this.dust = new Particles(new THREE.IcosahedronGeometry(0.5, 0), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.55, depthWrite: false }), Math.min(120, budget));
+    this.dust = new Particles(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.45, depthWrite: false, alphaMap: glowTexture(), side: THREE.DoubleSide }), Math.min(120, budget));
     scene.add(this.sparks.mesh, this.dust.mesh);
     const n = Math.max(40, Math.min(budget, 900));
     if (weather === "rain") {
@@ -43,7 +43,7 @@ export class Effects {
       this.embers.frustumCulled = false;
       scene.add(this.embers);
     } else {
-      this.leaves = new Particles(featherGeometry(), new THREE.MeshLambertMaterial({ side: THREE.DoubleSide, color: "#ffffff" }), 60);
+      this.leaves = new Particles(featherGeometry(), new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, color: "#ffffff" }) /* unlit: the lite tier has no lights */, 60);
       scene.add(this.leaves.mesh);
     }
   }

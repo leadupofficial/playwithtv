@@ -6,7 +6,7 @@ Statuses: **concept** = idea only, hidden from TVs · **prototype** = partly pla
 (objective, motion input, rules, scoring, end state, rematch) with automated tests · **released** = also passed the
 real-device controller test ([real-device-test.md](real-device-test.md)).
 
-Built: 15 · concepts: 39.
+Built: 16 · concepts: 39.
 
 ## Prioritisation matrix
 
@@ -69,6 +69,7 @@ Within a phase, order by validated demand, controller reliability, cost and repl
 | – | 🚀 Squat Rocket | D · Co-op & adventure | 1–4 | 5 | **playable** | solo, couch-party, team-coop | unit+e2e |
 | – | 💥 Emoji Dhamaka | C · Competitive | 1–8 | 4 | **playable** | solo, couch-party | unit+e2e |
 | – | 🪶 Pillow Fort Brawl | C · Competitive | 1–4 | 4 | **playable** | solo-challenge, couch-party | unit+e2e |
+| – | 🥋 Kalari Clash | C · Competitive | 1–4 | 5 | **playable** | solo-challenge, couch-party | unit+e2e |
 
 ## Built games: motion mappings
 
@@ -236,3 +237,15 @@ Hold: **flat** · gyroscope: unused · assets: HUD, ghosts, socks, lava and wall
 - **push**: swing the pillow (a strong push: full SMASH)
 - **flick-left**: dodge
 - **flick-right**: dodge
+
+### 🥋 Kalari Clash
+
+A Kalaripayattu-inspired martial-arts brawler for up to four. Pick Simha, Mayil, Puli or Ashwa, chain STRIKE-STRIKE-STRIKE, break guards with HEAVY, parry with a well-timed GUARD, roll away, and charge a cinematic SPECIAL. Health and ring-outs at a lamp-lit temple pond, rainy harbour docks or a coconut-grove rooftop. Best of three, CPUs fill to four.
+
+Hold: **flat** · gyroscope: unused · assets: fighter bodies and animations: KayKit Character Pack Adventurers 1.0 by Kay Lousberg (restyled in Blender: new palettes, sashes, headwear, staff) (CC0 1.0); stone, roof-tile and plank textures: ambientCG PavingStones070, PavingStones138, RoofingTiles012A, Planks037A (CC0 1.0); HDRIs: Qwantani Dusk 2, Kloppenheim 06, Kloofendal Overcast (pure skies) from Poly Haven (CC0 1.0); arenas, sprite sheets and backdrops (modelled and rendered with tools/blender/kalari) (original); impact, interface and cloth sounds, announcer voice: Kenney Impact Sounds, Interface Sounds, RPG Audio, Voiceover Pack (CC0 1.0); three.js renderer (MIT)
+
+- **roll / pitch**: move
+- **push**: strike (a hard push: HEAVY)
+- **pull**: guard for half a second
+- **flick**: dodge-roll
+- **shake**: SPECIAL
