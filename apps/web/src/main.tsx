@@ -1,4 +1,4 @@
-import { StrictMode } from "react";
+import { StrictMode, Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
 import "./styles.css";
@@ -8,7 +8,12 @@ import { JoinApp } from "./phone/JoinApp";
 import { AdminApp } from "./admin/AdminApp";
 import { Stage } from "./tv/Stage";
 import { SensorLab } from "./phone/SensorLab";
+import { HostingHelp } from "./quality/HostingHelp";
 import "./install"; // catches the browser's one-time install event as early as possible
+
+// the showroom pulls in three.js and the 3D kits: loaded only when opened
+const Showroom = lazy(() => import("./showroom/Showroom"));
+const loading = <div className="tv"><div className="center-screen"><p className="hint">Loading…</p></div></div>;
 
 function Home() {
   return (
@@ -41,6 +46,8 @@ createRoot(document.getElementById("root")!).render(
       <Routes>
         <Route path="/" element={<Stage><Home /></Stage>} />
         <Route path="/tv" element={<Stage><TvApp /></Stage>} />
+        <Route path="/tv/showroom" element={<Stage><Suspense fallback={loading}><Showroom /></Suspense></Stage>} />
+        <Route path="/tv/hosting" element={<Stage><HostingHelp /></Stage>} />
         <Route path="/play" element={<Stage><TvApp /></Stage>} />
         <Route path="/join" element={<JoinApp />} />
         <Route path="/controller" element={<JoinApp />} />

@@ -1,0 +1,12 @@
+Poly Haven HDRIs used by the cinematic pipeline test assets in this folder
+
+kloofendal_overcast_puresky_1k.hdr
+  "Kloofendal Overcast (Pure Sky)" by Greg Zaal, https://polyhaven.com/a/kloofendal_overcast_puresky
+  Used directly (runtime environment light for the high/ultra showroom) and, at 2k, to light ghat-loop.mp4.
+
+studio_small_08 (2k, not shipped)
+  "Studio Small 08" by Sergej Majboroda, https://polyhaven.com/a/studio_small_08
+  Used only to light the pre-rendered sprite sheet hatchback.webp / hatchback-normals.webp.
+
+Licence: CC0 1.0 Universal (public domain dedication), https://creativecommons.org/publicdomain/zero/1.0/
+See https://polyhaven.com/license. No attribution required; we credit the authors anyway.

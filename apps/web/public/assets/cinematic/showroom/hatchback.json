@@ -1,0 +1,145 @@
+{
+ "format": "pwtv-sprites",
+ "version": 1,
+ "name": "hatchback",
+ "image": "hatchback.webp",
+ "fallback": null,
+ "normals": "hatchback-normals.webp",
+ "size": {
+  "w": 750,
+  "h": 888
+ },
+ "cell": {
+  "w": 250,
+  "h": 148
+ },
+ "grid": {
+  "cols": 3,
+  "rows": 6
+ },
+ "directions": 16,
+ "framesPerDirection": 1,
+ "fps": 12,
+ "angle0": 0.0,
+ "pivot": {
+  "x": 0.512,
+  "y": 0.663
+ },
+ "pixelsPerMetre": 65.337,
+ "camera": {
+  "type": "ortho",
+  "elevationDeg": 30,
+  "fovDeg": null
+ },
+ "shadow": true,
+ "frames": [
+  {
+   "x": 0,
+   "y": 0,
+   "w": 250,
+   "h": 148
+  },
+  {
+   "x": 250,
+   "y": 0,
+   "w": 250,
+   "h": 148
+  },
+  {
+   "x": 500,
+   "y": 0,
+   "w": 250,
+   "h": 148
+  },
+  {
+   "x": 0,
+   "y": 148,
+   "w": 250,
+   "h": 148
+  },
+  {
+   "x": 250,
+   "y": 148,
+   "w": 250,
+   "h": 148
+  },
+  {
+   "x": 500,
+   "y": 148,
+   "w": 250,
+   "h": 148
+  },
+  {
+   "x": 0,
+   "y": 296,
+   "w": 250,
+   "h": 148
+  },
+  {
+   "x": 250,
+   "y": 296,
+   "w": 250,
+   "h": 148
+  },
+  {
+   "x": 500,
+   "y": 296,
+   "w": 250,
+   "h": 148
+  },
+  {
+   "x": 0,
+   "y": 444,
+   "w": 250,
+   "h": 148
+  },
+  {
+   "x": 250,
+   "y": 444,
+   "w": 250,
+   "h": 148
+  },
+  {
+   "x": 500,
+   "y": 444,
+   "w": 250,
+   "h": 148
+  },
+  {
+   "x": 0,
+   "y": 592,
+   "w": 250,
+   "h": 148
+  },
+  {
+   "x": 250,
+   "y": 592,
+   "w": 250,
+   "h": 148
+  },
+  {
+   "x": 500,
+   "y": 592,
+   "w": 250,
+   "h": 148
+  },
+  {
+   "x": 0,
+   "y": 740,
+   "w": 250,
+   "h": 148
+  }
+ ],
+ "source": {
+  "model": "hatchback-sports.glb",
+  "animFrom": null,
+  "action": null,
+  "hdri": "studio_small_08_2k.hdr",
+  "preset": "studio",
+  "finish": "premium",
+  "engine": "cycles",
+  "samples": 64,
+  "look": "AgX - Punchy",
+  "licence": "Kenney Car Kit 3.1 (CC0 1.0); HDRI studio_small_08 by Sergej Majboroda, Poly Haven (CC0 1.0)"
+ }
+}
