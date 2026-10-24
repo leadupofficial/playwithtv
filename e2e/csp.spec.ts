@@ -34,3 +34,36 @@ test("no page breaks under the Content Security Policy (TV lobby, a 3D game, pho
     expect(await v(), path).toEqual([]);
   }
 });
+
+// camera games: a fake camera (test pattern), allowed without a prompt
+test.use({ launchOptions: { args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"] } });
+
+test("camera play: the phone loads and runs the real body-tracking model (self-hosted wasm) under its CSP", async ({ browser }) => {
+  test.setTimeout(120_000);
+  const tv = await (await browser.newContext({ viewport: { width: 1280, height: 720 }, ignoreHTTPSErrors: true })).newPage();
+  const tvCsp = await watchCsp(tv);
+  await tv.goto("/tv?quick=1");
+  const code = await tvCode(tv);
+  const phone = await joinPhone(browser, code, "Cam");
+  const phoneCsp = await watchCsp(phone);
+  await phone.reload();
+  await startController(phone);
+  const origin = new URL(phone.url()).origin;
+  const external: string[] = [];
+  phone.on("request", (r) => { if (!r.url().startsWith(origin) && !/^(data|blob):/.test(r.url())) external.push(r.url()); });
+  await tv.locator(".game-card", { hasText: "Squat Rocket" }).click();
+  await tv.getByRole("button", { name: /Start Squat Rocket/ }).click();
+  await phone.getByRole("button", { name: /cleared the space/ }).click();
+  await phone.getByRole("button", { name: /Turn on camera/ }).click();
+  const pad = phone.locator(".cam-pad[data-cam=running]");
+  await expect(pad).toBeVisible({ timeout: 60_000 });
+  await expect.poll(async () => Number(await pad.getAttribute("data-fps")), { timeout: 15_000 }).toBeGreaterThan(3);
+  await phone.waitForTimeout(4000);
+  const info = { fps: await pad.getAttribute("data-fps"), inferMs: await pad.getAttribute("data-infer"), delegate: await pad.getAttribute("data-delegate"), track: await pad.getAttribute("data-track") };
+  test.info().annotations.push({ type: "pose-model", description: JSON.stringify(info) });
+  console.log("pose model in headless Chromium:", JSON.stringify(info));
+  expect(info.track).toBe("need-body"); // the fake camera shows nobody
+  expect(external).toEqual([]);         // nothing leaves this origin (no CDN, no telemetry)
+  expect(await phoneCsp()).toEqual([]);
+  expect(await tvCsp()).toEqual([]);
+});
