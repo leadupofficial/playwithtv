@@ -10,7 +10,7 @@ export default defineConfig({
   plugins: [react(), ...(https ? [basicSsl()] : [])],
   server: {
     host: true,
-    port: 5173,
+    port: Number(process.env.WEB_PORT ?? 5173),
     proxy: {
       "/api": target,
       "/healthz": target,

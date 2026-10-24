@@ -5,17 +5,19 @@ import { defineConfig, devices } from "@playwright/test";
  * security header (CSP, permissions policy, ...) active, exactly as deployed. localhost counts as a secure
  * page, so phones get motion sensors without certificates.
  */
+const PORT = Number(process.env.PW_HUB_PORT ?? 8080);
+
 export default defineConfig({
   testDir: "e2e",
   timeout: 120_000,
   fullyParallel: false,
   workers: 1,
   reporter: [["list"]],
-  use: { baseURL: "http://localhost:8080", trace: "retain-on-failure", actionTimeout: 10_000 },
+  use: { baseURL: `http://localhost:${PORT}`, trace: "retain-on-failure", actionTimeout: 10_000 },
   webServer: {
     command: "pnpm --filter @playwithtv/web build && pnpm --filter @playwithtv/server start",
-    url: "http://localhost:8080/healthz",
-    env: { PORT: "8080", PUBLIC_URL: "http://localhost:8080", ALLOWED_ORIGINS: "http://localhost:8080", ADMIN_TOKEN: "e2e-admin" },
+    url: `http://localhost:${PORT}/healthz`,
+    env: { PORT: String(PORT), PUBLIC_URL: `http://localhost:${PORT}`, ALLOWED_ORIGINS: `http://localhost:${PORT}`, ADMIN_TOKEN: "e2e-admin" },
     reuseExistingServer: false,
     timeout: 120_000,
   },
