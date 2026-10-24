@@ -20,7 +20,8 @@ function Home() {
           <p className="hint">Open this page on the TV, then scan the code with your phone. No app needed.</p>
           <div className="row">
             <Link className="btn" to="/tv" autoFocus>This is the TV</Link>
-            <Link className="btn secondary" to="/join">Join with my phone</Link>
+            {/* a full page load: the phone page has its own security headers (camera for camera games) */}
+            <Link className="btn secondary" to="/join" reloadDocument>Join with my phone</Link>
           </div>
           <p className="credit" style={{ fontSize: "0.7em" }}>Play With TV · by <b>Leadup Technologies</b> · Abishek Sivakumar</p>
         </div>

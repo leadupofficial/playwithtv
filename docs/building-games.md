@@ -8,6 +8,7 @@ The TV renders the game. Each phone is that player's controller, in the **contro
 | `motion` | "watch the TV"; tilt plus gestures (push, flicks, twist, shake) | maze, bowling, golf, party fun |
 | `hybrid` | tilt for movement plus on-screen action buttons | racing (tilt the "wheel", tap Boost) |
 | `touchpad` | a trackpad: drag to move or aim, swipe or tap for actions | slicing, air hockey, aiming |
+| `camera` | the phone, propped up 2–3 m away, watches the player's body; a big rep counter | fitness: squats, jumps, jacks |
 
 **Think about which modes make your game fun.** Offer every mode that plays well, best first, and leave out
 the ones that don't. A game never needs to know which mode a player picked: it receives the same signals
@@ -146,3 +147,44 @@ Cover your default mode fully, and at least one other mode.
   and `shake`.
 - **No repeats:** one movement is one action, with a cooldown and settle time. Single knocks and noise are
   rejected.
+
+## Camera fitness controllers
+
+In `camera` mode the phone is propped up (landscape, about hip height, 2–3 m away, front camera facing the
+player) and tracks the body itself with MediaPipe Pose Landmarker lite (`apps/web/src/phone/camera/`). The video
+never leaves the phone; the TV receives the same signals as any other mode:
+
+```
+actions   onAction: a pose move mapped to your action (squat, jump, jack, raise, punch, hands-on-head)
+x         lean, -1 (player's left) … 1 (player's right): dead zone ±3°, full at ±15°
+y         squat depth 0…1
+ok        calibrated and tracking the player (false = "step back / move into the light": don't penalise them)
+raw axes  s = seated (0/1), i = intensity (0 gentle, 0.5 normal, 1 sweaty), q = latest squat form 0…1,
+          cs = camera state (0 off, 0.25 setting up, 0.5 calibrating, 0.75 lost, 1 tracking);
+          read them with bridge.onInput (see games/squat-rocket)
+```
+
+Map moves to actions in the ControlSpec, with an upper-body alternative for seated players:
+
+```ts
+{ id: "pump", label: "⛽ PUMP", gestures: ["push"], poses: ["squat"], seatedPoses: ["raise"] },
+{ id: "pause", label: "⏸ Pause", poses: ["hands-on-head"], buttonIn: ["buttons"] }, // also a big Pause button on the camera pad
+```
+
+- **Pipeline (pure, tested):** `poseActions.ts` + `moves.ts`: One-Euro smoothing, visibility > 0.6, a 3 s
+  calibration that refuses to start until feet and hands are in view, re-calibration when the player's size
+  changes by more than 20 %, and per-move state machines (hysteresis, ~120 ms dwell, refractory periods). Tune
+  with synthetic bodies (`synthetic.ts`) in `poseActions.test.ts`.
+- **Timing:** camera moves arrive ~150 ms after the movement. Give timing windows at least 100 ms of forgiveness
+  on both sides, and reject spamming (one move per cue).
+- **Fairness and safety:** reward rhythm and form, never speed or jump height; cap rep rates by the player's
+  intensity; offer a seated variant of every move; start with a short warm-up; pause on hands-on-head; never
+  penalise a player while `ok` is false. Always offer `buttons` (and `motion`) too: "Play with buttons instead"
+  on the phone switches mode, for phones without a camera or too slow to track.
+- **Loading:** the camera code and ~17 MB of wasm and model load only when a camera game starts on that phone
+  (the service worker caches them). The phone page's CSP allows WebAssembly for this (see `docs/security.md`).
+- **Browser tests:** Chromium's fake camera shows nobody, so set `window.__fakePose = { queue: [], base: {}, done: 0 }`
+  on the phone before the camera starts and push moves (`"squat"`, `"jump"`, `"jack"`, `"arm-jack"`, `"raise"`,
+  `"punch"`, `"head"`, `"lean-left"`): synthetic landmarks go through the real pipeline. Launch Chromium with
+  `--use-fake-device-for-media-stream --use-fake-ui-for-media-stream` (see `e2e/squat-rocket.spec.ts`).
+- **Real devices:** frame rate and accuracy still need checking on real phones in real living rooms.

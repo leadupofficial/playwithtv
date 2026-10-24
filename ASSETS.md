@@ -31,3 +31,17 @@ downloads a script's font when that script is on screen.
 | Kenney Voiceover Pack #1 (female voice) | ready, go, correct, wrong, final round, hurry up, congratulations, time over | https://kenney.nl/assets/voiceover-pack | `kenney-voiceover/License.txt` |
 
 The drumroll and the heartbeat under the timer are synthesised in code (Web Audio).
+
+## Squat Rocket and camera mode
+
+### 3D models and sounds (`apps/web/public/assets/`), CC0 1.0 (public domain)
+| Pack | Files used | Source | Licence file |
+|---|---|---|---|
+| Kenney Space Kit | rocket base/fuel/top/fins, meteors, rocks, craters, hangar, satellite dish, platform, astronaut, generator (GLB) | https://kenney.nl/assets/space-kit | `kenney-space-kit/License.txt` |
+| Kenney Sci-Fi Sounds 1.0 | spaceEngineLow, explosionCrunch, forceField, laserSmall, lowFrequency_explosion | https://kenney.nl/assets/sci-fi-sounds | `kenney-sci-fi-sounds/License.txt` |
+| Kenney Interface Sounds 1.0 | pluck, confirmation, maximize, tick, error | https://kenney.nl/assets/interface-sounds | `kenney-interface-sounds/License.txt` |
+
+### Body tracking (`apps/web/public/vendor/mediapipe-0.10.35/`), Apache License 2.0
+MediaPipe Tasks Vision 0.10.35 wasm runtime (npm `@mediapipe/tasks-vision@0.10.35`) and the Pose Landmarker lite
+model, self-hosted and unmodified: checksums and provenance in `SOURCE.txt`, licence in `LICENSE`. Runs only on
+the phone, and only in camera games.

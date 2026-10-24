@@ -2,8 +2,8 @@ import { ControlReader } from "@playwithtv/motion";
 import type { ControlMode, ControlSpec } from "@playwithtv/protocol";
 import type { GameBridge } from "./types";
 
-export const MODE_NAMES: ControlMode[] = ["buttons", "motion", "hybrid", "touchpad"];
-export const MODE_ICON: Record<ControlMode, string> = { buttons: "🎮", motion: "🎯", hybrid: "⚡", touchpad: "👆" };
+export const MODE_NAMES: ControlMode[] = ["buttons", "motion", "hybrid", "touchpad", "camera"];
+export const MODE_ICON: Record<ControlMode, string> = { buttons: "🎮", motion: "🎯", hybrid: "⚡", touchpad: "👆", camera: "📷" };
 
 /**
  * TV side of the controls for one game: sends the game's ControlSpec to the phones and keeps a ControlReader

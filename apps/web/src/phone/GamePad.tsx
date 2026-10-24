@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { STRONG, frameAxes } from "@playwithtv/motion";
-import { MODE_CODE, buttonsFor, type ControlAction, type ControlMode, type ControlSpec, type GestureName, type SwipeName } from "@playwithtv/protocol";
+import { MODE_CODE, MODE_DIVISOR, buttonsFor, type ControlAction, type ControlMode, type ControlSpec, type GestureName, type SwipeName } from "@playwithtv/protocol";
 import type { InputSender } from "./inputSender";
 import type { PhoneMotion } from "./motion";
 import { Stick } from "./pad/Stick";
@@ -88,7 +88,7 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
 
   // movement out, 20 times a second (the sender throttles), plus sensor health in tilt modes
   useEffect(() => {
-    const m = MODE_CODE[mode] / 3; // axes are clamped to [-1, 1]: send the mode code 0..3 as 0..1
+    const m = MODE_CODE[mode] / MODE_DIVISOR; // axes are clamped to [-1, 1]: send the mode code 0..4 as 0..1
     const id = setInterval(() => {
       if (tilted) {
         const f = motion.frame();

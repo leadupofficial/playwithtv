@@ -1,0 +1,20 @@
+MediaPipe Tasks Vision 0.10.35 runtime files and the Pose Landmarker (lite) model, self-hosted so the phone
+never contacts a third-party server. Licence: Apache License 2.0 (LICENSE in this folder).
+Copyright The MediaPipe Authors (Google LLC).
+
+wasm/vision_wasm_internal.js          from npm @mediapipe/tasks-vision@0.10.35 (wasm/), unmodified
+  sha256 e7fd9858e8e8f221d9b96eddc11f8e077f263e0b7bbd79d3cbe882b134274f8c
+wasm/vision_wasm_internal.wasm
+  sha256 6a5c64584c2ab61c763b6e204afbdbc7ce1caf7f5216187322bca8df94f646bc
+wasm/vision_wasm_nosimd_internal.js   (for browsers without WebAssembly SIMD)
+  sha256 438d1fe8ff7f4d946025bc211c291543c037d8a3785ed4eee60f1f521b236296
+wasm/vision_wasm_nosimd_internal.wasm
+  sha256 8a3092d34c79d3f57e6ba8592105e8a90f6b07c27891ffecd14cca428bfd3e31
+
+pose_landmarker_lite.task             from
+  https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task
+  sha256 59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a
+
+Versions 1.0 and later of @mediapipe/tasks-vision send usage telemetry to Google: do not upgrade past 0.10.x
+without checking. The folder name carries the version so a future upgrade gets new URLs (the service worker
+caches these files permanently).

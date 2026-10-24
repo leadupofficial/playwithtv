@@ -1,6 +1,7 @@
 /*
  * Service worker: makes the site installable as an app and opens instantly on repeat visits.
- * - Versioned build files (/assets/*, hashed names) and icons: served from cache, fetched once.
+ * - Versioned build files (/assets/*, hashed names), icons and versioned vendor files (/vendor/<name>-<version>/,
+ *   e.g. the ~17 MB body-tracking model for camera games): served from cache, fetched once.
  * - Pages: always from the network (a new deploy is picked up immediately); the offline page if there is none.
  * - API, WebSocket and everything else: never touched.
  */
@@ -28,7 +29,7 @@ self.addEventListener("fetch", (e) => {
     e.respondWith(fetch(req).catch(() => caches.match(OFFLINE)));
     return;
   }
-  if (url.pathname.startsWith("/assets/") || url.pathname.startsWith("/icons/")) {
+  if (url.pathname.startsWith("/assets/") || url.pathname.startsWith("/icons/") || url.pathname.startsWith("/vendor/")) {
     e.respondWith(
       caches.match(req).then((hit) => hit ?? fetch(req).then((res) => {
         if (res.ok) {

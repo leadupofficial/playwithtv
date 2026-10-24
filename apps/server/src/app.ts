@@ -52,9 +52,11 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
     origin: (origin, cb) => cb(null, originAllowed(cfg, origin ?? undefined) || !origin),
   });
   // Browser-side protection. The code is public, so nothing here relies on hiding how it works.
-  const csp = [
+  const policy = (phone: boolean) => [
     "default-src 'self'",
-    "script-src 'self'",                                   // no inline or third-party scripts can run
+    // no inline or third-party scripts can run. The phone controller page may also compile WebAssembly
+    // ('wasm-unsafe-eval' allows WebAssembly.instantiate only, never JS eval) for on-phone body tracking
+    phone ? "script-src 'self' 'wasm-unsafe-eval'" : "script-src 'self'",
     "style-src 'self' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",                // self-hosted Indic fonts (public/fonts)
     "img-src 'self' data: blob:",                          // QR codes are data: URLs
@@ -67,16 +69,21 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
     "form-action 'self'",
     "frame-ancestors 'none'",                              // nobody can frame the site (clickjacking)
   ].join("; ");
+  const csp = policy(false), phoneCsp = policy(true);
+  // only the phone controller may use the camera (camera games track the body on the phone; video never leaves it)
+  const permissions = (phone: boolean) =>
+    `accelerometer=(self), gyroscope=(self), magnetometer=(), camera=${phone ? "(self)" : "()"}, microphone=(), geolocation=(), payment=(), usb=(), fullscreen=(self), screen-wake-lock=(self)`;
+  const pp = permissions(false), phonePp = permissions(true);
   const hsts = cfg.publicUrl.startsWith("https://");
   http.addHook("onSend", async (req, reply) => {
+    const phone = isPhonePage(req.url);
     reply.header("x-request-id", req.id);
     reply.header("x-content-type-options", "nosniff");
     reply.header("referrer-policy", "no-referrer"); // invite tokens in /join URLs never leak via Referer
-    reply.header("content-security-policy", csp);
+    reply.header("content-security-policy", phone ? phoneCsp : csp);
     reply.header("x-frame-options", "DENY");
     reply.header("cross-origin-opener-policy", "same-origin");
-    reply.header("permissions-policy",
-      "accelerometer=(self), gyroscope=(self), magnetometer=(), camera=(), microphone=(), geolocation=(), payment=(), usb=(), fullscreen=(self), screen-wake-lock=(self)");
+    reply.header("permissions-policy", phone ? phonePp : pp);
     if (hsts) reply.header("strict-transport-security", "max-age=31536000");
   });
 
@@ -221,4 +228,14 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
       await http.close();
     },
   };
+}
+
+/**
+ * The phone controller page (/join and /controller, with any query string). Only its HTML gets the camera and
+ * 'wasm-unsafe-eval': a page's CSP and permissions come from the response that loaded the document, so the TV,
+ * admin and every other page keep the strict policy.
+ */
+export function isPhonePage(url: string): boolean {
+  const path = url.split(/[?#]/, 1)[0]!.replace(/\/+$/, "");
+  return path === "/join" || path === "/controller";
 }

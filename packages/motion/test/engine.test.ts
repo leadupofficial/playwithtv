@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ControlReader, HoldTimer, MotionEngine, TraceBuilder, frameAxes, pose, replay, toScreen, v, zoneOf } from "../src/index.js";
+import { ControlReader, HoldTimer, MODE_DIVISOR, MotionEngine, TraceBuilder, frameAxes, pose, replay, toScreen, v, zoneOf } from "../src/index.js";
 
 const UP = pose(0, 0);
 const kinds = (t: ReturnType<typeof replay>) => t.gestures.map((g) => g.kind);
@@ -118,10 +118,20 @@ describe("wire format", () => {
     const tv = new ControlReader();
     expect(tv.update({ taps: { jab: 5, calibrated: 1 } })).toEqual([]);
     expect(tv.calibrations).toBe(1);
-    const a = tv.update({ axes: { x: 0.4, y: -0.2, ok: 1, m: 2 / 3 }, taps: { jab: 7, hook: 1, calibrated: 1 }, buttons: { block: true } });
+    const a = tv.update({ axes: { x: 0.4, y: -0.2, ok: 1, m: 2 / 4 }, taps: { jab: 7, hook: 1, calibrated: 1 }, buttons: { block: true } });
     expect(a).toEqual(["jab", "jab", "hook"]);
     expect([tv.x, tv.y, tv.ok, tv.mode, tv.held("block"), tv.held("jab")]).toEqual([0.4, -0.2, true, 2, true, false]);
     expect(tv.update({ axes: { x: 0.4, ok: 1 }, taps: { jab: 7, hook: 1 } })).toEqual([]);
+  });
+
+  it("decodes all five mode codes (buttons … camera) after the phone's 2-decimal clamp", () => {
+    for (let code = 0; code <= 4; code++) {
+      const tv = new ControlReader();
+      const sent = Math.round(Math.max(-1, Math.min(1, code / MODE_DIVISOR)) * 100) / 100; // what InputSender puts on the wire
+      tv.update({ axes: { m: sent } });
+      expect(tv.mode).toBe(code);
+    }
+    expect(MODE_DIVISOR).toBe(4);
   });
 
   it("falls back to tilt for movement when x/y are absent", () => {

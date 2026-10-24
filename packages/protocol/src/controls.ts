@@ -6,16 +6,27 @@
  *   motion    tilt + gestures (push, flicks, shake…), eyes on the TV, no touching during play
  *   hybrid    tilt for movement plus on-screen action buttons (e.g. steer by tilting, tap Boost)
  *   touchpad  the screen is a trackpad: drag to move or aim, swipe for actions
+ *   camera    the phone, propped up 2-3 m away, watches the player's body (on the phone only: video never
+ *             leaves it) and sends moves such as squats and jumps as actions, leaning as axes.x
  *
  * Whatever the mode, games receive the same signals, so they never need to know which one a player chose:
  *   axes.x, axes.y   movement in [-1, 1]: x right, y up/forward (stick, tilt or touchpad)
  *   taps[action]     a counter per action (button press, mapped gesture or swipe)
  *   buttons[action]  held state for `hold` actions
- *   axes.m           the mode in use, sent as code / 3 (0 buttons, 1 motion, 2 hybrid, 3 touchpad), for games that tune by it
+ *   axes.m           the mode in use, sent as code / MODE_DIVISOR (0 buttons, 1 motion, 2 hybrid, 3 touchpad,
+ *                    4 camera), for games that tune by it
  */
-export type ControlMode = "buttons" | "motion" | "hybrid" | "touchpad";
-export const CONTROL_MODES: ControlMode[] = ["buttons", "motion", "hybrid", "touchpad"];
-export const MODE_CODE: Record<ControlMode, number> = { buttons: 0, motion: 1, hybrid: 2, touchpad: 3 };
+export type ControlMode = "buttons" | "motion" | "hybrid" | "touchpad" | "camera";
+export const CONTROL_MODES: ControlMode[] = ["buttons", "motion", "hybrid", "touchpad", "camera"];
+export const MODE_CODE: Record<ControlMode, number> = { buttons: 0, motion: 1, hybrid: 2, touchpad: 3, camera: 4 };
+/** Axes are clamped to [-1, 1], so the mode travels as code / MODE_DIVISOR (the motion package's ControlReader uses the same). */
+export const MODE_DIVISOR = 4;
+
+/**
+ * Body moves the phone camera recognises (camera mode). "Seated" players use upper-body moves only, so an
+ * action lists both: e.g. a fuel pump is a squat standing and an arm raise seated.
+ */
+export type PoseMove = "squat" | "jump" | "jack" | "raise" | "punch" | "hands-on-head";
 
 /** Gesture names from the motion SDK (@playwithtv/motion), repeated here so the protocol has no dependency. */
 export type GestureName =
@@ -39,6 +50,10 @@ export interface ControlAction {
   strongOf?: string;
   /** In touchpad mode, these swipes trigger the action; "tap" = a quick tap on the pad. */
   swipes?: Array<SwipeName | "tap">;
+  /** In camera mode, these body moves trigger the action (standing players). */
+  poses?: PoseMove[];
+  /** In camera mode, for seated players (upper body only). Defaults to `poses`. */
+  seatedPoses?: PoseMove[];
 }
 
 export interface ControlSpec {
@@ -58,6 +73,6 @@ export interface ControlSpec {
 
 /** Which actions a mode shows as buttons. */
 export function buttonsFor(spec: ControlSpec, mode: ControlMode): ControlAction[] {
-  if (mode === "motion") return [];
+  if (mode === "motion" || mode === "camera") return [];
   return spec.actions.filter((a) => (a.buttonIn ?? ["buttons", "hybrid"]).includes(mode));
 }

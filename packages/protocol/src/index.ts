@@ -240,7 +240,7 @@ export const GameManifest = z.object({
   licenceInventory: z.array(z.object({ asset: z.string(), licence: z.string(), source: z.string() })).optional(),
   automatedTestStatus: z.enum(["none", "unit", "unit+e2e"]),
   /** Control modes the game offers on phones, best first (see controls.ts). */
-  controlModes: z.array(z.enum(["buttons", "motion", "hybrid", "touchpad"])).optional(),
+  controlModes: z.array(z.enum(["buttons", "motion", "hybrid", "touchpad", "camera"])).optional(),
 });
 export type GameManifest = z.infer<typeof GameManifest>;
 
