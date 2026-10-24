@@ -56,7 +56,7 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
     "default-src 'self'",
     "script-src 'self'",                                   // no inline or third-party scripts can run
     "style-src 'self' https://fonts.googleapis.com",
-    "font-src https://fonts.gstatic.com",
+    "font-src 'self' https://fonts.gstatic.com",                // self-hosted Indic fonts (public/fonts)
     "img-src 'self' data: blob:",                          // QR codes are data: URLs
     "media-src 'self'",
     `connect-src 'self' ${cfg.publicUrl.replace(/^http/, "ws")}`,
