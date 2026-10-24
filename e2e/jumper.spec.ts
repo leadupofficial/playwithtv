@@ -90,6 +90,8 @@ test("Tilt Jumper Worlds split screen: one phone on ◀ ▶ buttons, one on the 
   await pad.mouse.down();
   let shot = false;
   const best = [0, 0];
+  // each phone shows its result for only 3.5 s before the lobby returns, so watch for it from now on
+  const results = Promise.all([btn, pad].map((p) => p.getByText(/You climbed highest|#\d/).waitFor({ timeout: 150_000 })));
   const until = Date.now() + 60_000;
   while (Date.now() < until) {
     const s = await state();
@@ -114,12 +116,11 @@ test("Tilt Jumper Worlds split screen: one phone on ◀ ▶ buttons, one on the 
     }
     await tv.waitForTimeout(40);
   }
+  await results;
   await pad.mouse.up();
   await arrows(0).catch(() => undefined);
   console.log("jumper split best heights", best);
   expect(best[0]).toBeGreaterThan(60);
   expect(best[1]).toBeGreaterThan(60);
-  await expect(btn.getByText(/You climbed highest|#\d/)).toBeVisible({ timeout: 10_000 });
-  await expect(pad.getByText(/You climbed highest|#\d/)).toBeVisible({ timeout: 10_000 });
   await expect(tv.getByRole("button", { name: /Rematch/ })).toBeVisible({ timeout: 15_000 });
 });
