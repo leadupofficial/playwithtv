@@ -29,6 +29,7 @@ export function relaySignal(room: SignalRoom, conn: Conn, m: Extract<ClientMessa
   metrics.rtcSignals++;
   if (conn.role === "controller") {
     if (m.to !== "tv") throw new HubError("not_allowed", "phones can only signal the TV");
+    if (!room.players.has(conn.playerId!)) throw new HubError("unauthorized", "not in this room");
     return send(room.tv, { type: "rtc.signal", from: conn.playerId!, signal: m.signal });
   }
   const p = room.players.get(m.to);

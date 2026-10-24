@@ -135,6 +135,11 @@ export function TvApp() {
     };
   }, [socket]);
 
+  // only the room's current players may send input (a removed phone's direct link is closed at once)
+  useEffect(() => {
+    if (inputs && room) inputs.setMembers(room.players.map((p) => p.id));
+  }, [inputs, room]);
+
   // A stable bridge from the running game to its players.
   const bridge = useMemo<GameBridge | null>(() => {
     if (!socket || !inputs) return null;

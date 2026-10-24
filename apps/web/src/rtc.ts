@@ -162,6 +162,15 @@ export class TvLinks {
     return () => void this.cbs.delete(cb);
   }
 
+  peerIds(): string[] {
+    return [...this.peers.keys()];
+  }
+
+  /** Close a player's link (they left or were removed). */
+  remove(id: string) {
+    this.drop(id);
+  }
+
   /** Players currently on a direct link. */
   direct(): string[] {
     return [...this.peers].filter(([, p]) => p.open).map(([id]) => id);
@@ -246,6 +255,8 @@ export class InputMerger {
 export class TvInputs {
   readonly links: TvLinks;
   private merger = new InputMerger();
+  /** Players currently in the room (null until the first room state): input from anyone else is ignored. */
+  private members: Set<string> | null = null;
   private inputCbs = new Set<(playerId: string, state: InputState) => void>();
   private clearCbs = new Set<(playerId: string) => void>();
   private offs: Array<() => void>;
@@ -279,7 +290,14 @@ export class TvInputs {
     this.links.close();
   }
 
+  /** The room's current players: links of anyone no longer in it are closed, and their input dropped. */
+  setMembers(ids: string[]) {
+    this.members = new Set(ids);
+    for (const id of this.links.peerIds()) if (!this.members.has(id)) this.links.remove(id);
+  }
+
   private deliver(id: string, seq: number, state: InputState) {
+    if (this.members && !this.members.has(id)) return;
     if (this.merger.accept(id, seq)) this.inputCbs.forEach((cb) => cb(id, state));
   }
 }

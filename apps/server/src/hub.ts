@@ -279,6 +279,8 @@ export class Hub {
         this.send(p.socket, { type: "error", code: "removed", message: "The TV host removed you from this game." });
         p.socket?.close(4410, "removed");
         this.sendTv(room, { type: "controller.clear", playerId: p.id });
+        // also close their direct phone→TV link, so nothing from that phone reaches the TV any more
+        this.sendTv(room, { type: "rtc.signal", from: p.id, signal: { bye: true } });
         return this.broadcastState(room);
       }
       case "game.exit":

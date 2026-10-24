@@ -18,3 +18,24 @@ describe("input merging (direct link + hub relay)", () => {
     expect(m.accept("a", 0)).toBe(true);
   });
 });
+
+import { TvInputs } from "./rtc";
+
+describe("only current room members' input reaches games", () => {
+  it("drops input from a player who is no longer in the room (removed), by any path", () => {
+    const handlers: Array<(m: unknown) => void> = [];
+    const socket = { on: (h: (m: unknown) => void) => { handlers.push(h); return () => undefined; }, send: () => undefined };
+    const inputs = new TvInputs(socket as never);
+    const got: string[] = [];
+    inputs.onInput((id) => got.push(id));
+    const relay = (playerId: string, seq: number) => handlers.forEach((h) => h({ type: "controller.input", playerId, seq, state: {} }));
+    relay("a", 1);
+    inputs.setMembers(["a", "b"]);
+    relay("a", 2);
+    relay("b", 1);
+    inputs.setMembers(["b"]); // "a" was removed
+    relay("a", 3);
+    relay("b", 2);
+    expect(got).toEqual(["a", "a", "b", "b"]);
+  });
+});

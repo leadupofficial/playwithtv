@@ -450,3 +450,14 @@ describe("the host removes a player", () => {
     expect((await again.next("error")).code).toBe("unauthorized"); // the old token no longer works
   });
 });
+
+describe("removal also ends direct links", () => {
+  it("the TV is told to close the removed player's direct link, and the removed phone can't signal any more", async () => {
+    await start();
+    const { room, c: t } = await tv();
+    const guest = await phone({ inviteToken: room.inviteToken }, "Stranger");
+    t.send({ type: "player.remove", playerId: guest.playerId });
+    const bye = await t.next("rtc.signal");
+    expect(bye).toMatchObject({ from: guest.playerId, signal: { bye: true } });
+  });
+});
