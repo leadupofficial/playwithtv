@@ -62,6 +62,7 @@ export class BrawlFx {
     this.feathers = new Particles(featherGeometry(), new THREE.MeshLambertMaterial({ side: THREE.DoubleSide }), 260);
     this.sparks = new Particles(sparkleGeometry(), new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }), 80);
     d.scene.add(this.feathers.mesh, this.sparks.mesh);
+    void this.sfx.load(); // sounds fill in as they decode; play() skips any not loaded yet
   }
 
   private name(id: string) {
