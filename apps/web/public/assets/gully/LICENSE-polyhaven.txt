@@ -1,0 +1,10 @@
+Poly Haven HDRI used by Gully Super Over
+
+sky_1k.hdr
+  "Qwantani Sunset (Pure Sky)" by Greg Zaal (photography) and Jarod Guest (processing),
+  https://polyhaven.com/a/qwantani_sunset_puresky
+  Shipped at 1k as the runtime sky and environment light (high/ultra); the 2k version (not shipped) lit the
+  Blender renders gully-*.webp and the sprite sheets in sprites/.
+
+Licence: CC0 1.0 Universal (public domain dedication), https://creativecommons.org/publicdomain/zero/1.0/
+See https://polyhaven.com/license. No attribution required; we credit the authors anyway.
