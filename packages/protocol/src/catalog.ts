@@ -312,6 +312,34 @@ const IMPLEMENTED: GameManifest[] = [
     ],
     controlModes: ["buttons", "touchpad", "motion"], automatedTestStatus: "unit+e2e",
   },
+  {
+    id: "ghat-rush",
+    title: "GHAT RUSH",
+    description: "Monsoon racing down the Western Ghats in autos, scooters and tiny hatchbacks: split-screen chase cams, hairpin drifts that charge blue, orange and purple turbos, a boost meter filled by near misses with buses, drafting and big air, shunt rivals into the rails for TAKEDOWNS, and mind the goats. Coconuts, puddle splashes, chai and the goat-horn. 1–8 players, CPUs fill the grid to six.",
+    categories: ["racing", "party", "versus"],
+    tags: ["3d", "racing", "split-screen", "drift", "takedowns", "items", "vs-cpu", "cinematic"],
+    minPlayers: 1, maxPlayers: 8, version: "1.0.0", executionMode: "browser", controller: "game", orientation: "landscape",
+    estimatedAssetKb: 4000, difficulty: "easy", sessionMinutes: 3,
+    accessibility: ["cpu-opponents", "auto-gas", "steering-assist", "catch-up-for-trailing-players", "quick-respawn", "large-text"],
+    colors: ["#ff6a00", "#2f8f5b"], emoji: "🛺", playable: true,
+    category: "competitive", modes: ["couch-party", "solo-challenge", "tournament"], completionStatus: "playable", phase: 4,
+    sensorRequirements: { accelerometer: true, gyroscope: "unused" },
+    motionMappings: [
+      { motion: "roll", action: "steer like a wheel" }, { motion: "flick-left", action: "start a drift (straighten to fire the turbo)" },
+      { motion: "flick-right", action: "start a drift (straighten to fire the turbo)" }, { motion: "push", action: "boost" }, { motion: "pull", action: "use your item" },
+    ],
+    calibrationProfile: "upright", difficultyLevels: ["normal"],
+    licenceInventory: [
+      { asset: "auto-rickshaw, scooter, hatchback, ghat bus and goat models (modelled in Blender from primitives), their sprite sheets and real-time GLBs", licence: "original", source: "this repository (tools/blender/models/ghat_rush.py)" },
+      { asset: "track, terrain, road textures, sky panorama, HUD and synthesised engine, rain, thunder and horn sounds (made in code)", licence: "original", source: "this repository" },
+      { asset: "lorry: Kenney Car Kit (truck)", licence: "CC0 1.0", source: "https://kenney.nl/assets/car-kit" },
+      { asset: "trees, bushes and rocks: Kenney Nature Kit", licence: "CC0 1.0", source: "https://kenney.nl/assets/nature-kit" },
+      { asset: "HDRI Kloofendal Overcast (Pure Sky) by Greg Zaal, Poly Haven", licence: "CC0 1.0", source: "https://polyhaven.com/a/kloofendal_overcast_puresky" },
+      { asset: "impact, interface and cloth sounds, countdown voice: Kenney audio packs", licence: "CC0 1.0", source: "https://kenney.nl/assets" },
+      THREE,
+    ],
+    controlModes: ["hybrid", "buttons", "motion"], automatedTestStatus: "unit+e2e",
+  },
 ];
 
 /** Implemented games first, then the remaining catalogue concepts (hidden from TVs until built). */

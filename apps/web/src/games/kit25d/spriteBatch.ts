@@ -15,6 +15,9 @@
  *
  * Extras: tint recolours only the saturated "paint" texels (keeps tyres, glass and shading); with a normals
  * sheet, setLight() relights sprites cheaply (lightning flashes, headlights sweeping past).
+ * Options (SpriteBatchOptions): `keyHue` tints only paint of one hue (e.g. magenta paint, so skin and lamps keep
+ * their colour), `depthBias` lets billboards stand on a 3D road under a low perspective camera, and
+ * `flipY` on a sprite draws its reflection (a wet road: a second batch with depthTest off and low opacity).
  */
 import * as THREE from "three";
 import { type SpriteManifest, cellIndex, cellUv, directionIndex, frameAt, parseManifest, screenHeading, worldSize } from "./manifest";
@@ -79,6 +82,23 @@ export interface SpriteState {
   tintStrength?: number;
   opacity?: number;
   visible?: boolean;
+  /** Mirror the sprite about its ground line (a reflection on a wet road; draw it before the real sprites). */
+  flipY?: boolean;
+}
+
+/** Optional batch settings (all default off, so existing batches draw exactly as before). */
+export interface SpriteBatchOptions {
+  /** Tint only paint of this hue (degrees, e.g. 300 for magenta paint), so skin, lamps and trim keep colour. */
+  keyHue?: number;
+  /** Half-width of the keyed hue band (degrees, default 40). */
+  hueWidth?: number;
+  /**
+   * Pulls every sprite this many metres towards a perspective camera (keeping its screen size), so the part of
+   * a billboard below its ground point is not clipped by the road it stands on.
+   */
+  depthBias?: number;
+  /** Turn depth testing off (e.g. reflections drawn straight onto the road). */
+  depthTest?: boolean;
 }
 
 const VERT = /* glsl */ `
@@ -88,6 +108,7 @@ attribute vec4 iUv;
 attribute vec4 iTint;
 attribute float iAlpha;
 uniform vec2 pivot;
+uniform float depthBias;
 varying vec2 vUv;
 varying vec4 vTint;
 varying float vAlpha;
@@ -96,6 +117,11 @@ void main() {
   vec2 c = position.xy + 0.5;
   vec2 off = vec2(c.x - pivot.x, c.y - (1.0 - pivot.y)) * iSize;
   vec4 mv = modelViewMatrix * vec4(iPos, 1.0);
+  if (depthBias > 0.0 && mv.z < 0.0) {
+    float b = min(depthBias, -mv.z * 0.5);
+    off *= (-mv.z - b) / -mv.z;       // closer but the same size on screen
+    mv.z += b;
+  }
   mv.xy += off;                       // screen-aligned billboard: the sheet already has the camera's pitch
   gl_Position = projectionMatrix * mv;
   vUv = iUv.xy + c * iUv.zw;
@@ -122,6 +148,14 @@ void main() {
   float hi = max(rgb.r, max(rgb.g, rgb.b)), lo = min(rgb.r, min(rgb.g, rgb.b));
   float sat = hi > 0.0 ? (hi - lo) / hi : 0.0;
   float mask = smoothstep(0.18, 0.4, sat) * vTint.a;
+#ifdef KEY_HUE
+  // only texels near the paint's hue take the tint
+  float hd = hi - lo;
+  float h = hd <= 0.0 ? 0.0 : hi == rgb.r ? mod((rgb.g - rgb.b) / hd, 6.0) : hi == rgb.g ? (rgb.b - rgb.r) / hd + 2.0 : (rgb.r - rgb.g) / hd + 4.0;
+  float dh = abs(h * 60.0 - KEY_HUE);
+  dh = min(dh, 360.0 - dh);
+  mask *= 1.0 - smoothstep(HUE_WIDTH * 0.6, HUE_WIDTH, dh);
+#endif
   float lum = dot(rgb, vec3(0.299, 0.587, 0.114));
   rgb = mix(rgb, vTint.rgb * lum * 1.7, mask);
 #ifdef USE_NORMALS
@@ -148,7 +182,7 @@ export class SpriteBatch {
   private camPos = new THREE.Vector3();
   private col = new THREE.Color();
 
-  constructor(sheet: SpriteSheet, readonly capacity: number) {
+  constructor(sheet: SpriteSheet, readonly capacity: number, opts: SpriteBatchOptions = {}) {
     this.sheet = sheet;
     this.states = new Array(capacity).fill(null);
     const g = new THREE.InstancedBufferGeometry();
@@ -168,9 +202,15 @@ export class SpriteBatch {
       fragmentShader: FRAG,
       transparent: true,
       depthWrite: false,
-      defines: sheet.normals ? { USE_NORMALS: "" } : {},
+      depthTest: opts.depthTest ?? true,
+      side: THREE.DoubleSide, // a flipY reflection reverses the quad's winding
+      defines: {
+        ...(sheet.normals ? { USE_NORMALS: "" } : {}),
+        ...(opts.keyHue !== undefined ? { KEY_HUE: opts.keyHue.toFixed(1), HUE_WIDTH: (opts.hueWidth ?? 40).toFixed(1) } : {}),
+      },
       uniforms: {
         map: { value: sheet.texture },
+        depthBias: { value: opts.depthBias ?? 0 },
         pivot: { value: new THREE.Vector2(m.pivot.x, m.pivot.y) },
         normalSheet: { value: sheet.normals },
         lightDir: { value: new THREE.Vector3(0, 0.6, 0.8).normalize() },
@@ -185,6 +225,11 @@ export class SpriteBatch {
   /** Sets (or with null, removes) sprite `i`. */
   set(i: number, s: SpriteState | null) {
     this.states[i] = s;
+  }
+
+  /** Sprite `i`'s current state (null if empty), e.g. to adjust it per view before update(). */
+  get(i: number): SpriteState | null {
+    return this.states[i] ?? null;
   }
 
   /**
@@ -222,7 +267,7 @@ export class SpriteBatch {
       const [u, v, w, hh] = cellUv(cell, m);
       const size = worldSize(m, s.scale ?? 1);
       this.pos.setXYZ(n, s.x, s.y, s.z);
-      this.size.setXY(n, size.w, size.h);
+      this.size.setXY(n, size.w, s.flipY ? -size.h : size.h);
       this.uv.setXYZW(n, u, v, w, hh);
       if (s.tint != null) {
         this.col.set(s.tint);

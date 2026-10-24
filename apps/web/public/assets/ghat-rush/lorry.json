@@ -1,0 +1,145 @@
+{
+ "format": "pwtv-sprites",
+ "version": 1,
+ "name": "lorry",
+ "image": "lorry.webp",
+ "fallback": null,
+ "normals": "lorry-normals.webp",
+ "size": {
+  "w": 1792,
+  "h": 1440
+ },
+ "cell": {
+  "w": 448,
+  "h": 360
+ },
+ "grid": {
+  "cols": 4,
+  "rows": 4
+ },
+ "directions": 16,
+ "framesPerDirection": 1,
+ "fps": 12,
+ "angle0": 0.0,
+ "pivot": {
+  "x": 0.4286,
+  "y": 0.931
+ },
+ "pixelsPerMetre": 123.687,
+ "camera": {
+  "type": "ortho",
+  "elevationDeg": 10.0,
+  "fovDeg": null
+ },
+ "shadow": true,
+ "frames": [
+  {
+   "x": 0,
+   "y": 0,
+   "w": 448,
+   "h": 360
+  },
+  {
+   "x": 448,
+   "y": 0,
+   "w": 448,
+   "h": 360
+  },
+  {
+   "x": 896,
+   "y": 0,
+   "w": 448,
+   "h": 360
+  },
+  {
+   "x": 1344,
+   "y": 0,
+   "w": 448,
+   "h": 360
+  },
+  {
+   "x": 0,
+   "y": 360,
+   "w": 448,
+   "h": 360
+  },
+  {
+   "x": 448,
+   "y": 360,
+   "w": 448,
+   "h": 360
+  },
+  {
+   "x": 896,
+   "y": 360,
+   "w": 448,
+   "h": 360
+  },
+  {
+   "x": 1344,
+   "y": 360,
+   "w": 448,
+   "h": 360
+  },
+  {
+   "x": 0,
+   "y": 720,
+   "w": 448,
+   "h": 360
+  },
+  {
+   "x": 448,
+   "y": 720,
+   "w": 448,
+   "h": 360
+  },
+  {
+   "x": 896,
+   "y": 720,
+   "w": 448,
+   "h": 360
+  },
+  {
+   "x": 1344,
+   "y": 720,
+   "w": 448,
+   "h": 360
+  },
+  {
+   "x": 0,
+   "y": 1080,
+   "w": 448,
+   "h": 360
+  },
+  {
+   "x": 448,
+   "y": 1080,
+   "w": 448,
+   "h": 360
+  },
+  {
+   "x": 896,
+   "y": 1080,
+   "w": 448,
+   "h": 360
+  },
+  {
+   "x": 1344,
+   "y": 1080,
+   "w": 448,
+   "h": 360
+  }
+ ],
+ "source": {
+  "model": "lorry.glb",
+  "animFrom": null,
+  "action": null,
+  "hdri": null,
+  "preset": "monsoon",
+  "finish": "premium",
+  "engine": "cycles",
+  "samples": 48,
+  "look": "AgX - Punchy",
+  "licence": "Kenney Car Kit (CC0 1.0)"
+ }
+}

@@ -1,0 +1,145 @@
+{
+ "format": "pwtv-sprites",
+ "version": 1,
+ "name": "bus",
+ "image": "bus.webp",
+ "fallback": null,
+ "normals": "bus-normals.webp",
+ "size": {
+  "w": 1848,
+  "h": 1488
+ },
+ "cell": {
+  "w": 462,
+  "h": 372
+ },
+ "grid": {
+  "cols": 4,
+  "rows": 4
+ },
+ "directions": 16,
+ "framesPerDirection": 1,
+ "fps": 12,
+ "angle0": 0.0,
+ "pivot": {
+  "x": 0.4459,
+  "y": 0.9002
+ },
+ "pixelsPerMetre": 40.04,
+ "camera": {
+  "type": "ortho",
+  "elevationDeg": 10.0,
+  "fovDeg": null
+ },
+ "shadow": true,
+ "frames": [
+  {
+   "x": 0,
+   "y": 0,
+   "w": 462,
+   "h": 372
+  },
+  {
+   "x": 462,
+   "y": 0,
+   "w": 462,
+   "h": 372
+  },
+  {
+   "x": 924,
+   "y": 0,
+   "w": 462,
+   "h": 372
+  },
+  {
+   "x": 1386,
+   "y": 0,
+   "w": 462,
+   "h": 372
+  },
+  {
+   "x": 0,
+   "y": 372,
+   "w": 462,
+   "h": 372
+  },
+  {
+   "x": 462,
+   "y": 372,
+   "w": 462,
+   "h": 372
+  },
+  {
+   "x": 924,
+   "y": 372,
+   "w": 462,
+   "h": 372
+  },
+  {
+   "x": 1386,
+   "y": 372,
+   "w": 462,
+   "h": 372
+  },
+  {
+   "x": 0,
+   "y": 744,
+   "w": 462,
+   "h": 372
+  },
+  {
+   "x": 462,
+   "y": 744,
+   "w": 462,
+   "h": 372
+  },
+  {
+   "x": 924,
+   "y": 744,
+   "w": 462,
+   "h": 372
+  },
+  {
+   "x": 1386,
+   "y": 744,
+   "w": 462,
+   "h": 372
+  },
+  {
+   "x": 0,
+   "y": 1116,
+   "w": 462,
+   "h": 372
+  },
+  {
+   "x": 462,
+   "y": 1116,
+   "w": 462,
+   "h": 372
+  },
+  {
+   "x": 924,
+   "y": 1116,
+   "w": 462,
+   "h": 372
+  },
+  {
+   "x": 1386,
+   "y": 1116,
+   "w": 462,
+   "h": 372
+  }
+ ],
+ "source": {
+  "model": "bus.glb",
+  "animFrom": null,
+  "action": null,
+  "hdri": null,
+  "preset": "monsoon",
+  "finish": "premium",
+  "engine": "cycles",
+  "samples": 48,
+  "look": "AgX - Punchy",
+  "licence": "original model (Play With TV), CC0 1.0"
+ }
+}

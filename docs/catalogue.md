@@ -6,7 +6,7 @@ Statuses: **concept** = idea only, hidden from TVs · **prototype** = partly pla
 (objective, motion input, rules, scoring, end state, rematch) with automated tests · **released** = also passed the
 real-device controller test ([real-device-test.md](real-device-test.md)).
 
-Built: 15 · concepts: 39.
+Built: 16 · concepts: 39.
 
 ## Prioritisation matrix
 
@@ -69,6 +69,7 @@ Within a phase, order by validated demand, controller reliability, cost and repl
 | – | 🚀 Squat Rocket | D · Co-op & adventure | 1–4 | 5 | **playable** | solo, couch-party, team-coop | unit+e2e |
 | – | 💥 Emoji Dhamaka | C · Competitive | 1–8 | 4 | **playable** | solo, couch-party | unit+e2e |
 | – | 🪶 Pillow Fort Brawl | C · Competitive | 1–4 | 4 | **playable** | solo-challenge, couch-party | unit+e2e |
+| – | 🛺 GHAT RUSH | C · Competitive | 1–8 | 4 | **playable** | couch-party, solo-challenge, tournament | unit+e2e |
 
 ## Built games: motion mappings
 
@@ -236,3 +237,15 @@ Hold: **flat** · gyroscope: unused · assets: HUD, ghosts, socks, lava and wall
 - **push**: swing the pillow (a strong push: full SMASH)
 - **flick-left**: dodge
 - **flick-right**: dodge
+
+### 🛺 GHAT RUSH
+
+Monsoon racing down the Western Ghats in autos, scooters and tiny hatchbacks: split-screen chase cams, hairpin drifts that charge blue, orange and purple turbos, a boost meter filled by near misses with buses, drafting and big air, shunt rivals into the rails for TAKEDOWNS, and mind the goats. Coconuts, puddle splashes, chai and the goat-horn. 1–8 players, CPUs fill the grid to six.
+
+Hold: **upright** · gyroscope: unused · assets: auto-rickshaw, scooter, hatchback, ghat bus and goat models (modelled in Blender from primitives), their sprite sheets and real-time GLBs (original); track, terrain, road textures, sky panorama, HUD and synthesised engine, rain, thunder and horn sounds (made in code) (original); lorry: Kenney Car Kit (truck) (CC0 1.0); trees, bushes and rocks: Kenney Nature Kit (CC0 1.0); HDRI Kloofendal Overcast (Pure Sky) by Greg Zaal, Poly Haven (CC0 1.0); impact, interface and cloth sounds, countdown voice: Kenney audio packs (CC0 1.0); three.js renderer (MIT)
+
+- **roll**: steer like a wheel
+- **flick-left**: start a drift (straighten to fire the turbo)
+- **flick-right**: start a drift (straighten to fire the turbo)
+- **push**: boost
+- **pull**: use your item

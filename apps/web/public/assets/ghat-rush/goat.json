@@ -1,0 +1,145 @@
+{
+ "format": "pwtv-sprites",
+ "version": 1,
+ "name": "goat",
+ "image": "goat.webp",
+ "fallback": null,
+ "normals": "goat-normals.webp",
+ "size": {
+  "w": 912,
+  "h": 880
+ },
+ "cell": {
+  "w": 228,
+  "h": 220
+ },
+ "grid": {
+  "cols": 4,
+  "rows": 4
+ },
+ "directions": 16,
+ "framesPerDirection": 1,
+ "fps": 12,
+ "angle0": 0.0,
+ "pivot": {
+  "x": 0.4386,
+  "y": 0.929
+ },
+ "pixelsPerMetre": 122.797,
+ "camera": {
+  "type": "ortho",
+  "elevationDeg": 10.0,
+  "fovDeg": null
+ },
+ "shadow": true,
+ "frames": [
+  {
+   "x": 0,
+   "y": 0,
+   "w": 228,
+   "h": 220
+  },
+  {
+   "x": 228,
+   "y": 0,
+   "w": 228,
+   "h": 220
+  },
+  {
+   "x": 456,
+   "y": 0,
+   "w": 228,
+   "h": 220
+  },
+  {
+   "x": 684,
+   "y": 0,
+   "w": 228,
+   "h": 220
+  },
+  {
+   "x": 0,
+   "y": 220,
+   "w": 228,
+   "h": 220
+  },
+  {
+   "x": 228,
+   "y": 220,
+   "w": 228,
+   "h": 220
+  },
+  {
+   "x": 456,
+   "y": 220,
+   "w": 228,
+   "h": 220
+  },
+  {
+   "x": 684,
+   "y": 220,
+   "w": 228,
+   "h": 220
+  },
+  {
+   "x": 0,
+   "y": 440,
+   "w": 228,
+   "h": 220
+  },
+  {
+   "x": 228,
+   "y": 440,
+   "w": 228,
+   "h": 220
+  },
+  {
+   "x": 456,
+   "y": 440,
+   "w": 228,
+   "h": 220
+  },
+  {
+   "x": 684,
+   "y": 440,
+   "w": 228,
+   "h": 220
+  },
+  {
+   "x": 0,
+   "y": 660,
+   "w": 228,
+   "h": 220
+  },
+  {
+   "x": 228,
+   "y": 660,
+   "w": 228,
+   "h": 220
+  },
+  {
+   "x": 456,
+   "y": 660,
+   "w": 228,
+   "h": 220
+  },
+  {
+   "x": 684,
+   "y": 660,
+   "w": 228,
+   "h": 220
+  }
+ ],
+ "source": {
+  "model": "goat.glb",
+  "animFrom": null,
+  "action": null,
+  "hdri": null,
+  "preset": "monsoon",
+  "finish": "premium",
+  "engine": "cycles",
+  "samples": 48,
+  "look": "AgX - Punchy",
+  "licence": "original model (Play With TV), CC0 1.0"
+ }
+}
