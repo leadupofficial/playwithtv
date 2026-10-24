@@ -232,6 +232,36 @@ const IMPLEMENTED: GameManifest[] = [
     calibrationProfile: "upright", difficultyLevels: ["grows each round"],
     licenceInventory: [CODE_ART], controlModes: ["buttons", "motion", "touchpad"], automatedTestStatus: "unit+e2e",
   },
+  {
+    id: "pillow-fort-brawl",
+    title: "Pillow Fort Brawl",
+    description: "A pillow fight on a giant bed, and the floor is lava! Hold SWING to charge a whack, let go to send friends flying off the edge. Knocked out? Come back as a ghost and drop socks and feathers on them. Best of three rounds, CPUs fill the bed to four.",
+    categories: ["party", "fighting", "versus"],
+    tags: ["3d", "brawler", "knockback", "multiplayer", "vs-cpu", "rounds"],
+    minPlayers: 1, maxPlayers: 4, version: "1.0.0", executionMode: "browser", controller: "game", orientation: "landscape",
+    estimatedAssetKb: 2150, difficulty: "easy", sessionMinutes: 5,
+    accessibility: ["cpu-opponents", "one-button-attack", "comeback-bonus-for-trailing-players", "knocked-out-players-keep-playing", "large-text"],
+    colors: ["#ff5d73", "#ffd23f"], emoji: "🪶", playable: true,
+    category: "competitive", modes: ["solo-challenge", "couch-party"], completionStatus: "playable", phase: 4,
+    sensorRequirements: { accelerometer: true, gyroscope: "unused" },
+    motionMappings: [
+      { motion: "roll", action: "move left/right" }, { motion: "pitch", action: "move forward/back" },
+      { motion: "push", action: "swing the pillow (a strong push: full SMASH)" },
+      { motion: "flick-left", action: "dodge" }, { motion: "flick-right", action: "dodge" },
+    ],
+    calibrationProfile: "flat", difficultyLevels: ["cpu"],
+    licenceInventory: [
+      { asset: "HUD, ghosts, socks, lava and wallpaper textures (drawn in code)", licence: "original", source: "this repository" },
+      { asset: "characters and animations: KayKit Character Pack Adventurers 1.0 by Kay Lousberg (trimmed)", licence: "CC0 1.0", source: "https://kaylousberg.itch.io/kaykit-adventurers" },
+      { asset: "bedroom furniture and pillows: KayKit Furniture Bits 1.0 by Kay Lousberg", licence: "CC0 1.0", source: "https://kaylousberg.itch.io/kaykit-furniture-bits" },
+      { asset: "impact sounds: Kenney Impact Sounds", licence: "CC0 1.0", source: "https://kenney.nl/assets/impact-sounds" },
+      { asset: "UI sounds: Kenney Interface Sounds", licence: "CC0 1.0", source: "https://kenney.nl/assets/interface-sounds" },
+      { asset: "cloth whooshes: Kenney RPG Audio", licence: "CC0 1.0", source: "https://kenney.nl/assets/rpg-audio" },
+      { asset: "announcer voice: Kenney Voiceover Pack", licence: "CC0 1.0", source: "https://kenney.nl/assets/voiceover-pack" },
+      THREE,
+    ],
+    controlModes: ["buttons", "touchpad", "motion"], automatedTestStatus: "unit+e2e",
+  },
 ];
 
 /** Implemented games first, then the remaining catalogue concepts (hidden from TVs until built). */

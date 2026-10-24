@@ -16,10 +16,12 @@ export interface MatchOptions {
   maxRounds?: number;
   introSeconds?: number;
   countdownSeconds?: number;
+  /** Seconds into each round for the first chaos event (default: random 13–20 s). */
+  firstChaos?: number;
 }
 
 /** Start spots: the four corners of the mattress, facing the middle. */
-const SPAWN: Array<[number, number]> = [[-3.6, -2.4], [3.6, 2.4], [3.6, -2.4], [-3.6, 2.4], [0, -3.2], [0, 3.2]];
+const SPAWN: Array<[number, number]> = [[-3, -1.8], [3, 1.8], [3, -1.8], [-3, 1.8], [0, -3], [0, 3]];
 
 function makeFighter(id: string, cpu: boolean, slot: number): Fighter {
   return {
@@ -37,7 +39,7 @@ export function newMatch(entrants: Array<{ id: string; cpu: boolean }>, o: Match
     roundsToWin: o.roundsToWin ?? 2, maxRounds: o.maxRounds ?? 3,
     introSeconds: o.introSeconds ?? 3.5, countdownSeconds: o.countdownSeconds ?? 3,
     fighters: entrants.slice(0, SPAWN.length).map((e, i) => makeFighter(e.id, e.cpu, i)),
-    hazards: [], drops: [], chaos: null, nextChaos: 0, lastChaos: null,
+    hazards: [], drops: [], chaos: null, nextChaos: 0, firstChaos: o.firstChaos ?? null, lastChaos: null,
     seed: Math.max(1, Math.floor(o.seed ?? 1) % 2147483646), nextId: 1,
     roundWinner: null, lastKoAt: null, firstOutDone: false, matchWinner: null, countdownShown: -1,
   };
@@ -64,7 +66,7 @@ function resetRound(m: Match) {
   m.lastKoAt = null;
   m.firstOutDone = false;
   m.countdownShown = -1;
-  m.nextChaos = chaosGap(m);
+  m.nextChaos = m.firstChaos ?? chaosGap(m);
 }
 
 function setPhase(m: Match, phase: Match["phase"], ev: BrawlEvent[]) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DT, HX, IDLE, newMatch, score, standings, step, type BrawlEvent, type BrawlInput, type Match } from "./engine";
+import { DT, HX, HZ, IDLE, WOBBLE, newMatch, score, standings, step, type BrawlEvent, type BrawlInput, type Match } from "./engine";
 import { knockback } from "./combat";
 import { cpuInput, newBrain } from "./cpu";
 import { awards } from "./awards";
@@ -137,7 +137,7 @@ describe("pillow swings", () => {
     const m = two();
     const a = fighter(m, "a"), b = fighter(m, "b");
     const fresh = knockback(0.5, a, b);
-    b.damage = 90;
+    b.damage = WOBBLE;
     expect(knockback(0.5, a, b)).toBeCloseTo(fresh * 2);
     a.underdog = true;
     expect(knockback(0.5, a, b)).toBeGreaterThan(fresh * 2);
@@ -170,6 +170,19 @@ describe("pillow swings", () => {
     expect(ev.some((e) => e.kind === "dodge" && e.id === "b")).toBe(true);
     expect(ev.some((e) => e.kind === "hit")).toBe(false);
     expect(b.z).toBeGreaterThan(0.8);
+  });
+});
+
+describe("the headboard", () => {
+  it("is a soft wall: fighters bounce off the back instead of falling", () => {
+    const m = two();
+    toFight(m);
+    const a = fighter(m, "a");
+    Object.assign(a, { x: 0, z: -HZ + 0.3, vz: -12, state: "hit", stun: 0.5 });
+    const ev = run(m, 0.5);
+    expect(ev.some((e) => e.kind === "fall")).toBe(false);
+    expect(a.alive).toBe(true);
+    expect(a.z).toBeGreaterThanOrEqual(-HZ);
   });
 });
 

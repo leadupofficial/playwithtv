@@ -3,7 +3,8 @@
  * (engine.ts, combat.ts, chaos.ts, cpu.ts, awards.ts). No DOM, no three.js: everything here runs in Vitest.
  *
  * World units: x to the right, z towards the camera, y up. The arena is the top of a giant bed (a rectangle
- * of half-size HX × HZ); stepping more than EDGE past its border means falling off ("the floor is lava!").
+ * of half-size HX × HZ); stepping more than EDGE past its left, right or front border means falling off ("the floor
+ * is lava!"). The back border is the headboard and its big pillows: a soft wall you bounce off.
  */
 
 export const DT = 1 / 60;
@@ -18,7 +19,7 @@ export const SPEED = 5.4;          // run speed (units/s)
 export const CHARGE_SLOW = 0.45;   // move speed factor while charging
 export const FEATHER_SLOW = 0.5;   // move speed factor inside a feather pile
 export const ACCEL = 14;           // how fast velocity follows the stick
-export const FRICTION = 3.4;       // knockback slide damping (1/s) on the mattress
+export const FRICTION = 4.5;       // knockback slide damping (1/s) on the mattress
 export const AIR_FRICTION = 0.9;
 export const GRAVITY = 24;
 
@@ -26,7 +27,9 @@ export const CHARGE_TIME = 0.9;    // seconds to a full charge
 export const MIN_POWER = 0.15;     // the weakest swing (a quick tap)
 export const REACH = 1.7;          // swing reach (plus up to 0.4 for a full charge)
 export const ARC = (75 * Math.PI) / 180;
-export const KB_BASE = 5.2, KB_POWER = 11;
+export const KB_BASE = 3.4, KB_POWER = 9.5;
+/** Knockback grows by 100% for every WOBBLE % of damage. */
+export const WOBBLE = 60;
 export const DMG_BASE = 7, DMG_POWER = 15;
 
 export const DODGE_SPEED = 13, DODGE_TIME = 0.2, DODGE_COOLDOWN = 0.85;
@@ -114,6 +117,8 @@ export interface Match {
   drops: Drop[];
   chaos: Chaos | null;
   nextChaos: number;
+  /** Seconds into a round for the first chaos event (null = random 13–20 s). */
+  firstChaos: number | null;
   lastChaos: ChaosKind | null;
   seed: number;
   nextId: number;
@@ -176,7 +181,7 @@ export function angleDiff(a: number, b: number): number {
   return d;
 }
 
-/** Distance from a point to the nearest mattress border (negative once past it). */
+/** Distance from a point to the nearest open mattress border (negative once past it); the headboard side is a wall. */
 export function edgeDistance(x: number, z: number): number {
-  return Math.min(HX - Math.abs(x), HZ - Math.abs(z));
+  return Math.min(HX - Math.abs(x), HZ - z);
 }

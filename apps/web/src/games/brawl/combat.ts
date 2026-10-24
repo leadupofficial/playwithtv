@@ -5,7 +5,7 @@
 import {
   ACCEL, AIR_FRICTION, ARC, CHARGE_SLOW, CHARGE_TIME, CREDIT_WINDOW, DMG_BASE, DMG_POWER, DODGE_COOLDOWN,
   DODGE_SPEED, DODGE_TIME, EDGE, FEATHER_SLOW, FRICTION, GHOST_COOLDOWN, GHOST_SPEED, GRAVITY, HX, HZ, KB_BASE,
-  KB_POWER, MAX_HAZARDS, MIN_POWER, RADIUS, REACH, ROOM_X, ROOM_Z, SPEED, angleDiff,
+  KB_POWER, MAX_HAZARDS, WOBBLE, MIN_POWER, RADIUS, REACH, ROOM_X, ROOM_Z, SPEED, angleDiff,
   type BrawlEvent, type BrawlInput, type Fighter, type Match,
 } from "./rules";
 
@@ -18,7 +18,7 @@ const recoverTime = (power: number) => 0.18 + 0.2 * power;
 
 /** Knockback speed a hit of `power` gives `victim` (grows with the victim's wobble %). */
 export function knockback(power: number, attacker: Fighter, victim: Fighter): number {
-  const wobble = 1 + victim.damage / 90;
+  const wobble = 1 + victim.damage / WOBBLE;
   const bonus = (attacker.underdog ? 1.25 : 1) * (victim.underdog ? 0.85 : 1);
   return (KB_BASE + KB_POWER * power) * wobble * bonus;
 }
@@ -158,6 +158,10 @@ export function updateFighter(m: Match, f: Fighter, inp: BrawlInput, dt: number,
   f.slowed = Math.max(0, f.slowed - dt);
   f.x += f.vx * dt;
   f.z += f.vz * dt;
+  if (f.z < -HZ) { // the headboard pillows: bounce back softly
+    f.z = -HZ;
+    if (f.vz < 0) f.vz = -f.vz * 0.45;
+  }
   if (!grounded || f.vy > 0) {
     f.vy -= GRAVITY * dt;
     f.y += f.vy * dt;
@@ -171,7 +175,7 @@ export function updateFighter(m: Match, f: Fighter, inp: BrawlInput, dt: number,
 
 /** Has this fighter gone over the edge of the mattress? */
 export function offBed(f: Fighter): boolean {
-  return Math.abs(f.x) > HX + EDGE || Math.abs(f.z) > HZ + EDGE;
+  return Math.abs(f.x) > HX + EDGE || f.z > HZ + EDGE;
 }
 
 /** Off the bed: falls towards the floor; credit goes to the last hitter (if recent). */

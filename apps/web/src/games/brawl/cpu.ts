@@ -87,7 +87,7 @@ export function cpuInput(m: Match, f: Fighter, brain: Brain, dt: number, skill =
   const edge = edgeDistance(f.x, f.z);
   if (edge < 1.3) {
     const back = (1.3 - edge) / 1.3;
-    const cx = -f.x / HX, cz = -f.z / HZ;
+    const cx = -f.x / HX, cz = -Math.max(0, f.z) / HZ;
     const cl = Math.hypot(cx, cz) || 1;
     mx = mx * (1 - back) + (cx / cl) * back * 1.4;
     mz = mz * (1 - back) + (cz / cl) * back * 1.4;
