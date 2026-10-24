@@ -312,6 +312,35 @@ const IMPLEMENTED: GameManifest[] = [
     ],
     controlModes: ["buttons", "touchpad", "motion"], automatedTestStatus: "unit+e2e",
   },
+  {
+    id: "gully-super-over",
+    title: "Gully Super Over",
+    description: "Street cricket in a lane between colourful houses: a brick stack for stumps, the neighbour's window for bonus runs, one tip one hand catches and a sleeping dog on the boundary. Swing your phone like a bat (timing picks the direction, strength the power) or tap SWING; drag on the touchpad to bowl pace or spin. Two teams, one super over each, a bowl-out if it's a tie. CPU kids fill the teams.",
+    categories: ["sports", "party", "team"],
+    tags: ["cricket", "3d", "cinematic", "teams", "vs-cpu", "swing", "touchpad", "tamil", "hindi"],
+    minPlayers: 1, maxPlayers: 8, version: "1.0.0", executionMode: "browser", controller: "game", orientation: "landscape",
+    estimatedAssetKb: 6000, difficulty: "easy", sessionMinutes: 6,
+    accessibility: ["cpu-opponents", "generous-timing-windows", "buttons-alternative-to-swinging", "large-text", "commentary-in-english-tamil-hindi"],
+    colors: ["#ff8a1f", "#2fa7ff"], emoji: "🏏", playable: true,
+    catalogueNo: 29, category: "competitive", modes: ["solo-challenge", "duo-versus", "couch-party", "team-versus"], completionStatus: "playable", phase: 4,
+    sensorRequirements: { accelerometer: true, gyroscope: "optional" },
+    motionMappings: [
+      { motion: "swing", action: "bat: swing timing picks the direction, swing strength the power (gentle = block)" },
+      { motion: "roll", action: "bowl: aim the line" }, { motion: "pitch", action: "bowl: aim the length" },
+      { motion: "push", action: "bowl: release" }, { motion: "twist-left", action: "bowl: spin" }, { motion: "twist-right", action: "bowl: pace" },
+    ],
+    calibrationProfile: "upright", difficultyLevels: ["cpu"],
+    licenceInventory: [
+      { asset: "lane, houses, auto-rickshaw, dog, bricks, props and textures (modelled in Blender from code: tools/blender/scenes/gully_*.py), backdrops and sprites rendered from them", licence: "original", source: "this repository" },
+      { asset: "HUD, commentary (English/Tamil/Hindi), crowd roar (synthesised)", licence: "original", source: "this repository" },
+      { asset: "characters and animations: KayKit Character Pack Adventurers 1.0 by Kay Lousberg (trimmed)", licence: "CC0 1.0", source: "https://kaylousberg.itch.io/kaykit-adventurers" },
+      { asset: "sky: Qwantani Sunset (Pure Sky) HDRI by Poly Haven", licence: "CC0 1.0", source: "https://polyhaven.com/a/qwantani_sunset_puresky" },
+      { asset: "impact, interface and cloth sounds, music jingles, announcer voice: Kenney", licence: "CC0 1.0", source: "https://kenney.nl/assets" },
+      { asset: "Baloo 2, Baloo Thambi 2, Noto Sans Tamil / Devanagari fonts", licence: "OFL-1.1", source: "https://github.com/EkType/Baloo2" },
+      THREE,
+    ],
+    controlModes: ["motion", "buttons", "touchpad"], automatedTestStatus: "unit+e2e",
+  },
 ];
 
 /** Implemented games first, then the remaining catalogue concepts (hidden from TVs until built). */

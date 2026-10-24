@@ -6,7 +6,7 @@ Statuses: **concept** = idea only, hidden from TVs · **prototype** = partly pla
 (objective, motion input, rules, scoring, end state, rematch) with automated tests · **released** = also passed the
 real-device controller test ([real-device-test.md](real-device-test.md)).
 
-Built: 15 · concepts: 39.
+Built: 16 · concepts: 38.
 
 ## Prioritisation matrix
 
@@ -43,7 +43,7 @@ Within a phase, order by validated demand, controller reliability, cost and repl
 | 26 | 🎮 Bowling League | C · Competitive | 2–8 | 4 | concept | couch-party, tournament, team-versus | none |
 | 27 | 🎮 Golf Showdown | C · Competitive | 2–4 | 4 | concept | couch-party, tournament | none |
 | 28 | ⚽ Global Penalty Cup | C · Competitive | 1–8 | 4 | **playable** | solo-challenge, couch-party, tournament | unit+e2e |
-| 29 | 🎮 Cricket Super Over | C · Competitive | 1–4 | 4 | concept | solo-challenge, duo-versus | none |
+| 29 | 🏏 Gully Super Over | C · Competitive | 1–8 | 4 | **playable** | solo-challenge, duo-versus, couch-party, team-versus | unit+e2e |
 | 30 | 🎮 Basketball Trick Shot | C · Competitive | 1–4 | 4 | concept | solo, couch-party | none |
 | 31 | 🎮 Motion Volleyball | C · Competitive | 2–4 | 4 | concept | team-versus | none |
 | 32 | 🎮 Space Dogfight | C · Competitive | 2–4 | 4 | concept | couch-party, team-versus | none |
@@ -170,6 +170,19 @@ Hold: **upright** · gyroscope: unused · assets: all visuals and sounds (drawn 
 - **flick-left**: keeper: dive left
 - **flick-right**: keeper: dive right
 - **flick-up**: keeper: jump
+
+### 🏏 Gully Super Over
+
+Street cricket in a lane between colourful houses: a brick stack for stumps, the neighbour's window for bonus runs, one tip one hand catches and a sleeping dog on the boundary. Swing your phone like a bat (timing picks the direction, strength the power) or tap SWING; drag on the touchpad to bowl pace or spin. Two teams, one super over each, a bowl-out if it's a tie. CPU kids fill the teams.
+
+Hold: **upright** · gyroscope: optional · assets: lane, houses, auto-rickshaw, dog, bricks, props and textures (modelled in Blender from code: tools/blender/scenes/gully_*.py), backdrops and sprites rendered from them (original); HUD, commentary (English/Tamil/Hindi), crowd roar (synthesised) (original); characters and animations: KayKit Character Pack Adventurers 1.0 by Kay Lousberg (trimmed) (CC0 1.0); sky: Qwantani Sunset (Pure Sky) HDRI by Poly Haven (CC0 1.0); impact, interface and cloth sounds, music jingles, announcer voice: Kenney (CC0 1.0); Baloo 2, Baloo Thambi 2, Noto Sans Tamil / Devanagari fonts (OFL-1.1); three.js renderer (MIT)
+
+- **swing**: bat: swing timing picks the direction, swing strength the power (gentle = block)
+- **roll**: bowl: aim the line
+- **pitch**: bowl: aim the length
+- **push**: bowl: release
+- **twist-left**: bowl: spin
+- **twist-right**: bowl: pace
 
 ### 🧠 Tamil Trivia Royale
 
