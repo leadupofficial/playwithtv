@@ -6,9 +6,12 @@ import { playableIn } from "./validate";
  * Every trivia pack in content/trivia, bundled into the app at build time (no runtime fetching).
  * Only approved questions are exposed; a language counts only where its translation is approved.
  */
-const files = import.meta.glob<Pack>(["../../../../../content/trivia/*.json", "!**/schema.json"], { eager: true, import: "default" });
+const files = import.meta.glob<Pack>("../../../../../content/trivia/*.json", { eager: true, import: "default" });
 
-export const PACKS: Pack[] = Object.values(files);
+// the production bundler ignores negative globs, so skip the schema (and anything else that is not a pack) here
+export const PACKS: Pack[] = Object.entries(files)
+  .filter(([path, p]) => !path.endsWith("/schema.json") && Array.isArray(p?.questions))
+  .map(([, p]) => p);
 export const QUESTIONS: Question[] = PACKS.flatMap((p) => p.questions).filter((q) => q.status === "approved");
 
 export { playableIn };
