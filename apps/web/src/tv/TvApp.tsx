@@ -76,6 +76,7 @@ export function TvApp() {
   const [games, setGames] = useState<GameManifest[]>([]);
   const [qr, setQr] = useState<string>("");
   const [notice, setNotice] = useState<string | null>(null);
+  const [removing, setRemoving] = useState<{ id: string; name: string } | null>(null);
   const [results, setResults] = useState<GameResult[] | null>(null);
   const [paused, setPaused] = useState(false);
   const startedAt = useRef(0);
@@ -196,6 +197,22 @@ export function TvApp() {
         </div>
       </div>
 
+      {removing && (
+        <div className="tv-install-help" role="dialog" aria-label={`Remove ${removing.name}?`}>
+          <div>
+            <h2>Remove {removing.name}?</h2>
+            <p className="hint">They leave this game. To keep someone out, they would need the TV's new code.</p>
+            <div className="row" style={{ justifyContent: "center" }}>
+              <button className="btn secondary" data-nav autoFocus onClick={() => setRemoving(null)}>Cancel</button>
+              <button className="btn" data-nav onClick={() => {
+                socket?.send({ type: "player.remove", playerId: removing.id });
+                socket?.send({ type: "room.rotateInvite" }); // a fresh code, so the removed player can't simply rejoin
+                setRemoving(null);
+              }}>Remove</button>
+            </div>
+          </div>
+        </div>
+      )}
       {room?.status === "results" && results ? (
         <>
           <Results results={results} room={room} game={selected} onRematch={start} onExit={() => socket?.send({ type: "game.exit" })} />
@@ -221,6 +238,7 @@ export function TvApp() {
                     <div className="avatar" style={{ boxShadow: `0 0 0 0.18em ${p.color}` }}>{AVATARS[p.avatar].emoji}</div>
                     <div className="name">{p.name}</div>
                     <div className="hint">{!p.connected ? "reconnecting…" : `${p.ready ? "✅ ready" : "joined"}${direct.has(p.id) ? " · ⚡ direct" : ""}`}</div>
+                    <button className="player-remove" data-nav aria-label={`Remove ${p.name}`} onClick={() => setRemoving({ id: p.id, name: p.name })}>✕</button>
                   </div>
                 ))}
                 {Array.from({ length: Math.max(0, 4 - (room?.players.length ?? 0)) }).map((_, i) => (

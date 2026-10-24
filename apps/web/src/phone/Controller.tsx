@@ -74,7 +74,7 @@ export function Controller({ session, onLeave }: { session: PhoneSession; onLeav
       }
       if (m.type === "tv.event") setLastEvent({ event: m.event, data: m.data, at: Date.now() });
       if (m.type === "room.expired") setFatal("This game session has ended. Scan the TV code to join again.");
-      if (m.type === "error" && (m.code === "unauthorized" || m.code === "room_not_found")) setFatal(m.message);
+      if (m.type === "error" && (m.code === "unauthorized" || m.code === "room_not_found" || m.code === "removed")) setFatal(m.message);
     });
     const lat = setInterval(() => setLatency(link.mode === "direct" ? { ms: link.rttMs, direct: true } : { ms: s.latencyMs, direct: false }), 2000);
     const hide = () => document.hidden && input.current?.release(); // never leave tilt "held" in a background tab

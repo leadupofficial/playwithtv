@@ -272,6 +272,15 @@ export class Hub {
         return this.broadcastState(room);
       case "game.finished":
         return this.finish(room, m.results, m.durationMs);
+      case "player.remove": {
+        const p = room.players.get(m.playerId);
+        if (!p) throw new HubError("not_allowed", "no such player");
+        room.players.delete(p.id); // their player token stops working; joining again needs the TV's code
+        this.send(p.socket, { type: "error", code: "removed", message: "The TV host removed you from this game." });
+        p.socket?.close(4410, "removed");
+        this.sendTv(room, { type: "controller.clear", playerId: p.id });
+        return this.broadcastState(room);
+      }
       case "game.exit":
         room.status = "lobby";
         room.layoutAll = undefined;

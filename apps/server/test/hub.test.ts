@@ -431,3 +431,22 @@ describe("direct phone-to-TV links (WebRTC signalling)", () => {
     expect((await a.c.next("error", (e) => e.code === "rate_limited")).code).toBe("rate_limited");
   });
 });
+
+describe("the host removes a player", () => {
+  it("the removed phone is told and disconnected, its token stops working, and only the TV can remove", async () => {
+    await start();
+    const { room, c: t } = await tv();
+    const guest = await phone({ inviteToken: room.inviteToken }, "Stranger");
+    const friend = await phone({ joinCode: room.joinCode }, "Friend");
+    friend.c.send({ type: "player.remove", playerId: guest.playerId });
+    expect((await friend.c.next("error")).code).toBe("not_allowed"); // a phone can't remove anyone
+    t.send({ type: "player.remove", playerId: guest.playerId });
+    expect((await guest.c.next("error")).code).toBe("removed");
+    expect(await guest.c.closed).toBe(4410);
+    await t.next("room.state", (m) => m.room.players.length === 1);
+    const again = new Client();
+    await again.open();
+    again.send({ type: "hello", v: 1, role: "controller", roomId: guest.roomId, playerToken: guest.playerToken });
+    expect((await again.next("error")).code).toBe("unauthorized"); // the old token no longer works
+  });
+});

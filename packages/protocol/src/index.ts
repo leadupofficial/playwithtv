@@ -125,6 +125,8 @@ export const ClientMessage = z.discriminatedUnion("type", [
   }),
   z.object({ type: z.literal("tv.event"), to: z.string().max(64), event: z.string().max(32), data: z.record(z.string(), z.unknown()).optional() }),
   z.object({ type: z.literal("room.rotateInvite") }),
+  // TV only: the host removes a player (an uninvited guest); their token stops working
+  z.object({ type: z.literal("player.remove"), playerId: z.string().max(64) }),
   // TV only: how often sponsors were shown (see ads.ts)
   z.object({ type: z.literal("ads.impressions"), items: ImpressionItems }),
   // both: a phone signals "tv"; the TV signals one player id
@@ -162,7 +164,8 @@ export type ErrorCode =
   | "rate_limited"
   | "not_allowed"
   | "unknown_game"
-  | "player_count";
+  | "player_count"
+  | "removed";
 
 // ---- HTTP API ---------------------------------------------------------------------------
 
