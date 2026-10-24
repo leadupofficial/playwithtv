@@ -127,3 +127,32 @@ export async function practiseUntilReady(tv: Page, phone: Page, name: string, mo
   }
   await expect(card).toHaveClass(/ready/, { timeout: 10_000 });
 }
+
+/** Holds an on-screen action button (a `hold` action, e.g. a charge button) by its label for `ms`. */
+export async function holdAction(page: Page, label: string | RegExp, ms: number) {
+  const el = page.locator(".game-pad .action", { hasText: label }).first();
+  await el.dispatchEvent("pointerdown", { pointerId: 9 }, { timeout: 5000 });
+  await page.waitForTimeout(ms);
+  await el.dispatchEvent("pointerup", { pointerId: 9 });
+  await page.waitForTimeout(120);
+}
+
+/** A point on the touchpad in pad units (x right, y up, both in [-1, 1]) as page coordinates. */
+export async function padPoint(page: Page, x: number, y: number) {
+  const box = (await page.locator(".game-pad .touchpad").first().boundingBox())!;
+  return { x: box.x + ((x + 1) / 2) * box.width, y: box.y + ((1 - y) / 2) * box.height };
+}
+
+/** A finger stroke on the touchpad between two pad points: quick (≤ 250 ms) is a swipe, slow is a drag. */
+export async function stroke(page: Page, from: [number, number], to: [number, number], ms = 120) {
+  const a = await padPoint(page, ...from), b = await padPoint(page, ...to);
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  const steps = Math.max(2, Math.round(ms / 40));
+  for (let i = 1; i <= steps; i++) {
+    await page.mouse.move(a.x + ((b.x - a.x) * i) / steps, a.y + ((b.y - a.y) * i) / steps);
+    await page.waitForTimeout(ms / steps);
+  }
+  await page.mouse.up();
+  await page.waitForTimeout(150);
+}
