@@ -42,7 +42,10 @@ function useRoom() {
           c = await api<CreateRoomResponse>("/api/rooms", {});
           sessionStorage.setItem(ROOM_KEY, JSON.stringify(c));
         } catch (e) {
-          if (alive) setError((e as Error).message);
+          if (!alive) return;
+          setError((e as Error).message);
+          // the server may be restarting (a deploy takes a few seconds): try again by itself rather than stay stuck
+          setTimeout(() => alive && (setError(null), setNonce((n) => n + 1)), 5000);
           return;
         }
       }
@@ -167,6 +170,7 @@ export function TvApp() {
       <div className="tv"><div className="center-screen"><div>
         <h1 className="big-title">Can't reach the game server</h1>
         <p className="hint">{error}</p>
+        <p className="hint">Trying again by itself…</p>
         <button className="btn" data-nav autoFocus onClick={() => location.reload()}>Try again</button>
       </div></div></div>
     );
