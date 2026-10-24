@@ -169,7 +169,7 @@ function Brawl({ humans, kit, controls, bridge, paused, onFinish, assets, progre
         }
         if (m.phase === "podium") {
           podiumAt ||= now;
-          if (!reported && now - podiumAt > (QUICK ? 4500 : 9000)) finish();
+          if (!reported && now - podiumAt > (QUICK ? 7000 : 10000)) finish();
         }
       };
       raf = requestAnimationFrame(frame);
