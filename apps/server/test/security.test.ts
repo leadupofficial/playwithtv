@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { buildApp, type App } from "../src/app.js";
+import { buildApp, isPhonePage, type App } from "../src/app.js";
 import { loadConfig, productionProblems } from "../src/config.js";
 import { MemoryPersistence } from "../src/persistence.js";
 import { MemoryPresence } from "../src/presence.js";
@@ -45,6 +45,28 @@ describe("browser protection headers", () => {
     expect(pp).toContain("camera=()");
     expect(pp).toContain("microphone=()");
     expect(pp).toContain("geolocation=()");
+  });
+
+  it("only the phone controller page may compile WebAssembly and use the camera (camera games); never JS eval", async () => {
+    await start();
+    for (const path of ["/join", "/join?i=abc123", "/join/", "/controller"]) {
+      const r = await fetch(`${base}${path}`);
+      const csp = r.headers.get("content-security-policy")!;
+      expect(csp, path).toContain("script-src 'self' 'wasm-unsafe-eval';");
+      expect(csp, path).not.toMatch(/'unsafe-eval'|unsafe-inline/);
+      expect(csp, path).toContain("connect-src 'self' wss://play.example.com");
+      expect(csp, path).toContain("frame-ancestors 'none'");
+      const pp = r.headers.get("permissions-policy")!;
+      expect(pp, path).toContain("camera=(self)");
+      expect(pp, path).toContain("microphone=()");
+    }
+    for (const path of ["/", "/tv", "/play", "/admin", "/sensors", "/joinx", "/tv?next=/join", "/api/games", "/healthz", "/assets/x.js"]) {
+      const r = await fetch(`${base}${path}`);
+      expect(r.headers.get("content-security-policy"), path).not.toContain("wasm-unsafe-eval");
+      expect(r.headers.get("content-security-policy"), path).toContain("script-src 'self';");
+      expect(r.headers.get("permissions-policy"), path).toContain("camera=()");
+    }
+    expect([isPhonePage("/join?x=1#y"), isPhonePage("/controller/"), isPhonePage("/join-us"), isPhonePage("/admin?join")]).toEqual([true, true, false, false]);
   });
 
   it("the public health check reveals no usage numbers; metrics need the admin token", async () => {
