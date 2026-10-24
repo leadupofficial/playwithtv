@@ -25,7 +25,7 @@ export interface PlayOptions {
   from?: number;
 }
 
-type Lit = THREE.MeshToonMaterial | THREE.MeshLambertMaterial;
+type Lit = THREE.MeshToonMaterial | THREE.MeshLambertMaterial | THREE.MeshStandardMaterial;
 
 export class Character {
   readonly root = new THREE.Group();
@@ -36,9 +36,11 @@ export class Character {
   private mats: Lit[] = [];
   private flashT = 0;
   private flashColor = new THREE.Color("#ffffff");
+  private flashK = 0.85;
 
-  constructor(readonly model: THREE.Object3D, clips: THREE.AnimationClip[], opts: { scale?: number; material?: "toon" | "lambert" } = {}) {
-    cheapMaterials(model, opts.material ?? "toon");
+  constructor(readonly model: THREE.Object3D, clips: THREE.AnimationClip[], opts: { scale?: number; material?: "toon" | "lambert" | "keep" } = {}) {
+    // "keep": leave the model's own (PBR) materials, for the cinematic tiers
+    if (opts.material !== "keep") cheapMaterials(model, opts.material ?? "toon");
     model.scale.setScalar(opts.scale ?? 1);
     model.traverse((o) => {
       const m = o as THREE.Mesh;
@@ -128,16 +130,17 @@ export class Character {
   }
 
   /** A short emissive flash (hit feedback). */
-  flash(seconds: number, color: THREE.ColorRepresentation = "#ffffff") {
+  flash(seconds: number, color: THREE.ColorRepresentation = "#ffffff", intensity = 0.85) {
     this.flashT = seconds;
     this.flashColor.set(color);
+    this.flashK = intensity;
   }
 
   update(dt: number) {
     this.mixer.update(dt);
     if (this.flashT > 0 || this.mats[0]?.emissiveIntensity) {
       this.flashT = Math.max(0, this.flashT - dt);
-      const k = this.flashT > 0 ? 0.85 : 0;
+      const k = this.flashT > 0 ? this.flashK : 0;
       for (const m of this.mats) {
         m.emissive.copy(this.flashColor);
         m.emissiveIntensity = k;

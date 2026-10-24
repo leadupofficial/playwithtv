@@ -29,8 +29,8 @@ export interface MoveData {
 export const MOVES: Record<MoveId, MoveData> = {
   jab: { startup: F(6), active: F(4), recovery: F(11), damage: 4, kb: 2.6, lift: 0, reach: 1.45, arc: 1.0, hitstun: F(20), next: "cross", guardBreak: false, lunge: 2.5 },
   cross: { startup: F(7), active: F(4), recovery: F(13), damage: 5, kb: 3.2, lift: 0, reach: 1.5, arc: 1.0, hitstun: F(22), next: "kick", guardBreak: false, lunge: 3 },
-  kick: { startup: F(10), active: F(5), recovery: F(20), damage: 9, kb: 8.5, lift: 4.5, reach: 1.75, arc: 1.15, hitstun: F(30), next: null, guardBreak: false, lunge: 3.5 },
-  heavy: { startup: F(19), active: F(5), recovery: F(26), damage: 14, kb: 10.5, lift: 5.5, reach: 1.9, arc: 1.2, hitstun: F(34), next: null, guardBreak: true, lunge: 2 },
+  kick: { startup: F(10), active: F(5), recovery: F(20), damage: 9, kb: 10, lift: 3.5, reach: 1.75, arc: 1.15, hitstun: F(30), next: null, guardBreak: false, lunge: 3.5 },
+  heavy: { startup: F(19), active: F(5), recovery: F(26), damage: 14, kb: 11.5, lift: 4.5, reach: 1.9, arc: 1.2, hitstun: F(34), next: null, guardBreak: true, lunge: 2 },
 };
 
 /** A fighter's special: a cinematic move charged by landing hits. Hits are scheduled after the start. */
@@ -99,7 +99,7 @@ export const ROLL_SPEED = 8.5;
 export const ROLL_IFRAMES: [number, number] = [0.03, 0.32];
 export const ROLL_COOLDOWN = 0.35;
 export const BUFFER = 0.22;           // input buffer for strikes / heavies / rolls
-export const LAUNCH_KB = 7;           // knockback at or above this launches the victim into the air
+export const LAUNCH_KB = 4.4;           // knockback at or above this launches the victim into the air
 export const DOWN_TIME = 0.55;        // on the floor after a launch (invulnerable while getting up)
 export const WALL_SPLAT_KB = 6;       // hitting a wall this fast hurts
 export const CREDIT_WINDOW = 4;       // seconds a hitter keeps credit for a ring-out

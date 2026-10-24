@@ -49,7 +49,7 @@ export function gainMeter(m: Match, f: Fighter, amount: number, ev: KalariEvent[
 
 /** Knockback speed for a hit: grows as the victim's health falls (Smash-style), scaled by weight and comebacks. */
 export function knockback(base: number, attacker: Fighter, victim: Fighter): number {
-  const hurt = 1 + (MAX_HEALTH - victim.health) / 85;
+  const hurt = 0.45 + (MAX_HEALTH - victim.health) / 90; // fresh fighters hold their ground; hurt ones fly
   const bonus = (attacker.underdog ? 1.15 : 1) * (victim.underdog ? 0.88 : 1);
   return base * hurt * character(victim.char).weight * bonus;
 }
@@ -259,7 +259,7 @@ export function updateFighter(m: Match, f: Fighter, inp: KalariInput, dt: number
     f.vz += (mz * speed - f.vz) * k;
     if (mag > 0.2 && f.state === "ok") f.face += angleDiff(Math.atan2(mx, mz), f.face) * Math.min(1, 16 * dt);
   } else if (f.state === "hit" || f.state === "stagger" || f.state === "down" || f.state === "air") {
-    const k = Math.exp(-(grounded ? FRICTION : FRICTION * 0.25) * dt);
+    const k = Math.exp(-(grounded ? FRICTION : FRICTION * 0.6) * dt);
     f.vx *= k; f.vz *= k;
   }
   f.x += f.vx * dt;
