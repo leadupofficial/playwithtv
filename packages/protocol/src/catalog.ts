@@ -312,6 +312,34 @@ const IMPLEMENTED: GameManifest[] = [
     ],
     controlModes: ["buttons", "touchpad", "motion"], automatedTestStatus: "unit+e2e",
   },
+  {
+    id: "tiffin-tornado",
+    title: "Tiffin Tornado",
+    description: "Co-op chaos in the kitchen carriage of a moving train! Make dosa, idli, vada, sambar, chutney and filter coffee for the passengers' tickets: flip dosas at the golden moment, grind chutney, wash plates, put out fires. Three services: a calm departure, swaying ghat curves that slide your plates, and a tunnel plus a platform stop where the kitchen splits across two coaches.",
+    categories: ["party", "co-op", "family"],
+    tags: ["cooking", "co-op", "chaos", "3d", "cinematic", "indian-food"],
+    minPlayers: 1, maxPlayers: 4, version: "1.0.0", executionMode: "browser", controller: "game", orientation: "landscape",
+    estimatedAssetKb: 6500, difficulty: "medium", sessionMinutes: 14,
+    accessibility: ["one-action-button", "context-icons-on-phone", "solo-friendly", "large-text", "no-fail-state"],
+    colors: ["#ff8a1f", "#8a1f2a"], emoji: "🫓", playable: true,
+    category: "coop-adventure", modes: ["solo", "couch-party", "team-coop"], completionStatus: "playable", phase: 5,
+    sensorRequirements: { accelerometer: true, gyroscope: "unused" },
+    motionMappings: [
+      { motion: "roll", action: "move left/right" }, { motion: "pitch", action: "move up/down the kitchen" },
+      { motion: "push", action: "ACTION (pick, place, plate, serve…)" }, { motion: "flick-up", action: "ACTION, e.g. flip a dosa" },
+      { motion: "shake", action: "chop, grind or wash faster" }, { motion: "flick-left", action: "dash" }, { motion: "flick-right", action: "dash" },
+    ],
+    calibrationProfile: "flat", difficultyLevels: ["three services"],
+    licenceInventory: [
+      { asset: "kitchen carriage, South Indian dishes and equipment, scenery, chef outfits (modelled and rendered in code: tools/blender/tiffin)", licence: "original", source: "this repository" },
+      { asset: "counters, stoves, sink, crates, cutting board, dish rack: KayKit Restaurant Bits 1.0 by Kay Lousberg (repainted)", licence: "CC0 1.0", source: "https://kaylousberg.itch.io/restaurant-bits" },
+      { asset: "chefs: KayKit Character Pack Adventurers 1.0 by Kay Lousberg (re-dressed) and its animations", licence: "CC0 1.0", source: "https://kaylousberg.itch.io/kaykit-adventurers" },
+      { asset: "HDRIs: Kloofendal 48d Partly Cloudy, Studio Small 09 (Blender lighting), Kloofendal Overcast (real-time)", licence: "CC0 1.0", source: "https://polyhaven.com" },
+      { asset: "sound effects: Kenney Interface Sounds, Impact Sounds, RPG Audio, Voiceover Pack; sizzle, rails, horn and bell synthesised in code", licence: "CC0 1.0", source: "https://kenney.nl/assets" },
+      THREE,
+    ],
+    controlModes: ["buttons", "touchpad", "motion"], automatedTestStatus: "unit+e2e",
+  },
 ];
 
 /** Implemented games first, then the remaining catalogue concepts (hidden from TVs until built). */

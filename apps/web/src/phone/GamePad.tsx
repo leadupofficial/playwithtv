@@ -10,7 +10,8 @@ import { t } from "../i18n";
 
 export interface PadEvent { event: string; data?: Record<string, unknown>; at: number }
 
-type Status = { text?: string; bars?: Array<{ label: string; value: number; color?: string }> };
+/** `labels` lets a game relabel its buttons live (e.g. a context icon on one ACTION button). */
+type Status = { text?: string; bars?: Array<{ label: string; value: number; color?: string }>; labels?: Record<string, string> };
 
 /** Which action a gesture or swipe means for this game (a strong gesture may mean a power move). */
 function resolver(spec: ControlSpec) {
@@ -60,7 +61,7 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
   const pad = useRef({ x: 0, y: 0 });
   const firstRecentre = useRef(recentre);
   const map = useMemo(() => resolver(spec), [spec]);
-  const buttons = buttonsFor(spec, mode);
+  const buttons = buttonsFor(spec, mode).map((b) => (status?.labels?.[b.id] ? { ...b, label: status.labels[b.id]! } : b));
 
   const fire = (a: ControlAction) => {
     input.tap(a.id);
