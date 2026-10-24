@@ -1,0 +1,47 @@
+/* ---------- camera mode on the phone (phone/camera/CameraPad.tsx), landscape ---------- */
+.cam-pad { flex: 1; display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+.cam-bar { display: flex; align-items: center; gap: 8px; font-size: 13px; flex-wrap: wrap; }
+.cam-bar .chip { font-size: 13px; padding: 4px 10px; cursor: pointer; }
+.cam-on { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: #ffb3bd; margin-right: auto; }
+.cam-on i { width: 10px; height: 10px; border-radius: 50%; background: #ff3b55; box-shadow: 0 0 0 3px rgba(255,59,85,0.25); animation: cam-blink 1.6s ease-in-out infinite; }
+@keyframes cam-blink { 50% { opacity: 0.45; } }
+.cam-main { flex: 1; display: flex; gap: 12px; min-height: 0; }
+.cam-main > .pad-panel, .cam-main > .cam-setup, .cam-main > .cam-play, .cam-main > .cam-side { flex: 1; }
+.cam-video { position: relative; flex: none; height: 100%; aspect-ratio: 4 / 3; max-width: 60%; border-radius: 18px; overflow: hidden; background: #000; }
+/* during play the preview is hidden to save battery, but stays on the page so video frames keep arriving */
+.cam-video.hidden { position: absolute; width: 2px; height: 2px; opacity: 0.01; pointer-events: none; left: 0; top: 0; }
+.cam-video video, .cam-video canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+.cam-silhouette { position: absolute; inset: 4% 10%; width: 80%; height: 92%; fill: rgba(255,255,255,0.08); stroke: rgba(255,255,255,0.75); stroke-width: 0.8; stroke-dasharray: 2 1.5; pointer-events: none; }
+.cam-side { display: flex; flex-direction: column; justify-content: center; gap: 12px; padding: 8px; font-size: 18px; }
+.cam-side .mini { height: 14px; }
+.cam-msg { font-size: 22px; line-height: 1.2; }
+.cam-small { font-size: 14px; color: var(--muted); }
+.cam-ring { width: 92px; height: 92px; border-radius: 50%; display: grid; place-items: center; }
+.cam-ring span { width: 72px; height: 72px; border-radius: 50%; background: var(--bg-0); display: grid; place-items: center; font-weight: 800; font-size: 20px; }
+.cam-center { justify-content: center; font-size: 18px; }
+.cam-center .btn { width: auto; min-width: 260px; }
+
+.cam-setup { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; min-height: 0; overflow-y: auto; }
+.cam-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.cam-col h2 { margin: 0; font-size: 19px; }
+.cam-privacy { margin: 0; padding: 10px 12px; border-radius: 14px; background: rgba(62,224,143,0.12); border: 1px solid rgba(62,224,143,0.45); font-size: 15px; line-height: 1.3; }
+.cam-disclaimer { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.3; }
+.cam-row { display: flex; gap: 6px; }
+.cam-opt { flex: 1; padding: 9px 6px; border-radius: 12px; border: 2px solid var(--line); background: var(--glass); font-size: 15px; font-weight: 700; cursor: pointer; }
+.cam-opt.on { border-color: #fff; background: var(--glass-2); }
+.cam-tip { margin: 0; font-size: 13px; color: var(--muted); }
+.cam-clear { padding: 9px 10px; border-radius: 12px; border: 2px dashed var(--warn); background: rgba(255,210,63,0.08); font-size: 14px; text-align: left; cursor: pointer; }
+.cam-clear.on { border-style: solid; border-color: var(--good); background: rgba(62,224,143,0.15); font-weight: 800; }
+.phone .btn.cam-start { padding: 12px; font-size: 19px; }
+
+.cam-play { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; border: 3px solid; border-radius: 22px; padding: 10px 14px; min-height: 0; }
+.cam-count { display: flex; flex-direction: column; align-items: center; line-height: 0.9; min-width: 150px; }
+.cam-count b { font-size: 112px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.cam-count span { font-size: 18px; color: var(--muted); }
+.cam-mid { display: flex; flex-direction: column; gap: 8px; min-width: 0; font-size: 16px; }
+.cam-mid .pad-flash { margin: 0; font-size: 24px; min-height: 30px; }
+.cam-track { font-weight: 800; font-size: 17px; }
+.cam-track.ok { color: var(--good); }
+.cam-track.bad { color: var(--warn); }
+.cam-pause { width: 150px; height: 100%; max-height: 220px; border-radius: 22px; border: 0; background: linear-gradient(160deg, #ff7a59, #e2384d); color: #fff; font-size: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
+.cam-pause span { font-size: 20px; font-weight: 800; }

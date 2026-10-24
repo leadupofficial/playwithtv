@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import type { ControlMode, ControlSpec, ControllerType, PlayerView, RoomView } from "@playwithtv/protocol";
 import { HubSocket, type SocketStatus } from "../net";
 import { AVATARS } from "../avatars";
@@ -10,6 +10,10 @@ import { t } from "../i18n";
 import { PhoneLink } from "../rtc";
 import { ScreenWake, type WakeState } from "./wakeLock";
 import { Lobby } from "./Lobby";
+import { cameraSupported } from "./camera/support";
+
+// camera mode (body tracking) loads only when a camera game starts on this phone
+const CameraPad = lazy(() => import("./camera/CameraPad").then((m) => ({ default: m.CameraPad })));
 
 const PICKS_KEY = "pwtv.controls";
 const MODE_LABEL: Record<ControlMode, string> = { buttons: "🎮 Buttons", motion: "🎯 Motion", hybrid: "⚡ Hybrid", touchpad: "👆 Touchpad", camera: "📷 Camera" };
@@ -114,11 +118,11 @@ export function Controller({ session, onLeave }: { session: PhoneSession; onLeav
 
   const me: PlayerView | undefined = room?.players.find((p) => p.id === session.playerId);
   const spec = layout.type === "game" ? (layout.data as unknown as ControlSpec | undefined) : undefined;
-  const modes = (spec?.modes ?? []).filter((m) => (m === "motion" || m === "hybrid" ? motionState === "ok" : true));
+  const modes = (spec?.modes ?? []).filter((m) => (m === "motion" || m === "hybrid" ? motionState === "ok" : m === "camera" ? cameraSupported() : true));
   const mode: ControlMode | undefined = spec ? (picks[spec.title] && modes.includes(picks[spec.title]!) ? picks[spec.title] : modes[0]) : undefined;
-  const nextMode = () => {
+  const nextMode = (skipCamera = false) => {
     if (!spec || !mode || modes.length < 2) return;
-    const next = modes[(modes.indexOf(mode) + 1) % modes.length]!;
+    const next = skipCamera ? modes.find((m) => m !== "camera") ?? mode : modes[(modes.indexOf(mode) + 1) % modes.length]!;
     const p = { ...picks, [spec.title]: next };
     setPicks(p);
     savePicks(p);
@@ -155,7 +159,7 @@ export function Controller({ session, onLeave }: { session: PhoneSession; onLeav
               {layout.type === "game" && room?.captainId === session.playerId && (
                 <button className="chip" onClick={() => setConfirmEnd(true)} aria-label="End the game">⏹ End</button>
               )}
-              {mode && modes.length > 1 && <button className="chip mode-chip" onClick={nextMode} aria-label="Change controls">{MODE_LABEL[mode]} ⇄</button>}
+              {mode && modes.length > 1 && <button className="chip mode-chip" onClick={() => nextMode()} aria-label="Change controls">{MODE_LABEL[mode]} ⇄</button>}
               {(mode === "motion" || mode === "hybrid") && <button className="chip" onClick={() => setRecentre((n) => n + 1)}>⟳ {t("ctl.recentre")}</button>}
               <span className="chip" aria-live="polite" data-link={latency.direct ? "direct" : "server"}>
                 <span className={`dot ${status === "open" ? "on" : ""}`} />
@@ -186,6 +190,10 @@ export function Controller({ session, onLeave }: { session: PhoneSession; onLeav
             ) : layout.type === "lobby" ? (
               <Lobby room={room} me={me} data={layout.data} motion={motion.current} notice={notice}
                 send={(m) => socket.current?.send(m)} />
+            ) : input.current && spec && mode === "camera" ? (
+              <Suspense fallback={<div className="ctl-message">📷 Loading camera controls…</div>}>
+                <CameraPad key={layout.n} input={input.current} spec={spec} lastEvent={lastEvent} color={me?.color ?? "#7c3aed"} onFallback={() => nextMode(true)} />
+              </Suspense>
             ) : input.current && spec && mode ? (
               <GamePad
                 key={`${layout.n}-${mode}`}
