@@ -39,7 +39,7 @@ test("scan, connect, play: two phones play a full Tamil Trivia match, rematch an
   await a.getByRole("button", { name: "Peacock" }).click();
   await a.getByRole("button", { name: "Join as guest" }).click();
   await startController(a);
-  await expect(a.getByText("You're in!")).toBeVisible();
+  await expect(a.locator("[data-captain]")).toContainText("You're the captain"); // first to join: captain 👑
 
   const b = await newPhonePage(browser, { "Tamil Trivia Royale": "motion" });
   await b.goto(`/join?i=${invite.inviteToken}`);

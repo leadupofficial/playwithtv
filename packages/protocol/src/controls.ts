@@ -11,7 +11,7 @@
  *   axes.x, axes.y   movement in [-1, 1]: x right, y up/forward (stick, tilt or touchpad)
  *   taps[action]     a counter per action (button press, mapped gesture or swipe)
  *   buttons[action]  held state for `hold` actions
- *   axes.m           the mode in use (0 buttons, 1 motion, 2 hybrid, 3 touchpad), for games that tune by it
+ *   axes.m           the mode in use, sent as code / 3 (0 buttons, 1 motion, 2 hybrid, 3 touchpad), for games that tune by it
  */
 export type ControlMode = "buttons" | "motion" | "hybrid" | "touchpad";
 export const CONTROL_MODES: ControlMode[] = ["buttons", "motion", "hybrid", "touchpad"];

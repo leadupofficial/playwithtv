@@ -41,3 +41,23 @@ export interface Room {
   /** Games started since the last impression report: bounds "presented by" and in-game sponsor counts. */
   gamesSinceReport: number;
 }
+
+/**
+ * The captain: the earliest-joined player who is connected (or, with nobody connected, the earliest-joined).
+ * Their phone may pick, start and end games like the TV remote. Passes on automatically when they leave.
+ */
+export function captainOf(room: { players: Map<string, { id: string; socket?: unknown }> }): string | null {
+  let first: string | null = null;
+  for (const p of room.players.values()) {
+    if (p.socket) return p.id;
+    first ??= p.id;
+  }
+  return first;
+}
+
+/** A display name nobody else in the room has ("Priya", then "Priya 2"…). */
+export function uniqueName(room: { players: Map<string, { id: string; name: string }> }, name: string, selfId?: string): string {
+  const taken = new Set([...room.players.values()].filter((p) => p.id !== selfId).map((p) => p.name.toLowerCase()));
+  if (!taken.has(name.toLowerCase())) return name;
+  for (let i = 2; ; i++) if (!taken.has(`${name} ${i}`.toLowerCase())) return `${name} ${i}`.slice(0, 18);
+}

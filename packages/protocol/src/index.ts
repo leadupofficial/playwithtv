@@ -57,6 +57,8 @@ export const RoomView = z.object({
   gameId: z.string().nullable(),
   players: z.array(PlayerView),
   tvConnected: z.boolean(),
+  /** The player whose phone can pick and start games (the earliest-joined connected player), if any. */
+  captainId: z.string().nullable(),
 });
 export type RoomView = z.infer<typeof RoomView>;
 

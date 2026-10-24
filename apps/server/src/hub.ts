@@ -12,7 +12,7 @@ import type { Presence } from "./presence.js";
 import { HubError, metrics } from "./errors.js";
 import { type Conn, relaySignal } from "./rtc.js";
 import { takeImpressions } from "./impressions.js";
-import type { Player, Room } from "./room.js";
+import { type Player, type Room, captainOf, uniqueName } from "./room.js";
 
 const PLAYER_COLORS = ["#ff5d73", "#3dd6ff", "#ffd23f", "#7cf29c", "#c084fc", "#ff9f43", "#4ade80", "#f472b6"];
 
@@ -94,7 +94,7 @@ export class Hub {
     if (req.playerToken) {
       for (const p of room.players.values()) {
         if (sameToken(p.token, req.playerToken)) {
-          p.name = this.uniqueName(room, req.name, p.id);
+          p.name = uniqueName(room, req.name, p.id);
           p.avatar = req.avatar;
           metrics.rejoins++;
           this.broadcastState(room);
@@ -107,7 +107,7 @@ export class Hub {
     const p: Player = {
       id: randomUUID().slice(0, 8),
       token: token(),
-      name: this.uniqueName(room, req.name),
+      name: uniqueName(room, req.name),
       avatar: req.avatar,
       color: PLAYER_COLORS.find((c) => !used.has(c)) ?? PLAYER_COLORS[0]!,
       ready: false,
@@ -124,12 +124,6 @@ export class Hub {
     return { roomId: room.id, playerId: p.id, playerToken: p.token };
   }
 
-  private uniqueName(room: Room, name: string, selfId?: string): string {
-    const taken = new Set([...room.players.values()].filter((p) => p.id !== selfId).map((p) => p.name.toLowerCase()));
-    if (!taken.has(name.toLowerCase())) return name;
-    for (let i = 2; ; i++) if (!taken.has(`${name} ${i}`.toLowerCase())) return `${name} ${i}`.slice(0, 18);
-  }
-
   view(room: Room): RoomView {
     return {
       roomId: room.id,
@@ -137,6 +131,7 @@ export class Hub {
       status: room.status,
       gameId: room.gameId,
       tvConnected: !!room.tv,
+      captainId: captainOf(room),
       players: [...room.players.values()].map(
         (p): PlayerView => ({ id: p.id, name: p.name, avatar: p.avatar, color: p.color, connected: !!p.socket, ready: p.ready }),
       ),
@@ -229,6 +224,10 @@ export class Hub {
         this.broadcastState(room);
         return ws.close(1000, "left");
       }
+      if (m.type === "game.select" || m.type === "game.start" || m.type === "game.exit") {
+        if (captainOf(room) !== p.id) throw new HubError("not_allowed", "Only the captain 👑 can pick and start games.");
+        return this.hostCommand(room, m);
+      }
       throw new HubError("not_allowed", "only the TV can do that");
     }
 
@@ -238,32 +237,10 @@ export class Hub {
       throw new HubError("rate_limited", "slow down");
     }
     switch (m.type) {
-      case "game.select": {
-        const g = findGame(m.gameId);
-        if (!g || !g.playable) throw new HubError("unknown_game", "That game is not available.");
-        room.gameId = g.id;
-        room.status = "lobby";
-        this.broadcast(room, { type: "game.selected", gameId: g.id });
-        this.broadcastController(room, { type: "controller.layout", layout: "lobby", data: { gameId: g.id, title: g.title } });
-        return this.broadcastState(room);
-      }
-      case "game.start": {
-        const g = room.gameId ? findGame(room.gameId) : undefined;
-        if (!g) throw new HubError("unknown_game", "Pick a game first.");
-        const players = [...room.players.values()].filter((p) => p.socket);
-        if (players.length < g.minPlayers || players.length > g.maxPlayers) {
-          throw new HubError("player_count", `${g.title} needs ${g.minPlayers}–${g.maxPlayers} connected players.`);
-        }
-        room.status = "playing";
-        room.gameStartedAt = Date.now();
-        room.gamesSinceReport++;
-        room.layoutAll = undefined;
-        room.layoutFor.clear();
-        for (const p of room.players.values()) p.lastSeq = -1;
-        this.broadcast(room, { type: "game.started", gameId: g.id, players: this.view(room).players });
-        this.broadcastController(room, { type: "controller.layout", layout: g.controller });
-        return this.broadcastState(room);
-      }
+      case "game.select":
+      case "game.start":
+      case "game.exit":
+        return this.hostCommand(room, m);
       case "game.pause":
         if (room.status !== "playing" && room.status !== "paused") return;
         room.status = m.paused ? "paused" : "playing";
@@ -283,14 +260,6 @@ export class Hub {
         this.sendTv(room, { type: "rtc.signal", from: p.id, signal: { bye: true } });
         return this.broadcastState(room);
       }
-      case "game.exit":
-        room.status = "lobby";
-        room.layoutAll = undefined;
-        room.layoutFor.clear();
-        room.gameId = null;
-        this.broadcast(room, { type: "game.exit" });
-        this.broadcastController(room, { type: "controller.layout", layout: "lobby" });
-        return this.broadcastState(room);
       case "controller.layout": {
         const msg = { type: "controller.layout" as const, layout: m.layout, data: m.data };
         if (m.to === "all") {
@@ -320,6 +289,47 @@ export class Hub {
   }
 
   /** Results come from the TV host; they are checked against the room before being recorded. */
+  /** Picking, starting and leaving games: from the TV (remote) or the captain's phone. */
+  private hostCommand(room: Room, m: Extract<ClientMessage, { type: "game.select" | "game.start" | "game.exit" }>) {
+    switch (m.type) {
+      case "game.select": {
+        const g = findGame(m.gameId);
+        if (!g || !g.playable) throw new HubError("unknown_game", "That game is not available.");
+        room.gameId = g.id;
+        room.status = "lobby";
+        this.broadcast(room, { type: "game.selected", gameId: g.id });
+        this.broadcastController(room, { type: "controller.layout", layout: "lobby", data: { gameId: g.id, title: g.title } });
+        return this.broadcastState(room);
+      }
+      case "game.start": {
+        if (room.status === "playing" || room.status === "paused") throw new HubError("not_allowed", "A game is already running.");
+        const g = room.gameId ? findGame(room.gameId) : undefined;
+        if (!g) throw new HubError("unknown_game", "Pick a game first.");
+        const players = [...room.players.values()].filter((p) => p.socket);
+        if (players.length < g.minPlayers || players.length > g.maxPlayers) {
+          throw new HubError("player_count", `${g.title} needs ${g.minPlayers}–${g.maxPlayers} connected players.`);
+        }
+        room.status = "playing";
+        room.gameStartedAt = Date.now();
+        room.gamesSinceReport++;
+        room.layoutAll = undefined;
+        room.layoutFor.clear();
+        for (const p of room.players.values()) p.lastSeq = -1;
+        this.broadcast(room, { type: "game.started", gameId: g.id, players: this.view(room).players });
+        this.broadcastController(room, { type: "controller.layout", layout: g.controller });
+        return this.broadcastState(room);
+      }
+      case "game.exit":
+        room.status = "lobby";
+        room.layoutAll = undefined;
+        room.layoutFor.clear();
+        room.gameId = null;
+        this.broadcast(room, { type: "game.exit" });
+        this.broadcastController(room, { type: "controller.layout", layout: "lobby" });
+        return this.broadcastState(room);
+    }
+  }
+
   private finish(room: Room, results: GameResult[], durationMs: number) {
     if (room.status !== "playing" && room.status !== "paused") throw new HubError("not_allowed", "no game running");
     const g = room.gameId ? findGame(room.gameId) : undefined;

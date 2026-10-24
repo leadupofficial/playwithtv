@@ -5,7 +5,7 @@ import type { MotionFrame } from "./engine.js";
  *   axes.x, axes.y                    movement from any mode: stick, tilt or touchpad (x right, y up/forward)
  *   axes.roll, axes.pitch, axes.yaw   raw tilt (motion and hybrid modes)
  *   axes.ok                           1 while the controller is ready (sensors live and calibrated, or buttons)
- *   axes.m                            the mode: 0 buttons, 1 motion, 2 hybrid, 3 touchpad
+ *   axes.m                            the mode code / 3 (0 buttons, 1/3 motion, 2/3 hybrid, 1 touchpad)
  *   taps[action]                      a counter per game action (the phone maps gestures/swipes to actions)
  *   buttons[action]                   held actions
  *   taps["calibrated"]                increments each time the player finishes calibrating
@@ -49,7 +49,7 @@ export class ControlReader {
     this.x = a.x ?? this.roll;
     this.y = a.y ?? this.pitch;
     this.ok = (a.ok ?? 0) > 0.5;
-    this.mode = Math.round(a.m ?? 0);
+    this.mode = Math.round((a.m ?? 0) * 3); // sent as code / 3 (axes are clamped to [-1, 1])
     this.heldNow = { ...s.buttons };
     const taps = s.taps ?? {};
     const out: string[] = [];

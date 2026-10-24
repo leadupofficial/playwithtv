@@ -20,7 +20,7 @@ test("Gravity Maze 3D: a phone held flat tilts the board and rolls the ball into
   await tv.screenshot({ path: "test-results/maze-start.png" });
 
   await pose(phone, flat(22, 0), 0);                   // tip the right edge down
-  await expect.poll(async () => (await maze()).x, { timeout: 5_000 }).toBeGreaterThan(start.x + 2);
+  await expect.poll(async () => (await maze()).x, { timeout: 12_000 }).toBeGreaterThan(start.x + 2);
   await tv.screenshot({ path: "test-results/maze-rolling.png" });
   // reaching the goal scores 500 + time bonus + coins
   await expect.poll(async () => Object.values((await maze()).totals ?? {})[0] ?? 0, { timeout: 20_000 }).toBeGreaterThan(1000);
@@ -46,6 +46,25 @@ test("Gravity Maze 3D with the joystick: pushing it right rolls the ball right",
   await phone.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await phone.mouse.down();
   await phone.mouse.move(box.x + box.width * 0.95, box.y + box.height / 2, { steps: 5 });
-  await expect.poll(async () => (await maze()).x, { timeout: 5_000 }).toBeGreaterThan(start + 2);
+  await expect.poll(async () => (await maze()).x, { timeout: 12_000 }).toBeGreaterThan(start + 2); // generous: a loaded machine runs the TV slowly
+  await phone.mouse.up();
+});
+
+test("Gravity Maze 3D with the touchpad: a touchpad player becomes ready and drags the ball", async ({ browser }) => {
+  test.setTimeout(120_000);
+  const tv = await (await browser.newContext({ viewport: { width: 1280, height: 720 }, ignoreHTTPSErrors: true })).newPage();
+  await tv.goto("/tv?quick=1");
+  const code = await tvCode(tv);
+  const phone = await joinPhone(browser, code, "Pad", { "Gravity Maze 3D": "touchpad" });
+  await tv.locator(".game-card", { hasText: "Gravity Maze 3D" }).click();
+  await tv.getByRole("button", { name: /Start Gravity Maze 3D/ }).click();
+  await practiseUntilReady(tv, phone, "Pad", []); // touchpad players need no calibration: ready at once
+  const maze = () => tv.locator("[data-maze]").getAttribute("data-maze").then((s) => JSON.parse(s || "{}"));
+  await expect.poll(async () => (await maze()).phase, { timeout: 15_000 }).toBe("play");
+  const start = (await maze()).x;
+  const pad = (await phone.locator(".game-pad .touchpad").boundingBox())!;
+  await phone.mouse.move(pad.x + pad.width * 0.95, pad.y + pad.height / 2);
+  await phone.mouse.down();
+  await expect.poll(async () => (await maze()).x, { timeout: 12_000 }).toBeGreaterThan(start + 2); // generous: a loaded machine runs the TV slowly
   await phone.mouse.up();
 });

@@ -264,3 +264,20 @@ button { font-family: inherit; color: inherit; }
 .tv-install-help > div { max-width: 1100px; padding: 1.2em 1.6em; border-radius: 1em; background: var(--bg-1); border: 1px solid var(--line); }
 .credit { color: var(--muted); font-size: 13px; text-align: center; }
 .credit b { color: var(--ink); font-weight: 600; }
+/* captain's game menu on the phone (phone/Lobby.tsx) */
+.captain { flex: 1; display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; }
+.captain-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
+.game-menu { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.menu-game { border: 3px solid transparent; border-radius: 16px; padding: 10px; color: #fff; text-align: left; display: grid; grid-template-columns: auto 1fr; column-gap: 8px; align-items: center; cursor: pointer; }
+.menu-game.on { border-color: #fff; box-shadow: 0 0 0 3px rgba(255,255,255,0.25); }
+.menu-emoji { font-size: 30px; grid-row: span 2; }
+.menu-title { font-weight: 800; font-size: 15px; line-height: 1.15; }
+.menu-meta { font-size: 12px; opacity: 0.9; }
+.captain-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.captain-actions .btn { width: auto; flex: 1; min-width: 180px; }
+.play-btn { font-size: 22px !important; }
+.lobby-result { display: flex; align-items: center; gap: 10px; }
+.lobby-extras { display: flex; flex-direction: column; gap: 10px; }
+.captain .lobby-extras { flex-direction: row; align-items: center; }
+.captain .lobby-extras .btn { width: auto; }
+.end-confirm { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 14px; background: var(--bg-1); border: 1px solid var(--line); }

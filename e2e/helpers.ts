@@ -119,11 +119,17 @@ export async function tvCode(tv: Page) {
  */
 export async function practiseUntilReady(tv: Page, phone: Page, name: string, moves: Array<keyof typeof DIRS | `btn:${string}`>) {
   const card = tv.locator(`.tut-card[data-player="${name}"]`);
-  await expect(card).toBeVisible({ timeout: 15_000 });
-  await expect(card).toContainText("✓", { timeout: 10_000 });     // controller live (and calibrated if tilting)
+  // "over" = the game itself is on screen: not the lobby, not the get-ready screen, not still loading the game
+  const tutorialGone = async () =>
+    (await tv.locator(".lobby, [data-tutorial]").count()) === 0 && (await tv.getByText("Loading game…").count()) === 0;
+  // a buttons/touchpad player is ready at once, so in quick mode the get-ready screen may already be over
+  await expect.poll(async () => (await card.count()) > 0 || (await tutorialGone()), { timeout: 15_000 }).toBe(true);
+  if (await tutorialGone()) return;
+  await expect.poll(async () => (await tutorialGone()) || /✓/.test((await card.textContent().catch(() => "")) ?? ""), { timeout: 10_000 }).toBe(true);
   for (const m of moves) {
+    if (await tutorialGone()) return;
     if (m.startsWith("btn:")) await press(phone, m.slice(4));
     else await gesture(phone, m as keyof typeof DIRS);
   }
-  await expect(card).toHaveClass(/ready/, { timeout: 10_000 });
+  await expect.poll(async () => (await tutorialGone()) || /ready/.test((await card.getAttribute("class").catch(() => "")) ?? ""), { timeout: 10_000 }).toBe(true);
 }

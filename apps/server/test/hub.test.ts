@@ -189,12 +189,19 @@ describe("sockets and input", () => {
     expect(await c.closed).toBe(1009);
   });
 
-  it("does not let a phone act as the host", async () => {
+  it("even the captain's phone cannot do TV-only things (layouts, events, results, removing players)", async () => {
     await start();
     const { room } = await tv();
-    const p = await phone({ inviteToken: room.inviteToken });
-    p.c.send({ type: "game.select", gameId: "tamil-trivia-royale" });
-    expect((await p.c.next("error")).code).toBe("not_allowed");
+    const p = await phone({ inviteToken: room.inviteToken }); // the only player, so the captain
+    for (const m of [
+      { type: "controller.layout", to: "all", layout: "lobby" },
+      { type: "tv.event", to: "all", event: "outcome" },
+      { type: "game.finished", results: [], durationMs: 1 },
+      { type: "player.remove", playerId: p.playerId },
+    ]) {
+      p.c.send(m);
+      expect((await p.c.next("error")).code).toBe("not_allowed");
+    }
   });
 
   it("clears a player's controls on disconnect and accepts a reconnect", async () => {
@@ -459,5 +466,32 @@ describe("removal also ends direct links", () => {
     t.send({ type: "player.remove", playerId: guest.playerId });
     const bye = await t.next("rtc.signal");
     expect(bye).toMatchObject({ from: guest.playerId, signal: { bye: true } });
+  });
+});
+
+describe("the captain's phone runs the game menu", () => {
+  it("only the captain picks, starts and ends games; captaincy passes on when they leave", async () => {
+    await start();
+    const { room, c: t } = await tv();
+    const cap = await phone({ inviteToken: room.inviteToken }, "Captain");
+    const other = await phone({ joinCode: room.joinCode }, "Other");
+    const state = await t.next("room.state", (m) => m.room.players.length === 2);
+    expect(state.room.captainId).toBe(cap.playerId);
+
+    other.c.send({ type: "game.select", gameId: "tamil-trivia-royale" });
+    expect((await other.c.next("error")).code).toBe("not_allowed");
+
+    cap.c.send({ type: "game.select", gameId: "tamil-trivia-royale" });
+    expect((await t.next("game.selected")).gameId).toBe("tamil-trivia-royale");
+    cap.c.send({ type: "game.start" });
+    await t.next("game.started");
+    cap.c.send({ type: "game.start" });                       // no restarting a running game
+    expect((await cap.c.next("error")).message).toMatch(/already running/);
+    cap.c.send({ type: "game.exit" });
+    await t.next("game.exit");
+
+    cap.c.send({ type: "player.leave" });
+    const after = await t.next("room.state", (m) => m.room.players.length === 1 && m.room.players[0]!.name === "Other");
+    expect(after.room.captainId).toBe(other.playerId);       // the next player becomes captain
   });
 });

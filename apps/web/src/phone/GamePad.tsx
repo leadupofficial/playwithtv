@@ -88,7 +88,7 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
 
   // movement out, 20 times a second (the sender throttles), plus sensor health in tilt modes
   useEffect(() => {
-    const m = MODE_CODE[mode];
+    const m = MODE_CODE[mode] / 3; // axes are clamped to [-1, 1]: send the mode code 0..3 as 0..1
     const id = setInterval(() => {
       if (tilted) {
         const f = motion.frame();
