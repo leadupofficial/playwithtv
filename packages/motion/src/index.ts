@@ -10,3 +10,4 @@ export * from "./engine.js";
 export * from "./wire.js";
 export * from "./trace.js";
 export * from "./hold.js";
+export * from "./swing.js";

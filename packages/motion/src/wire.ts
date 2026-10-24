@@ -6,6 +6,7 @@ import type { MotionFrame } from "./engine.js";
  *   axes.roll, axes.pitch, axes.yaw   raw tilt (motion and hybrid modes)
  *   axes.ok                           1 while the controller is ready (sensors live and calibrated, or buttons)
  *   axes.m                            the mode code / 4 (0 buttons, 1/4 motion, 2/4 hybrid, 3/4 touchpad, 1 camera)
+ *   axes.gs                           strength of the latest gesture / GESTURE_SCALE (sent together with its tap)
  *   taps[action]                      a counter per game action (the phone maps gestures/swipes to actions)
  *   buttons[action]                   held actions
  *   taps["calibrated"]                increments each time the player finishes calibrating
@@ -14,6 +15,8 @@ import type { MotionFrame } from "./engine.js";
 export const STRONG = 2;
 /** Same as MODE_DIVISOR in @playwithtv/protocol (this package has no dependencies): 5 modes, codes 0..4. */
 export const MODE_DIVISOR = 4;
+/** Gesture strength travels as strength / GESTURE_SCALE (axes are clamped to [-1, 1]): 4 = a very hard swing. */
+export const GESTURE_SCALE = 4;
 
 export function frameAxes(f: MotionFrame): Record<string, number> {
   const ok = f.calibrated && !f.health.stale ? 1 : 0;
@@ -40,6 +43,8 @@ export class ControlReader {
   mode = 0;
   calibrations = 0;
   lastUpdate = 0;
+  /** Strength of the latest gesture (motion mode; 1 = a minimal gesture, 2+ strong), 0 if none was sent. */
+  gesture = 0;
 
   /** Returns the actions tapped since the previous state (an action tapped twice appears twice, at most 3). */
   update(s: WireState, now = Date.now()): string[] {
@@ -52,6 +57,7 @@ export class ControlReader {
     this.y = a.y ?? this.pitch;
     this.ok = (a.ok ?? 0) > 0.5;
     this.mode = Math.round((a.m ?? 0) * MODE_DIVISOR); // sent as code / MODE_DIVISOR (axes are clamped to [-1, 1])
+    this.gesture = (a.gs ?? 0) * GESTURE_SCALE;
     this.heldNow = { ...s.buttons };
     const taps = s.taps ?? {};
     const out: string[] = [];
