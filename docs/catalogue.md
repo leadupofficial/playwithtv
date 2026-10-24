@@ -6,7 +6,7 @@ Statuses: **concept** = idea only, hidden from TVs · **prototype** = partly pla
 (objective, motion input, rules, scoring, end state, rematch) with automated tests · **released** = also passed the
 real-device controller test ([real-device-test.md](real-device-test.md)).
 
-Built: 4 · concepts: 47.
+Built: 6 · concepts: 45.
 
 ## Prioritisation matrix
 
@@ -35,9 +35,9 @@ Within a phase, order by validated demand, controller reliability, cost and repl
 | 18 | 🎮 Kitchen Chaos Duo | B · Couples & duo | 2–4 | 3 | concept | duo-coop, team-coop | none |
 | 19 | 🎮 Bridge Balance | B · Couples & duo | 2–4 | 4 | concept | duo-coop, team-coop | none |
 | 20 | 🎮 Treasure Divers | B · Couples & duo | 2–2 | 4 | concept | duo-coop | none |
-| 21 | 🎮 Kart Knockout | C · Competitive | 2–8 | 4 | concept | couch-party, tournament | none |
+| 21 | 🏎️ Kart Knockout | C · Competitive | 1–8 | 4 | **playable** | couch-party, tournament, solo-challenge | unit+e2e |
 | 22 | 🎮 Orb Race Arena | C · Competitive | 2–8 | 3 | concept | couch-party | none |
-| 23 | 🎮 Motion Sumo | C · Competitive | 2–8 | 3 | concept | couch-party, tournament | none |
+| 23 | 🤼 Motion Sumo | C · Competitive | 1–8 | 3 | **playable** | couch-party, tournament, solo-challenge | unit+e2e |
 | 24 | 🎮 Target Siege | C · Competitive | 2–8 | 4 | concept | team-versus | none |
 | 25 | 🎮 Blade Clash | C · Competitive | 2–4 | 4 | concept | duo-versus, couch-party | none |
 | 26 | 🎮 Bowling League | C · Competitive | 2–8 | 4 | concept | couch-party, tournament, team-versus | none |
@@ -87,6 +87,28 @@ Hold: **upright** · gyroscope: optional · assets: all visuals and sounds (draw
 - **roll**: steer left/right
 - **pitch**: climb / dive
 - **push**: boost (uses energy)
+
+### 🏎️ Kart Knockout
+
+Top-down kart racing for up to 8 on one screen: steer by turning your phone, drift through corners for a spark boost, grab gift boxes for coconuts, soap slicks and bumpers. CPU karts fill the grid.
+
+Hold: **upright** · gyroscope: unused · assets: all visuals and sounds (drawn and synthesised in code) (original)
+
+- **roll**: steer like a wheel
+- **flick-left**: start a drift (straighten to boost)
+- **flick-right**: start a drift (straighten to boost)
+- **push**: use your item
+
+### 🤼 Motion Sumo
+
+Up to 8 round wrestlers in a shrinking ring: shove, brace and bump everyone else out. Last one standing wins the round; best of three. CPU wrestlers join when you are few.
+
+Hold: **upright** · gyroscope: unused · assets: all visuals and sounds (drawn and synthesised in code) (original)
+
+- **roll**: move left/right
+- **pitch**: move up/down the ring
+- **push**: shove (dash forward)
+- **pull**: brace for a moment
 
 ### 🧠 Tamil Trivia Royale
 
