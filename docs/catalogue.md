@@ -6,7 +6,7 @@ Statuses: **concept** = idea only, hidden from TVs · **prototype** = partly pla
 (objective, motion input, rules, scoring, end state, rematch) with automated tests · **released** = also passed the
 real-device controller test ([real-device-test.md](real-device-test.md)).
 
-Built: 6 · concepts: 45.
+Built: 8 · concepts: 43.
 
 ## Prioritisation matrix
 
@@ -20,7 +20,7 @@ Within a phase, order by validated demand, controller reliability, cost and repl
 | 3 | 🎮 Neon Drift Time Attack | A · Solo & arcade | 1–1 | 2 | concept | solo, async-challenge | none |
 | 4 | 🌈 Tilt Jumper Worlds | A · Solo & arcade | 1–4 | 2 | **playable** | solo, couch-party | unit+e2e |
 | 5 | ⚔️ Motion Blade Trial | A · Solo & arcade | 1–4 | 2 | **playable** | solo, solo-challenge, couch-party | unit+e2e |
-| 6 | 🎮 Bowling Master | A · Solo & arcade | 1–4 | 2 | concept | solo, couch-party, tournament | none |
+| 6 | 🎳 Bowling Master | A · Solo & arcade | 1–4 | 2 | **playable** | solo, couch-party, tournament | unit+e2e |
 | 7 | 🎮 Bullseye Motion | A · Solo & arcade | 1–4 | 4 | concept | solo, couch-party, tournament | none |
 | 8 | 🎮 Rhythm Reactor | A · Solo & arcade | 1–8 | 4 | concept | solo, couch-party | none |
 | 9 | 🎮 Deep Sea Fishing | A · Solo & arcade | 1–4 | 4 | concept | solo, duo-coop, couch-party | none |
@@ -30,7 +30,7 @@ Within a phase, order by validated demand, controller reliability, cost and repl
 | 13 | 🎮 Duo Escape Lab | B · Couples & duo | 2–2 | 2 | concept | duo-coop | none |
 | 14 | 🎮 Couple Kart Rivalry | B · Couples & duo | 2–2 | 4 | concept | duo-versus, duo-coop | none |
 | 15 | 🎮 Dance Sync Duel | B · Couples & duo | 1–4 | 4 | concept | duo-versus, duo-coop, solo | none |
-| 16 | 🎮 Air Hockey Motion | B · Couples & duo | 2–4 | 3 | concept | duo-versus, tournament | none |
+| 16 | 🏒 Air Hockey Motion | B · Couples & duo | 1–2 | 3 | **playable** | duo-versus, solo-challenge, tournament | unit+e2e |
 | 17 | 🎮 Motion Tennis | B · Couples & duo | 1–2 | 3 | concept | duo-versus, practice | none |
 | 18 | 🎮 Kitchen Chaos Duo | B · Couples & duo | 2–4 | 3 | concept | duo-coop, team-coop | none |
 | 19 | 🎮 Bridge Balance | B · Couples & duo | 2–4 | 4 | concept | duo-coop, team-coop | none |
@@ -109,6 +109,29 @@ Hold: **upright** · gyroscope: unused · assets: all visuals and sounds (drawn 
 - **flick-right**: slash right
 - **flick-up**: slash up
 - **flick-down**: slash down
+
+### 🎳 Bowling Master
+
+Ten-pin bowling for up to four: turn your phone to aim, push it towards the TV to roll (harder = faster), twist for hook. Or hold ROLL on the buttons for a power meter, or swipe up on the touchpad. Real strike and spare scoring.
+
+Hold: **upright** · gyroscope: optional · assets: all visuals and sounds (drawn and synthesised in code) (original)
+
+- **roll**: swing the aim arrow
+- **flick-left**: step left
+- **flick-right**: step right
+- **twist-left**: hook left
+- **twist-right**: hook right
+- **push**: roll the ball (a strong push: power roll)
+
+### 🏒 Air Hockey Motion
+
+Glide your striker and smash the puck into the goal: drag on the touchpad, steer with the joystick, or tilt your phone. Play a friend or the CPU. First to 7 wins.
+
+Hold: **any** · gyroscope: unused · assets: all visuals and sounds (drawn and synthesised in code) (original)
+
+- **roll**: move the striker left/right on your half
+- **pitch**: move the striker up/down
+- **push**: smash (a quick lunge at the puck)
 
 ### 🧠 Tamil Trivia Royale
 
