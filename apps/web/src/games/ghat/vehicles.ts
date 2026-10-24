@@ -186,7 +186,7 @@ export async function modelActors(q: QualityProfile, field: Array<{ kind: Kind; 
   const make = (name: string, color?: string) => {
     const root = new THREE.Group();
     const body = cloneModel(src(name));
-    prepareModel(body, q, { envIntensity: 1.1 });
+    prepareModel(body, q, { envIntensity: 1.7 });
     body.traverse((o) => {
       const m = o as THREE.Mesh;
       if (!m.isMesh) return;

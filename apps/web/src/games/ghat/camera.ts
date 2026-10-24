@@ -55,12 +55,14 @@ export class ChaseCam {
       this.crashA = 0;
       const want = p.travel * 0.75 + (p.travel + wrapAngle(p.yaw - p.travel)) * 0.25;
       this.yaw += wrapAngle(want - this.yaw) * (1 - Math.exp(-dt * 4.5));
-      const dist = 4.4 + speedFrac * 1.3, height = 1.95 + speedFrac * 0.2;
+      const near = p.kind === "scooter" ? 0.8 : p.kind === "car" ? 1.06 : 1;
+      const dist = (4.4 + speedFrac * 1.3) * near, height = (1.95 + speedFrac * 0.2) * (0.9 + near * 0.1);
       const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw);
       tmp.set(p.x - fx * dist, p.y + height, p.z - fz * dist);
-      this.pos.x += (tmp.x - this.pos.x) * (1 - Math.exp(-dt * 10));
-      this.pos.z += (tmp.z - this.pos.z) * (1 - Math.exp(-dt * 10));
-      this.pos.y += (tmp.y - this.pos.y) * (1 - Math.exp(-dt * 6));
+      // the yaw is smoothed, the distance is not (a positional lag would leave the car 3 m further away at speed)
+      this.pos.x = tmp.x;
+      this.pos.z = tmp.z;
+      this.pos.y += (tmp.y - this.pos.y) * (1 - Math.exp(-dt * 7));
       cam.position.copy(this.pos);
       look.set(p.x + fx * 4, p.y + 1.0, p.z + fz * 4);
       cam.lookAt(look);

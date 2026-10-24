@@ -19,8 +19,11 @@ void main() {
   vec4 mv = modelViewMatrix * vec4(iPos, 1.0);
   float facing = 1.0;
   if (dot(iDir, iDir) > 0.0) facing = smoothstep(-0.1, 0.5, dot(normalize(cameraPosition - iPos), iDir));
-  mv.xy += position.xy * iSize;
-  mv.z += min(0.6, iSize);            // pull towards the camera so lamps are not hidden by their own body
+  float sz = abs(iSize);
+  mv.xy += position.xy * sz;
+  // pull towards the camera: lamps a little (not hidden by their own body), reflections (negative size, below
+  // the road) a lot, so the wet road in front of them does not hide them
+  mv.z += iSize < 0.0 ? -mv.z * 0.45 : min(0.6, sz);
   gl_Position = projectionMatrix * mv;
   vUv = position.xy + 0.5;
   vCol = iCol * vec4(1.0, 1.0, 1.0, facing);
@@ -44,7 +47,8 @@ export class Glows {
   private n = 0;
   private c = new THREE.Color();
 
-  constructor(readonly capacity: number) {
+  /** `additive` (lamps, sparks) or normal alpha blending (mist banks). */
+  constructor(readonly capacity: number, additive = true) {
     const g = new THREE.InstancedBufferGeometry();
     const quad = new THREE.PlaneGeometry(1, 1);
     g.index = quad.index;
@@ -58,7 +62,7 @@ export class Glows {
     const mat = new THREE.ShaderMaterial({
       vertexShader: GLOW_VERT, fragmentShader: GLOW_FRAG, uniforms: { map: { value: glowTexture() } },
       transparent: true, depthWrite: false, blending: THREE.CustomBlending,
-      blendSrc: THREE.OneFactor, blendDst: THREE.OneFactor, // premultiplied additive
+      blendSrc: THREE.OneFactor, blendDst: additive ? THREE.OneFactor : THREE.OneMinusSrcAlphaFactor, // premultiplied
     });
     this.mesh = new THREE.Mesh(g, mat);
     this.mesh.frustumCulled = false;

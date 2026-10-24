@@ -92,6 +92,37 @@ export function buildRoad(t: Track, opts: { per?: number; bakeLight: boolean; br
           }
         }
       }
+      // telephone poles on the left verge every 44 m, with two sagging wires to the next pole
+      if (i % 22 === 3 && t.seg[i % t.n] !== opts.bridgeSeg) {
+        const H = 7.2, d = -(hwA + 3.2);
+        const base = P(i, d, -0.6), top = P(i, d, H);
+        const hh = t.heading[i % t.n]!;
+        const fw = new THREE.Vector3(Math.sin(hh), 0, Math.cos(hh)), rt = new THREE.Vector3(-Math.cos(hh), 0, Math.sin(hh));
+        const w = 0.11;
+        const wood = shade([0.24, 0.2, 0.16], 0.9), woodDark = shade([0.24, 0.2, 0.16], 0.6);
+        const cnr = (p: THREE.Vector3, a: number, b: number) => p.clone().addScaledVector(rt, a).addScaledVector(fw, b);
+        quad(b, [cnr(base, -w, -w), cnr(top, -w, -w), cnr(top, w, -w), cnr(base, w, -w)], wood);
+        quad(b, [cnr(base, w, w), cnr(top, w, w), cnr(top, -w, w), cnr(base, -w, w)], woodDark);
+        quad(b, [cnr(base, -w, w), cnr(top, -w, w), cnr(top, -w, -w), cnr(base, -w, -w)], wood);
+        quad(b, [cnr(base, w, -w), cnr(top, w, -w), cnr(top, w, w), cnr(base, w, w)], woodDark);
+        const bar = P(i, d, H - 0.4);
+        quad(b, [cnr(bar, -0.8, -0.05), cnr(bar, 0.8, -0.05), cnr(bar, 0.8, 0.05), cnr(bar, -0.8, 0.05)].map((v, k) => (k < 2 ? v : v.clone().setY(v.y + 0.12))), wood);
+        const j2 = i + 22;
+        const hw2 = t.hw[j2 % t.n]!, h2 = t.heading[j2 % t.n]!;
+        const rt2 = new THREE.Vector3(-Math.cos(h2), 0, Math.sin(h2));
+        for (const off of [-0.65, 0.65]) {
+          const a = bar.clone().addScaledVector(rt, off).setY(bar.y + 0.12);
+          const bEnd = P(j2, -(hw2 + 3.2), H - 0.28).addScaledVector(rt2, off);
+          const segs = 8, wire = shade([0.05, 0.05, 0.05], 1);
+          for (let k = 0; k < segs; k++) {
+            const f0 = k / segs, f1 = (k + 1) / segs;
+            const p0 = a.clone().lerp(bEnd, f0), p1 = a.clone().lerp(bEnd, f1);
+            p0.y -= Math.sin(f0 * Math.PI) * 0.7;
+            p1.y -= Math.sin(f1 * Math.PI) * 0.7;
+            quad(b, [p0, p1, p1.clone().setY(p1.y + 0.035), p0.clone().setY(p0.y + 0.035)], wire);
+          }
+        }
+      }
       // the bridge: pillars down to the river
       if (opts.bridgeSeg !== undefined && t.seg[i % t.n] === opts.bridgeSeg && i % 10 === 5) {
         for (const side of [-1, 1]) {

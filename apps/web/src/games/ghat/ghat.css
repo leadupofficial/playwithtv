@@ -78,3 +78,7 @@
 @keyframes gr-pulse { from { opacity: 1; } to { opacity: .45; } }
 @keyframes gr-roll { 0% { transform: translateY(-40%); opacity: .3; } 100% { transform: translateY(40%); opacity: .3; } }
 @keyframes gr-glow { from { box-shadow: 0 0 8px #ffd23f; } to { box-shadow: 0 0 26px #ffd23f; } }
+
+.gr-speedlines { position: absolute; inset: -25%; background: repeating-conic-gradient(from 0deg at 50% 52%, rgba(255,255,255,0) 0deg 2.2deg, rgba(255,255,255,.28) 2.4deg 2.55deg, rgba(255,255,255,0) 2.7deg 4.7deg);
+  -webkit-mask-image: radial-gradient(circle at 50% 52%, transparent 30%, #000 75%); mask-image: radial-gradient(circle at 50% 52%, transparent 30%, #000 75%); animation: gr-lines .18s linear infinite; }
+@keyframes gr-lines { from { transform: rotate(0deg) scale(1); } to { transform: rotate(2.4deg) scale(1.05); } }

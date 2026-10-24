@@ -37,7 +37,7 @@ export function roadTexture(rough = false): THREE.CanvasTexture {
   const px = (u: number) => u * R;
   const col = (rgb: string, r: number) => (rough ? `rgb(${r},${r},${r})` : rgb);
   // asphalt with aggregate
-  g.fillStyle = col("#2c2f31", 200);
+  g.fillStyle = col("#222527", 118);
   g.fillRect(0, 0, R, H);
   for (let i = 0; i < 14000; i++) {
     const x = sh + rnd() * (R - 2 * sh), y = rnd() * H, l = rnd();
@@ -53,29 +53,29 @@ export function roadTexture(rough = false): THREE.CanvasTexture {
     g.fillStyle = grad;
     g.fillRect(px(u) - 22, 0, 44, H);
   }
-  // puddles: dark mirror-like patches with a pale sky sheen (on the roughness map: near-zero roughness)
-  for (let i = 0; i < 7; i++) {
-    const x = px(0.18 + rnd() * 0.64), y = rnd() * H, rx = 18 + rnd() * 50, ry = 40 + rnd() * 120;
-    g.save();
-    g.translate(x, y);
-    g.scale(1, ry / rx);
-    const pg = g.createRadialGradient(0, 0, 0, 0, 0, rx);
-    if (rough) {
-      pg.addColorStop(0, "rgba(0,0,0,0.95)");
-      pg.addColorStop(0.7, "rgba(0,0,0,0.8)");
-      pg.addColorStop(1, "rgba(0,0,0,0)");
-    } else {
-      pg.addColorStop(0, "rgba(120,135,140,0.55)");
-      pg.addColorStop(0.55, "rgba(70,82,88,0.45)");
-      pg.addColorStop(1, "rgba(20,22,24,0)");
+  // puddles: irregular, elongated along the road, mostly by the edges and between the tyre tracks; on the
+  // colour map a dark sheen (lite fakes the reflection), on the roughness map near-mirror
+  for (let i = 0; i < 5; i++) {
+    const cx = px([0.16, 0.3, 0.5, 0.7, 0.84][i]! + (rnd() - 0.5) * 0.06), cy = rnd() * H;
+    for (let k = 0; k < 9; k++) {
+      const x = cx + (rnd() - 0.5) * 40, y = cy + (rnd() - 0.5) * 200, rx = 8 + rnd() * 16, ry = 30 + rnd() * 70;
+      for (const dy of [0, H, -H]) {
+        const pg = g.createRadialGradient(x, y + dy, 0, x, y + dy, ry);
+        if (rough) {
+          pg.addColorStop(0, "rgba(0,0,0,0.75)");
+          pg.addColorStop(0.6, "rgba(0,0,0,0.45)");
+          pg.addColorStop(1, "rgba(0,0,0,0)");
+        } else {
+          pg.addColorStop(0, "rgba(10,12,14,0.5)");
+          pg.addColorStop(0.5, "rgba(60,70,76,0.22)");
+          pg.addColorStop(1, "rgba(20,22,24,0)");
+        }
+        g.fillStyle = pg;
+        g.beginPath();
+        g.ellipse(x, y + dy, rx, ry, 0, 0, Math.PI * 2);
+        g.fill();
+      }
     }
-    g.fillStyle = pg;
-    for (const dy of [0, H, -H]) {
-      g.beginPath();
-      g.arc(0, dy * (rx / ry), rx, 0, Math.PI * 2);
-      g.fill();
-    }
-    g.restore();
   }
   // shoulders: red laterite earth and gravel, a gutter line
   for (const [x0, x1] of [[0, sh], [R - sh, R]] as const) {
@@ -134,9 +134,9 @@ export function skyPanorama(): THREE.CanvasTexture {
   const horizon = latToY(0);
   // sky: luminous grey-white near the horizon, deeper slate above
   const sky = g.createLinearGradient(0, 0, 0, horizon);
-  sky.addColorStop(0, "#6f8086");
-  sky.addColorStop(0.55, "#a9b7b6");
-  sky.addColorStop(1, "#d7dfd9");
+  sky.addColorStop(0, "#4f5f66");
+  sky.addColorStop(0.55, "#93a3a3");
+  sky.addColorStop(1, "#cdd7d2");
   g.fillStyle = sky;
   g.fillRect(0, 0, W, H);
   // cloud masses: soft overlapping blobs, darker undersides
@@ -144,7 +144,7 @@ export function skyPanorama(): THREE.CanvasTexture {
     const x = rnd() * W, y = rnd() * horizon * 0.75, r = 30 + rnd() * 110;
     const dark = rnd() < 0.45;
     const cg = g.createRadialGradient(x, y, 0, x, y, r);
-    cg.addColorStop(0, dark ? "rgba(84,96,102,0.32)" : "rgba(236,240,238,0.28)");
+    cg.addColorStop(0, dark ? "rgba(62,72,78,0.4)" : "rgba(226,232,230,0.26)");
     cg.addColorStop(1, "rgba(200,210,210,0)");
     g.fillStyle = cg;
     for (const dx of [0, W, -W]) {
@@ -263,4 +263,32 @@ export function bannerTexture(): THREE.CanvasTexture {
   g.textBaseline = "middle";
   g.fillText("GHAT RUSH", 512, 84);
   return finish(c, true, false);
+}
+
+/** Grey detail grain for the hillsides (multiplies the vertex colours): blades, pebbles, wet dark patches. */
+export function detailTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const { c, g } = canvas(S, S);
+  const rnd = makeRng(99);
+  g.fillStyle = "rgb(222,222,222)";
+  g.fillRect(0, 0, S, S);
+  for (let i = 0; i < 70; i++) {
+    const x = rnd() * S, y = rnd() * S, r = 10 + rnd() * 40, l = rnd();
+    const grd = g.createRadialGradient(x, y, 0, x, y, r);
+    const v = l < 0.5 ? 150 : 255;
+    grd.addColorStop(0, `rgba(${v},${v},${v},0.45)`);
+    grd.addColorStop(1, `rgba(${v},${v},${v},0)`);
+    g.fillStyle = grd;
+    for (const [dx, dy] of [[0, 0], [S, 0], [-S, 0], [0, S], [0, -S]] as const) {
+      g.beginPath();
+      g.arc(x + dx, y + dy, r, 0, Math.PI * 2);
+      g.fill();
+    }
+  }
+  for (let i = 0; i < 5000; i++) {
+    const v = Math.floor(120 + rnd() * 135);
+    g.fillStyle = `rgba(${v},${v},${v},0.55)`;
+    g.fillRect(rnd() * S, rnd() * S, 1, 2 + rnd() * 4);
+  }
+  return finish(c, false);
 }

@@ -222,14 +222,22 @@ def auto(M):
         for y, h in ((-0.62, 0.85), (0.92, 0.95)):
             P.append(cyl(f"pillar{x}{y}", 0.03, h, (x * (0.75 if y < 0 else 1), y, 1.45 if y < 0 else 1.5), M["black"], "z", 10))
     P.append(box("roof", (1.42, 1.9, 0.14), (0, 0.12, 1.98), M["vinyl"], 0.07, 4, taper=(0.96, 0.98, 0.0)))
-    P.append(box("roof_back", (1.38, 0.1, 0.9), (0, 1.02, 1.5), M["vinyl"], 0.05, 3))
+    # the back of the canopy (what everyone behind sees): paint below, a framed rear window and stripes above
+    yellow = mat("stripe", (0.95, 0.62, 0.02), 0.35, 0.0, 0.5)
+    P.append(box("roof_back_low", (1.38, 0.12, 0.42), (0, 1.02, 1.26), M["paint"], 0.05, 3))
+    P.append(box("roof_back", (1.38, 0.1, 0.5), (0, 1.02, 1.7), M["vinyl"], 0.05, 3))
+    P.append(box("rear_window_frame", (0.8, 0.06, 0.32), (0, 1.07, 1.7), M["chrome"], 0.03, 2))
+    P.append(box("rear_window", (0.7, 0.06, 0.24), (0, 1.09, 1.7), M["glass"], 0.02, 2))
+    for k, z in enumerate((1.12, 1.4)):
+        P.append(box(f"stripe{k}", (1.4, 0.13, 0.05), (0, 1.03, z), yellow, 0.02, 2))
     P.append(box("roof_rim", (1.46, 1.94, 0.04), (0, 0.12, 1.9), M["paint"], 0.02, 2))
     # lamps: one big round headlight on the nose, indicators, tail lights
     P.append(cyl("headlamp_ring", 0.13, 0.08, (0, -1.08, 0.98), M["chrome"], "y", 24, 0.01))
     P.append(cyl("headlamp", 0.105, 0.04, (0, -1.125, 0.98), M["lamp"], "y", 24))
     for s in (-1, 1):
         P.append(ball(f"ind{s}", 0.045, (s * 0.42, -0.78, 1.18), M["amber"]))
-        P.append(box(f"tail{s}", (0.14, 0.04, 0.09), (s * 0.5, 1.13, 0.86), M["tail"], 0.015))
+        P.append(box(f"tail{s}", (0.2, 0.05, 0.12), (s * 0.48, 1.13, 0.86), M["tail"], 0.02))
+        P.append(box(f"reflector{s}", (0.08, 0.04, 0.2), (s * 0.62, 1.13, 0.62), M["amber"], 0.015))
     P.append(box("bumper", (1.2, 0.08, 0.08), (0, 1.17, 0.48), M["chrome"], 0.03))
     P.append(box("plate_blank", (0.3, 0.02, 0.12), (0, 1.17, 0.66), M["shirt"], 0.01))
     # the driver up front, hands on the handlebar

@@ -126,8 +126,8 @@ export interface TerrainOpts {
   seed: number;
 }
 
-export const LITE_TERRAIN: TerrainOpts = { spacing: 7, margin: 170, chunk: 110, trees: 170, rocks: 50, hedgeRows: 5, bakeLight: true, seed: 5 };
-export const HIGH_TERRAIN: TerrainOpts = { spacing: 4.5, margin: 200, chunk: 110, trees: 420, rocks: 110, hedgeRows: 9, bakeLight: false, seed: 5 };
+export const LITE_TERRAIN: TerrainOpts = { spacing: 7, margin: 170, chunk: 110, trees: 230, rocks: 60, hedgeRows: 5, bakeLight: true, seed: 5 };
+export const HIGH_TERRAIN: TerrainOpts = { spacing: 4.5, margin: 200, chunk: 110, trees: 760, rocks: 140, hedgeRows: 9, bakeLight: false, seed: 5 };
 
 const c = new THREE.Color();
 function albedo(ground: Ground, x: number, z: number, y: number, slope: number, out: THREE.Color) {
@@ -282,6 +282,14 @@ export function buildTerrain(t: Track, kit: PropKit, o: TerrainOpts): { chunks: 
       return q;
     }))!;
     if (o.bakeLight) bake(g);
+    // world-space UVs for the detail texture (grass, rock grain): 1 repeat per 7 m
+    const pos = g.getAttribute("position");
+    const uv = new Float32Array(pos.count * 2);
+    for (let i = 0; i < pos.count; i++) {
+      uv[i * 2] = pos.getX(i) / 7 + pos.getY(i) * 0.05;
+      uv[i * 2 + 1] = pos.getZ(i) / 7 - pos.getY(i) * 0.05;
+    }
+    g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
     g.computeBoundingSphere();
     const bs = g.boundingSphere!;
     chunks.push({ geometry: g, center: bs.center.clone(), radius: bs.radius });

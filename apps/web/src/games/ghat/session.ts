@@ -229,19 +229,21 @@ export class Session {
         case "lap":
           this.say(e.id, e.final ? "FINAL LAP!" : `LAP ${e.lap}`, e.final ? "#ff5d5d" : "#fff", e.final);
           break;
-        case "finish": {
+        case "finish":
           this.say(e.id, `FINISHED ${ORD[e.place - 1]}!`, "#ffd23f", true);
-          if (this.humans.includes(e.id)) {
-            this.kit.outcome(e.id, e.place === 1 ? "You rule the ghat!" : `You finished ${ORD[e.place - 1]}`, e.place === 1 ? "🏆" : e.place <= 3 ? "🥈" : "🛺");
-            if (e.place === 1) this.audio.play("win", 1);
-          }
+          if (e.place === 1 && this.humans.includes(e.id)) this.audio.play("win", 1);
           break;
-        }
         case "respawn":
           this.lastWreckBy.delete(e.id);
           break;
         case "phase":
           if (e.phase === "race") this.count = 0;
+          if (e.phase === "results") {
+            // the final word on every phone, in finishing order
+            this.race.finishOrder.forEach((id, i) => {
+              if (this.humans.includes(id)) this.kit.outcome(id, i === 0 ? "You rule the ghat!" : `You finished ${ORD[i]}`, i === 0 ? "🏆" : i <= 2 ? "🥈" : "🛺");
+            });
+          }
           break;
       }
     }
@@ -361,10 +363,11 @@ export class Session {
 
   private podiumPoses(racers: RacerPose[]) {
     const order = standings(this.race);
-    const base = toWorld(this.race.track, 40, -(this.race.track.hw[20]! + 0));
+    const base = toWorld(this.race.track, 40, -(this.race.track.hw[20]! + 7));
     const h = base.heading;
     const rx = -Math.cos(h), rz = Math.sin(h);
-    const spots = [[0, 1.5], [-3.4, 1.0], [3.4, 0.6]];
+    const spots: Array<[number, number]> = [[0, 1.5], [-3.4, 1.0], [3.4, 0.6]];
+    this.view.podium(base.x, base.y - 0.3, base.z, h + Math.PI, spots);
     for (const p of racers) p.visible = false;
     order.slice(0, 3).forEach((r, i) => {
       const p = racers.find((x) => x.id === r.id)!;
@@ -372,7 +375,7 @@ export class Session {
       p.visible = true;
       p.x = base.x + rx * off!;
       p.z = base.z + rz * off!;
-      p.y = base.y + hgt!;
+      p.y = base.y - 0.3 + hgt!;
       p.yaw = h + Math.PI + 0.5 + Math.sin(this.time * 2 + i) * 0.2;
       p.wrecked = false;
       p.boosting = false;
@@ -393,6 +396,7 @@ export class Session {
         meter: r.meter, item: r.item, rolling: r.rollT > 0, level: driftLevel(r), drifting: r.drift !== 0,
         blind: r.blindT, wrecked: r.wreckT > 0, by: r.wreckT > 0 ? this.lastWreckBy.get(id) ?? null : null, finished: r.finishedAt !== null,
         msgs: this.msgs.get(id) ?? [],
+        boost: r.boostT > 0 || r.turboT > 0.3, fx: !this.o.profile.prerendered,
       };
     });
     const fmt = (t: number | null) => (t === null ? "—" : `${Math.floor(t / 60)}:${(t % 60).toFixed(2).padStart(5, "0")}`);
@@ -413,6 +417,7 @@ export class Session {
     return {
       phase: race.phase, time: +race.time.toFixed(1), fps: this.fps, ms: { sim: +this.ms.sim.toFixed(1), dress: +this.ms.dress.toFixed(1), draw: +this.ms.draw.toFixed(1) }, calls: info.calls, tris: info.triangles, tier: this.o.profile.tier,
       views: this.layout.player.length + this.layout.director.length, laps: race.opts.laps, length: race.track.length,
+      cams: this.view ? this.humans.map((id, i) => { const p = this.racerPoses.find((r) => r.id === id); const c = this.view.cams[i]!.camera.position; return p ? +Math.hypot(p.x - c.x, p.z - c.z).toFixed(1) : null; }) : [],
       finish: race.finishOrder, replay: !!race.recorder.best,
       racers: race.racers.map((r) => ({
         id: r.id, name: this.names.get(r.id), cpu: r.cpu, kind: r.kind, place: r.place, lap: lapOf(race, r), s: Math.round(r.s), d: +r.d.toFixed(1),

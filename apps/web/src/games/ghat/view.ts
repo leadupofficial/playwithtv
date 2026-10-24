@@ -38,6 +38,9 @@ export class GhatView {
   readonly sparks: Particles;
   readonly spray: Puffs;
   readonly debris: Particles;
+  /** Mist banks drifting in the valleys (normal blending). */
+  readonly mist: Glows;
+  private mistSpots: Array<{ x: number; y: number; z: number; size: number; k: number }> = [];
   private mv: MultiViewPass | null = null;
   private sun: THREE.DirectionalLight | null = null;
   private hemi: THREE.HemisphereLight;
@@ -64,7 +67,9 @@ export class GhatView {
     } else {
       this.cine = createCinematic(canvas, q, { scene: this.scene, camera: this.extra[0] });
       this.renderer = this.cine.renderer;
-      this.renderer.toneMappingExposure = 1.05;
+      // ACES: more contrast and colour than AgX for a rainy, overcast scene (AgX greys it out)
+      this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      this.renderer.toneMappingExposure = 1.15;
       this.mv = useMultiView(this.cine, this.scene, players);
       this.sun = this.cine.sun(this.scene, { position: [-30, 60, 25], intensity: 1.6, color: "#fff3e0", extent: 26 });
       this.sun.shadow.camera.far = 160;
@@ -80,7 +85,22 @@ export class GhatView {
     this.sparks = new Particles(sparkleGeometry(), new THREE.MeshBasicMaterial({ color: "#ffffff", side: THREE.DoubleSide, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }), Math.round(budget * 0.4));
     this.spray = new Puffs(this.glows, lite ? 40 : 140);
     this.debris = new Particles(new THREE.BoxGeometry(0.4, 0.12, 0.3), lite ? new THREE.MeshLambertMaterial({ color: "#ffffff" }) : new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.5 }), Math.round(budget * 0.25));
-    this.scene.add(this.glows.mesh, this.rain.mesh, this.trails.mesh, this.sparks.mesh, this.debris.mesh);
+    this.mist = new Glows(lite ? 6 : 18, false);
+    this.mist.mesh.renderOrder = 2;
+    this.scene.add(this.glows.mesh, this.rain.mesh, this.trails.mesh, this.sparks.mesh, this.debris.mesh, this.mist.mesh);
+    // mist banks: over the drops beside the road, below and around road level
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    for (let k = 0; k < (lite ? 6 : 18); k++) {
+      for (let tries = 0; tries < 40; tries++) {
+        const i = Math.floor(rnd() * track.n);
+        const side = rnd() < 0.5 ? -1 : 1;
+        if ((side > 0 ? track.right[i] : track.left[i]) !== "drop") continue;
+        const h = track.heading[i]!, e = track.hw[i]! + 25 + rnd() * 90;
+        this.mistSpots.push({ x: track.x[i]! - Math.cos(h) * e * side, y: track.y[i]! - 4 - rnd() * 10, z: track.z[i]! + Math.sin(h) * e * side, size: 45 + rnd() * 60, k: 0.35 + rnd() * 0.25 });
+        break;
+      }
+    }
   }
 
   static async create(canvas: HTMLCanvasElement, q: QualityProfile, track: Track, field: Array<{ kind: Kind; color: string }>, players: number, onProgress?: (p: number) => void): Promise<GhatView> {
@@ -115,20 +135,44 @@ export class GhatView {
     this.flashT = 1;
   }
 
+  private podiumGroup: THREE.Group | null = null;
+  /** Gold, silver and bronze blocks at a spot (built once, when the podium starts). `spots` = [side offset, height]. */
+  podium(x: number, y: number, z: number, heading: number, spots: Array<[number, number]>) {
+    if (this.podiumGroup) return;
+    const g = (this.podiumGroup = new THREE.Group());
+    const cols = ["#f5c242", "#c9d3e0", "#d98b4b"];
+    spots.forEach(([off, h], i) => {
+      const mat = this.q.prerendered ? new THREE.MeshLambertMaterial({ color: cols[i] }) : new THREE.MeshStandardMaterial({ color: cols[i], roughness: 0.25, metalness: 0.6 });
+      const box = new THREE.Mesh(new THREE.BoxGeometry(3.2, h, 4.2), mat);
+      box.position.set(off, h / 2, 0);
+      box.castShadow = box.receiveShadow = this.q.shadows.enabled;
+      g.add(box);
+    });
+    g.position.set(x, y, z);
+    g.rotation.y = heading;
+    this.scene.add(g);
+  }
+
   /** Per-frame dynamic dressing: glows, trails, continuous sparks and spray. */
   dress(racers: RacerPose[], traffic: TrafficPose[], goats: GoatPose[], pickups: PickupPose[], coconuts: CoconutPose[], time: number, dt: number) {
     this.actors.set(racers, traffic, goats, pickups, coconuts, time);
     const g = this.glows;
     g.begin();
+    // a lamp and its smeared reflection in the wet road (mirrored about the ground under it)
+    const lamp = (x: number, y: number, z: number, ground: number, size: number, color: string, k: number, dx: number, dz: number) => {
+      g.add(x, y, z, size, color, k, dx, dz);
+      g.add(x, 2 * ground - y + 0.05, z, -size * 1.7, color, k * 0.32, dx, dz);
+    };
     racers.forEach((r, i) => {
       if (!r.visible) return;
       const k = KINDS[r.kind];
       const fx = Math.sin(r.yaw), fz = Math.cos(r.yaw), rx = -fz, rz = fx;
       const back = -k.len / 2 + 0.05, front = k.len / 2;
+      const ground = r.y - r.hop;
       const lampY = r.y + (r.kind === "scooter" ? 0.62 : r.kind === "auto" ? 0.86 : 0.76);
       const tailW = r.kind === "scooter" ? 0 : k.wid * 0.36;
-      for (const s of tailW ? [-1, 1] : [0]) g.add(r.x + fx * back + rx * s * tailW, lampY, r.z + fz * back + rz * s * tailW, 0.32, "#ff2412", 1.1, -fx, -fz);
-      g.add(r.x + fx * front, r.y + (r.kind === "auto" ? 0.98 : r.kind === "scooter" ? 1.3 : 0.76), r.z + fz * front, 0.8, "#fff1cf", 0.9, fx, fz);
+      for (const s of tailW ? [-1, 1] : [0]) lamp(r.x + fx * back + rx * s * tailW, lampY, r.z + fz * back + rz * s * tailW, ground, 0.32, "#ff2412", 1.1, -fx, -fz);
+      lamp(r.x + fx * front, r.y + (r.kind === "auto" ? 0.98 : r.kind === "scooter" ? 1.3 : 0.76), r.z + fz * front, ground, 0.8, "#fff1cf", 0.9, fx, fz);
       if (r.boosting) {
         const fl = 0.9 + Math.sin(time * 40 + i) * 0.25;
         g.add(r.x + fx * (back - 0.45), r.y + 0.45, r.z + fz * (back - 0.45), 0.75 * fl, "#ff8a2a", 1.1);
@@ -149,8 +193,8 @@ export class GhatView {
     for (const c of traffic) {
       const fx = Math.sin(c.yaw), fz = Math.cos(c.yaw), rx = -fz, rz = fx;
       for (const s of [-1, 1]) {
-        g.add(c.x + fx * c.len * 0.5 + rx * s * 0.85, c.y + 1.1, c.z + fz * c.len * 0.5 + rz * s * 0.85, 1.3, "#fff3d6", 1.0, fx, fz);
-        g.add(c.x - fx * c.len * 0.5 + rx * s * 0.95, c.y + 1.2, c.z - fz * c.len * 0.5 + rz * s * 0.95, 0.5, "#ff2a10", 1.2, -fx, -fz);
+        lamp(c.x + fx * c.len * 0.5 + rx * s * 0.85, c.y + 1.1, c.z + fz * c.len * 0.5 + rz * s * 0.85, c.y, 1.3, "#fff3d6", 1.0, fx, fz);
+        lamp(c.x - fx * c.len * 0.5 + rx * s * 0.95, c.y + 1.2, c.z - fz * c.len * 0.5 + rz * s * 0.95, c.y, 0.5, "#ff2a10", 1.2, -fx, -fz);
       }
     }
     for (const p of pickups) if (p.on) g.add(p.x, p.y + 1.1, p.z, 2.0, "#ffc94a", 0.5 + Math.sin(time * 4) * 0.15);
@@ -161,6 +205,9 @@ export class GhatView {
     this.sparks.update(dt);
     this.debris.update(dt);
     this.world.update(time);
+    this.mist.begin();
+    this.mistSpots.forEach((m, i) => this.mist.add(m.x + Math.sin(time * 0.05 + i) * 12, m.y + Math.sin(time * 0.08 + i * 2) * 1.5, m.z + Math.cos(time * 0.04 + i) * 12, m.size, "#e4ebe8", m.k));
+    this.mist.end();
     // monsoon lightning every so often
     this.nextFlash -= dt;
     if (this.nextFlash <= 0) {

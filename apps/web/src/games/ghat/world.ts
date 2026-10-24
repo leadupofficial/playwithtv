@@ -9,10 +9,10 @@ import { HAIRPIN_GHAT } from "./course";
 import { frameAt, toWorld, type Track } from "./track";
 import { HIGH_TERRAIN, LITE_TERRAIN, WATER_Y, buildTerrain, type Ground } from "./terrain";
 import { buildRoad } from "./road";
-import { SKY_LAT, bannerTexture, roadTexture, signTexture, skyPanorama } from "./textures";
+import { SKY_LAT, bannerTexture, detailTexture, roadTexture, signTexture, skyPanorama } from "./textures";
 import type { PropKit } from "./props";
 
-export const FOG = "#b9c4bf";
+export const FOG = "#aebbb7";
 
 export interface World {
   group: THREE.Group;
@@ -40,7 +40,7 @@ function skyDome(): THREE.Mesh {
   const tex = skyPanorama();
   const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: tex, side: THREE.BackSide, fog: false, depthWrite: false }));
   const cap = new THREE.Mesh(new THREE.SphereGeometry(900, 24, 4, 0, Math.PI * 2, 0, Math.PI / 2 - lat1 + 0.01),
-    new THREE.MeshBasicMaterial({ color: "#6f8086", side: THREE.BackSide, fog: false, depthWrite: false }));
+    new THREE.MeshBasicMaterial({ color: "#4f5f66", side: THREE.BackSide, fog: false, depthWrite: false }));
   m.add(cap);
   m.renderOrder = -10;
   cap.renderOrder = -10;
@@ -73,10 +73,11 @@ export function buildWorld(track: Track, kit: PropKit, q: QualityProfile): World
 
   // terrain + props
   const { chunks, ground } = buildTerrain(track, kit, lite ? LITE_TERRAIN : HIGH_TERRAIN);
+  const detail = detailTexture();
   const terrainMat = lite
-    ? new THREE.MeshBasicMaterial({ vertexColors: true })
-    : new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, metalness: 0, envMapIntensity: 0.7 });
-  disposables.push(terrainMat);
+    ? new THREE.MeshBasicMaterial({ vertexColors: true, map: detail })
+    : new THREE.MeshStandardMaterial({ vertexColors: true, map: detail, bumpMap: detail, bumpScale: 3, roughness: 0.85, metalness: 0, envMapIntensity: 0.8 });
+  disposables.push(terrainMat, detail);
   for (const ch of chunks) {
     const m = new THREE.Mesh(ch.geometry, terrainMat);
     m.receiveShadow = q.shadows.enabled;

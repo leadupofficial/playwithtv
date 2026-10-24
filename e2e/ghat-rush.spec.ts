@@ -47,7 +47,7 @@ test("GHAT RUSH: two phones (hybrid wheel + buttons) race the quick ghat to the 
   await tv.screenshot({ path: "test-results/ghat-intro.png" });
   await expect.poll(async () => (await race()).phase, { timeout: 20_000 }).toBe("race");
 
-  let steerB: "left" | "right" | null = null, drifting = false, shot = false, usedItem = false, boosted = false;
+  let steerB: "left" | "right" | null = null, drifting = false, shot = false, usedItem = false, boosted = false, boostedB = false;
   const fps: number[] = [];
   const until = Date.now() + 150_000;
   while (Date.now() < until) {
@@ -68,6 +68,7 @@ test("GHAT RUSH: two phones (hybrid wheel + buttons) race the quick ghat to the 
       steerB = want;
     }
     if (rb.item && !usedItem) { await press(b, "ITEM").catch(() => undefined); usedItem = true; }
+    if (!boostedB && rb.meter >= 0.34 && rb.s > 100) { await press(b, "BOOST").catch(() => undefined); boostedB = true; }
     if (!shot && ra.s > 350) {
       shot = true;
       await tv.screenshot({ path: "test-results/ghat-race-split.png" });
