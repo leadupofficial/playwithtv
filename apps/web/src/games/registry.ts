@@ -2,6 +2,8 @@ import { lazy } from "react";
 import type { GameComponent } from "./types";
 import { TriviaGame } from "./trivia/TriviaGame";
 import { BoxingGame } from "./boxing/BoxingGame";
+import { MemoryGame } from "./memory/MemoryGame";
+import { PenaltyGame } from "./penalty/PenaltyGame";
 
 // 3D games load three.js only when started, so the lobby stays light on TVs.
 const MazeGame = lazy(() => import("./maze/MazeGame").then((m) => ({ default: m.MazeGame })));
@@ -25,4 +27,6 @@ export const GAMES: Record<string, GameComponent> = {
   "air-hockey-motion": HockeyGame,
   "kart-knockout": KartGame,
   "motion-sumo": SumoGame,
+  "global-penalty-cup": PenaltyGame,
+  "memory-wave": MemoryGame,
 };

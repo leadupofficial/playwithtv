@@ -6,7 +6,7 @@ Statuses: **concept** = idea only, hidden from TVs · **prototype** = partly pla
 (objective, motion input, rules, scoring, end state, rematch) with automated tests · **released** = also passed the
 real-device controller test ([real-device-test.md](real-device-test.md)).
 
-Built: 8 · concepts: 43.
+Built: 12 · concepts: 39.
 
 ## Prioritisation matrix
 
@@ -35,14 +35,14 @@ Within a phase, order by validated demand, controller reliability, cost and repl
 | 18 | 🎮 Kitchen Chaos Duo | B · Couples & duo | 2–4 | 3 | concept | duo-coop, team-coop | none |
 | 19 | 🎮 Bridge Balance | B · Couples & duo | 2–4 | 4 | concept | duo-coop, team-coop | none |
 | 20 | 🎮 Treasure Divers | B · Couples & duo | 2–2 | 4 | concept | duo-coop | none |
-| 21 | 🎮 Kart Knockout | C · Competitive | 2–8 | 4 | concept | couch-party, tournament | none |
+| 21 | 🏎️ Kart Knockout | C · Competitive | 1–8 | 4 | **playable** | couch-party, tournament, solo-challenge | unit+e2e |
 | 22 | 🎮 Orb Race Arena | C · Competitive | 2–8 | 3 | concept | couch-party | none |
-| 23 | 🎮 Motion Sumo | C · Competitive | 2–8 | 3 | concept | couch-party, tournament | none |
+| 23 | 🤼 Motion Sumo | C · Competitive | 1–8 | 3 | **playable** | couch-party, tournament, solo-challenge | unit+e2e |
 | 24 | 🎮 Target Siege | C · Competitive | 2–8 | 4 | concept | team-versus | none |
 | 25 | 🎮 Blade Clash | C · Competitive | 2–4 | 4 | concept | duo-versus, couch-party | none |
 | 26 | 🎮 Bowling League | C · Competitive | 2–8 | 4 | concept | couch-party, tournament, team-versus | none |
 | 27 | 🎮 Golf Showdown | C · Competitive | 2–4 | 4 | concept | couch-party, tournament | none |
-| 28 | 🎮 Global Penalty Cup | C · Competitive | 2–8 | 4 | concept | couch-party, team-versus, tournament | none |
+| 28 | ⚽ Global Penalty Cup | C · Competitive | 1–8 | 4 | **playable** | solo-challenge, couch-party, tournament | unit+e2e |
 | 29 | 🎮 Cricket Super Over | C · Competitive | 1–4 | 4 | concept | solo-challenge, duo-versus | none |
 | 30 | 🎮 Basketball Trick Shot | C · Competitive | 1–4 | 4 | concept | solo, couch-party | none |
 | 31 | 🎮 Motion Volleyball | C · Competitive | 2–4 | 4 | concept | team-versus | none |
@@ -61,7 +61,7 @@ Within a phase, order by validated demand, controller reliability, cost and repl
 | 44 | 🎮 Power Plant Overload | D · Co-op & adventure | 2–6 | 4 | concept | team-coop | none |
 | 45 | 🎮 Alien Zoo Rescue | D · Co-op & adventure | 2–4 | 4 | concept | team-coop | none |
 | 46 | 🎮 Rhythm Orchestra | D · Co-op & adventure | 2–8 | 3 | concept | team-coop, practice | none |
-| 47 | 🎮 Memory Wave | E · Family & social | 1–8 | 4 | concept | solo, couch-party | none |
+| 47 | 🌊 Memory Wave | E · Family & social | 1–8 | 4 | **playable** | solo, couch-party | unit+e2e |
 | 48 | 🎮 Motion Charades | E · Family & social | 2–8 | 4 | concept | team-versus | none |
 | 49 | 🎮 World Quest Challenge | E · Family & social | 1–8 | 4 | concept | solo, couch-party | none |
 | 50 | 🎮 Motion Mini-Games Festival | E · Family & social | 1–8 | 4 | concept | couch-party, team-versus, tournament | none |
@@ -133,6 +133,41 @@ Hold: **any** · gyroscope: unused · assets: all visuals and sounds (drawn and 
 - **pitch**: move the striker up/down
 - **push**: smash (a quick lunge at the puck)
 
+### 🏎️ Kart Knockout
+
+Top-down kart racing for up to 8 on one screen: steer by turning your phone, drift through corners for a spark boost, grab gift boxes for coconuts, soap slicks and bumpers. CPU karts fill the grid.
+
+Hold: **upright** · gyroscope: unused · assets: all visuals and sounds (drawn and synthesised in code) (original)
+
+- **roll**: steer like a wheel
+- **flick-left**: start a drift (straighten to boost)
+- **flick-right**: start a drift (straighten to boost)
+- **push**: use your item
+
+### 🤼 Motion Sumo
+
+Up to 8 round wrestlers in a shrinking ring: shove, brace and bump everyone else out. Last one standing wins the round; best of three. CPU wrestlers join when you are few.
+
+Hold: **upright** · gyroscope: unused · assets: all visuals and sounds (drawn and synthesised in code) (original)
+
+- **roll**: move left/right
+- **pitch**: move up/down the ring
+- **push**: shove (dash forward)
+- **pull**: brace for a moment
+
+### ⚽ Global Penalty Cup
+
+A penalty shoot-out in fictional stadiums. Kick: aim, then power and curl the ball past the keeper. Keep: guess early or react and dive. Everyone kicks and keeps in turn; 5 kicks each, then sudden death.
+
+Hold: **upright** · gyroscope: unused · assets: all visuals and sounds (drawn and synthesised in code) (original); team and stadium names (original (fictional))
+
+- **roll**: kicker: aim left/right
+- **pitch**: kicker: aim low/high
+- **push**: kicker: shoot (a strong push is a power shot); twisting while pushing curls it
+- **flick-left**: keeper: dive left
+- **flick-right**: keeper: dive right
+- **flick-up**: keeper: jump
+
 ### 🧠 Tamil Trivia Royale
 
 Quiz rounds in Tamil and English. Tap your answer's colour on your phone, or turn the phone to aim and push to lock in.
@@ -141,6 +176,17 @@ Hold: **upright** · gyroscope: unused · assets: all visuals and sounds (drawn 
 
 - **roll**: move your marker across the four answers
 - **push**: lock in the answer
+
+### 🌊 Memory Wave
+
+The TV plays a wave of colours, shapes and notes; everyone repeats it on their phone at the same time. It grows and speeds up every round. Three lives: last memory standing wins!
+
+Hold: **upright** · gyroscope: unused · assets: all visuals and sounds (drawn and synthesised in code) (original)
+
+- **flick-up**: up (green ▲)
+- **flick-right**: right (red ●)
+- **flick-down**: down (blue ■)
+- **flick-left**: left (yellow ◆)
 
 ### 🥊 Ring Kings Boxing
 

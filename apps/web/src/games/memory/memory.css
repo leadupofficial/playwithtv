@@ -1,0 +1,59 @@
+/* Memory Wave on the 1920×1080 stage. Lit petals use transform/opacity only (cheap on TV GPUs). */
+.memory-bg { background: radial-gradient(ellipse at 30% 40%, #18306b 0%, #0c1238 55%, #070a22 100%); }
+.memory { gap: 22px; }
+.memory-top { display: flex; gap: 0.7em; align-items: center; }
+.memory-top .timer { margin-left: auto; font-size: 1.25em; font-weight: 800; }
+.memory-main { flex: 1; min-height: 0; display: grid; grid-template-columns: 760px 1fr; gap: 56px; align-items: center; }
+
+.wave-side { display: flex; flex-direction: column; align-items: center; gap: 34px; }
+.wave-pad { position: relative; width: 640px; height: 640px; }
+.wave-pad::before { content: ""; position: absolute; inset: 60px; border-radius: 50%; border: 6px solid rgba(255,255,255,0.07); }
+.petal { position: absolute; width: 230px; height: 230px; border-radius: 50%; display: grid; place-items: center; opacity: 0.32;
+  transition: opacity 0.08s, transform 0.08s; border: 8px solid rgba(255,255,255,0.18); }
+.petal span { font-size: 120px; line-height: 1; color: rgba(255,255,255,0.92); text-shadow: 0 4px 14px rgba(0,0,0,0.35); }
+.petal.up { left: 205px; top: 0; }
+.petal.right { right: 0; top: 205px; }
+.petal.down { left: 205px; bottom: 0; }
+.petal.left { left: 0; top: 205px; }
+.petal.lit { opacity: 1; transform: scale(1.14); border-color: #fff; }
+.wave-pad.ph-input .petal { opacity: 0.55; }
+.wave-core { position: absolute; left: 220px; top: 220px; width: 200px; height: 200px; border-radius: 50%; background: #0b1030;
+  border: 6px solid rgba(255,255,255,0.2); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.wave-core b { font-size: 34px; font-weight: 900; line-height: 1.05; }
+.wave-core small { font-size: 22px; color: var(--muted); margin-top: 6px; }
+.wave-pad.ph-input .wave-core { border-color: #3ee08f; }
+.wave-pad.ph-input .wave-core b { color: #3ee08f; }
+
+.seq-dots { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; max-width: 760px; min-height: 64px; }
+.seq-dots .sq { width: 56px; height: 56px; border-radius: 50%; border: 4px solid rgba(255,255,255,0.25); display: grid; place-items: center;
+  font-size: 28px; color: #fff; transition: transform 0.15s; }
+.seq-dots .sq.seen { border-color: rgba(255,255,255,0.75); background: rgba(255,255,255,0.12); }
+.seq-dots .sq.reveal { border-color: #fff; transform: scale(1.06); }
+
+.mw-players { display: grid; grid-template-columns: 1fr; gap: 18px; align-content: center; min-height: 0; }
+.mw-players.many { grid-template-columns: 1fr 1fr; gap: 14px; }
+.mw-card { border: 4px solid; border-radius: 22px; padding: 14px 20px; background: var(--glass); display: flex; flex-direction: column; gap: 10px; }
+.mw-card.out { opacity: 0.4; border-style: dashed; }
+.mw-card.done { background: rgba(62, 224, 143, 0.16); }
+.mw-card.wrong, .mw-card.slow { background: rgba(255, 93, 115, 0.14); }
+.mw-card.bump { animation: mwbump 0.3s ease-out; }
+.mw-card.shake { animation: mwshake 0.35s ease-in-out; }
+@keyframes mwbump { 50% { transform: scale(1.03); } }
+@keyframes mwshake { 25% { transform: translateX(-12px); } 75% { transform: translateX(12px); } }
+.mw-head { display: flex; align-items: center; gap: 14px; }
+.mw-head .avatar { width: 56px; height: 56px; font-size: 36px; display: grid; place-items: center; border-radius: 50%; background: rgba(0,0,0,0.25); }
+.mw-name { font-size: 34px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hearts { font-size: 34px; color: #ff5d73; letter-spacing: 4px; }
+.ticks { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-height: 44px; }
+.ticks > span:not(.badge):not(.mw-out) { width: 52px; height: 52px; border-radius: 12px; background: rgba(255,255,255,0.1); display: grid; place-items: center;
+  font-size: 32px; font-weight: 900; }
+.ticks > span.ok { background: #23a55a; }
+.ticks > span.bad { background: #e2384d; }
+.ticks .badge { margin-left: auto; font-size: 28px; font-weight: 900; color: #3ee08f; }
+.mw-card.wrong .badge, .mw-card.slow .badge { color: #ff8095; }
+.mw-out { font-size: 28px; font-weight: 900; letter-spacing: 0.1em; color: var(--muted); }
+.mw-players.many .mw-name, .mw-players.many .hearts { font-size: 28px; }
+.mw-players.many .ticks > span:not(.badge):not(.mw-out) { width: 32px; height: 32px; font-size: 22px; }
+
+.mw-final { position: absolute; left: 0; right: 0; bottom: 70px; text-align: center; animation: pop 0.4s ease-out; }
+.mw-final .big-title { display: inline-block; padding: 0.25em 0.8em; border-radius: 0.6em; background: rgba(7, 10, 34, 0.85); border: 3px solid #ffd23f; }
