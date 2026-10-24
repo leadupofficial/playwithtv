@@ -38,6 +38,7 @@ export function liteCamera(g: Game): CamName {
     case "play": return "shot";
     case "result": return g.ball?.play ? "shot" : "broadcast";
     case "replay": return "side";
+    case "podium": return "broadcast";
     default: return "shot";
   }
 }
@@ -82,7 +83,7 @@ export function freeCamera(g: Game, lane: LaneMeta, ball: { x: number; y: number
         : { position: base, target: [pos.x * 0.5, 0.9 + pos.y * 0.3, (pos.z - 1) * 0.5], fovDeg: 34, cut: "replay" };
     }
     case "podium":
-      return { position: [0, 1.9, -9.2], target: [0, 1.0, -3.4], fovDeg: 36, cut: "podium" };
+      return { position: [0, 2.2, -15.4], target: [0, 0.2, -9.2], fovDeg: 40, cut: "podium" };
   }
 }
 

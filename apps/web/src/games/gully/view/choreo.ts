@@ -169,10 +169,10 @@ export function podium(g: Game): Actor[] {
     ids.forEach((id, i) => {
       if (team === win) {
         const x = (i - (ids.length - 1) / 2) * 1.05;
-        out.push({ key: `podium-${id}`, id, role: "fielder", team, x, z: -3.3 - Math.abs(x) * 0.25, heading: Math.PI, clip: "cheer", bat: i === 0 });
+        out.push({ key: `podium-${id}`, id, role: "fielder", team, x, z: -9.2 - Math.abs(x) * 0.25, heading: Math.PI, clip: "cheer", bat: i === 0 });
       } else {
         const side = i % 2 ? 1 : -1;
-        out.push({ key: `podium-${id}`, id, role: "fielder", team, x: side * (3.4 - Math.floor(i / 2) * 0.2), z: -4.2 - Math.floor(i / 2) * 1.0, heading: side > 0 ? -Math.PI / 2 - 0.5 : Math.PI / 2 + 0.5, clip: "sit", bat: false });
+        out.push({ key: `podium-${id}`, id, role: "fielder", team, x: side * (3.4 - Math.floor(i / 2) * 0.2), z: -8.4 + Math.floor(i / 2) * 1.0, heading: side > 0 ? -Math.PI / 2 - 0.5 : Math.PI / 2 + 0.5, clip: "sit", bat: false });
       }
     });
   }
