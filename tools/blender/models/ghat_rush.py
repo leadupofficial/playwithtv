@@ -4,6 +4,10 @@ an auto-rickshaw, a scooter with its rider, a tiny hatchback, a ghat bus and a g
 (bevelled boxes, fat tyres, big heads), sized in metres, forward = -Y (glTF +Z after export), ground at z = 0.
 
   blender -b --factory-startup -P tools/blender/models/ghat_rush.py -- --out .run/models [--only auto,goat]
+  blender -b --factory-startup -P tools/blender/models/ghat_rush.py -- --out .run/models --props <dir> name.glb …
+
+--props merges the listed GLBs from <dir> (Kenney Nature Kit trees, rocks, bushes) into <out>/props.glb: one
+joined mesh per file, named after it, standing on its ground point.
 
 Each model becomes <out>/<name>.glb. Paint that a player colour replaces is one material named "paint" in a
 saturated magenta (hue 300°), so the lite sprites can be recoloured by hue (kit25d SpriteBatch `keyHue`) and the
@@ -27,6 +31,8 @@ def args():
     p = argparse.ArgumentParser()
     p.add_argument("--out", required=True)
     p.add_argument("--only", default="")
+    p.add_argument("--props", help="folder of GLBs to merge into props.glb (names follow)")
+    p.add_argument("files", nargs="*")
     return p.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
 
 
@@ -350,9 +356,42 @@ def export(parts, path):
     print("[pwtv] wrote", path, f"{os.path.getsize(path) / 1024:.0f} KB", len(ob.data.polygons), "faces", flush=True)
 
 
+def merge_props(folder, files, out):
+    reset()
+    for f in files:
+        before = set(bpy.data.objects)
+        bpy.ops.import_scene.gltf(filepath=os.path.join(folder, f))
+        new = [o for o in bpy.data.objects if o not in before]
+        meshes = [o for o in new if o.type == "MESH"]
+        others = [o.name for o in new if o.type != "MESH"]
+        bpy.ops.object.select_all(action="DESELECT")
+        for m in meshes:
+            m.select_set(True)
+        bpy.context.view_layer.objects.active = meshes[0]
+        bpy.ops.object.parent_clear(type="CLEAR_KEEP_TRANSFORM")
+        if len(meshes) > 1:
+            bpy.ops.object.join()
+        ob = bpy.context.active_object
+        ob.name = os.path.splitext(f)[0]
+        for n in others:
+            if n in bpy.data.objects:
+                bpy.data.objects.remove(bpy.data.objects[n], do_unlink=True)
+        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+        lo = min(v.co.z for v in ob.data.vertices)
+        for v in ob.data.vertices:
+            v.co.z -= lo
+        print("[pwtv] prop", ob.name, len(ob.data.polygons), "faces", flush=True)
+    bpy.ops.export_scene.gltf(filepath=out, export_format="GLB", export_apply=True, export_yup=True,
+                              export_draco_mesh_compression_enable=False)
+    print("[pwtv] wrote", out, f"{os.path.getsize(out) / 1024:.0f} KB", flush=True)
+
+
 def main():
     a = args()
     os.makedirs(a.out, exist_ok=True)
+    if a.props:
+        merge_props(a.props, a.files, os.path.abspath(os.path.join(a.out, "props.glb")))
+        return
     only = [x for x in a.only.split(",") if x]
     for name, fn in MODELS.items():
         if only and name not in only:

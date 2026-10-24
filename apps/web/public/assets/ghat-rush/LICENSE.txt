@@ -1,0 +1,8 @@
+GHAT RUSH assets
+
+auto, scooter, car, bus, goat (sprites *.webp/*.json and *-high.glb): original models made with
+tools/blender/models/ghat_rush.py for Play With TV. Released under CC0 1.0 (public domain dedication).
+
+lorry.*: Kenney Car Kit "truck" (CC0 1.0), see LICENSE-kenney-car-kit.txt.
+props.glb: Kenney Nature Kit trees, bushes and rocks (CC0 1.0), see LICENSE-kenney-nature-kit.txt.
+Lighting of the sprite sheets: Blender light rig (monsoon preset); no third-party HDRI is shipped here.

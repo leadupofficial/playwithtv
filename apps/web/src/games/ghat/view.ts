@@ -1,0 +1,217 @@
+/**
+ * The TV picture: one scene, drawn once per split-screen view. Lite: a plain WebGLRenderer, unlit baked world,
+ * sprite vehicles, no post. High/ultra: kit3d cinematic (HDRI light, shadows that follow each player, bloom,
+ * AA, AgX) with real-time models. Effects (glows, trails, rain, sparks, spray, debris) are shared.
+ */
+import * as THREE from "three";
+import type { QualityProfile } from "../../quality/tier";
+import { createCinematic, type Cinematic } from "../kit3d/cinematic";
+import { Particles, sparkleGeometry } from "../kit3d/particles";
+import { renderViews, useMultiView, type MultiViewPass, type View } from "../kit3d/multiview";
+import { GTAOPass } from "three/examples/jsm/postprocessing/GTAOPass.js";
+import { FOG, buildWorld, type World } from "./world";
+import { loadProps } from "./props";
+import { BASE, modelActors, spriteActors, type ActorLayer, type CoconutPose, type PickupPose } from "./vehicles";
+import { Glows, Puffs, Rain, Trails } from "./fx";
+import { ChaseCam } from "./camera";
+import { KINDS, type Kind } from "./racer";
+import type { GoatPose, RacerPose, TrafficPose } from "./actors";
+import type { Track } from "./track";
+
+const HDRI = "/assets/cinematic/showroom/kloofendal_overcast_puresky_1k.hdr";
+const LEVEL_COLOR = ["#ffffff", "#41b8ff", "#ff9a1f", "#d04bff"];
+const v3 = new THREE.Vector3();
+
+export interface DrawView { rect: { x: number; y: number; w: number; h: number }; camera: THREE.PerspectiveCamera; focus: RacerPose | null }
+
+export class GhatView {
+  readonly scene = new THREE.Scene();
+  readonly renderer: THREE.WebGLRenderer;
+  readonly cine: Cinematic | null;
+  readonly cams: ChaseCam[] = [];
+  readonly extra = [new THREE.PerspectiveCamera(50, 16 / 9, 0.3, 1400), new THREE.PerspectiveCamera(50, 16 / 9, 0.3, 1400)];
+  world!: World;
+  actors!: ActorLayer;
+  readonly glows: Glows;
+  readonly rain: Rain;
+  readonly trails: Trails;
+  readonly sparks: Particles;
+  readonly spray: Puffs;
+  readonly debris: Particles;
+  private mv: MultiViewPass | null = null;
+  private sun: THREE.DirectionalLight | null = null;
+  private hemi: THREE.HemisphereLight;
+  private flashT = 0;
+  private nextFlash = 9;
+  private fog: THREE.Fog;
+  private fogBase = new THREE.Color(FOG);
+  readonly width: number;
+  readonly height: number;
+
+  private constructor(readonly canvas: HTMLCanvasElement, readonly q: QualityProfile, readonly track: Track, players: number) {
+    const lite = q.prerendered;
+    this.width = q.resolution.w;
+    this.height = q.resolution.h;
+    this.fog = new THREE.Fog(FOG, lite ? 35 : 45, lite ? 300 : 420);
+    this.scene.fog = this.fog;
+    this.scene.background = new THREE.Color(FOG);
+    if (lite) {
+      this.cine = null;
+      this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: "high-performance", stencil: false });
+      this.renderer.setPixelRatio(1);
+      this.renderer.setSize(this.width, this.height, false);
+      this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    } else {
+      this.cine = createCinematic(canvas, q, { scene: this.scene, camera: this.extra[0] });
+      this.renderer = this.cine.renderer;
+      this.renderer.toneMappingExposure = 1.05;
+      this.mv = useMultiView(this.cine, this.scene, players);
+      this.sun = this.cine.sun(this.scene, { position: [-30, 60, 25], intensity: 1.6, color: "#fff3e0", extent: 26 });
+      this.sun.shadow.camera.far = 160;
+      this.sun.shadow.camera.updateProjectionMatrix();
+    }
+    this.hemi = new THREE.HemisphereLight("#dbe6e4", "#4a5a3a", lite ? 1.6 : 0.6);
+    this.scene.add(this.hemi);
+    for (let i = 0; i < Math.max(1, players); i++) this.cams.push(new ChaseCam());
+    this.glows = new Glows(lite ? 170 : 380);
+    this.rain = new Rain(lite ? 90 : Math.min(1400, q.particleBudget), lite ? 30 : 40);
+    this.trails = new Trails(16, lite ? 10 : 16);
+    const budget = q.particleBudget;
+    this.sparks = new Particles(sparkleGeometry(), new THREE.MeshBasicMaterial({ color: "#ffffff", side: THREE.DoubleSide, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }), Math.round(budget * 0.4));
+    this.spray = new Puffs(this.glows, lite ? 40 : 140);
+    this.debris = new Particles(new THREE.BoxGeometry(0.4, 0.12, 0.3), lite ? new THREE.MeshLambertMaterial({ color: "#ffffff" }) : new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.5 }), Math.round(budget * 0.25));
+    this.scene.add(this.glows.mesh, this.rain.mesh, this.trails.mesh, this.sparks.mesh, this.debris.mesh);
+  }
+
+  static async create(canvas: HTMLCanvasElement, q: QualityProfile, track: Track, field: Array<{ kind: Kind; color: string }>, players: number, onProgress?: (p: number) => void): Promise<GhatView> {
+    const v = new GhatView(canvas, q, track, players);
+    let a = 0, b = 0;
+    const report = () => onProgress?.(a * 0.7 + b * 0.3);
+    const [actors, kit] = await Promise.all([
+      q.prerendered ? spriteActors((p) => { a = p; report(); }) : modelActors(q, field, (p) => { a = p; report(); }),
+      loadProps(`${BASE}/props.glb`).then((k) => { b = 1; report(); return k; }),
+      v.cine ? v.cine.environment(v.scene, HDRI, { background: false, intensity: 0.75 }) : Promise.resolve(null),
+    ]);
+    v.actors = actors;
+    v.world = buildWorld(track, kit, q);
+    v.scene.add(v.world.group, actors.group);
+    return v;
+  }
+
+  /** A burst for a race moment at a pose. */
+  sparksAt(p: { x: number; y: number; z: number }, color: string, count: number, speed = 6) {
+    this.sparks.burst(v3.set(p.x, p.y + 0.4, p.z), { count, color, speed, up: 2, gravity: 14, drag: 1.2, life: 0.45, size: 0.35, spin: 10 });
+  }
+  wreckAt(p: RacerPose) {
+    this.debris.burst(v3.set(p.x, p.y + 0.7, p.z), { count: 14, color: p.color, colorJitter: 0.3, speed: 7, up: 5, gravity: 16, drag: 0.6, life: 1.6, size: 0.9, spin: 12, floor: p.y - p.hop + 0.05 });
+    this.debris.burst(v3.set(p.x, p.y + 0.7, p.z), { count: 8, color: "#222", speed: 6, up: 4, gravity: 16, drag: 0.6, life: 1.5, size: 0.7, spin: 12, floor: p.y - p.hop + 0.05 });
+    this.sparksAt(p, "#ffd27a", 18, 9);
+    this.spray.burst(p.x, p.y + 0.6, p.z, 8, 4, 1.2, 2.2);
+  }
+  splashAt(p: { x: number; y: number; z: number }) {
+    this.spray.burst(p.x, p.y + 0.4, p.z, 18, 9, 1.0, 1.8);
+  }
+  lightning() {
+    this.flashT = 1;
+  }
+
+  /** Per-frame dynamic dressing: glows, trails, continuous sparks and spray. */
+  dress(racers: RacerPose[], traffic: TrafficPose[], goats: GoatPose[], pickups: PickupPose[], coconuts: CoconutPose[], time: number, dt: number) {
+    this.actors.set(racers, traffic, goats, pickups, coconuts, time);
+    const g = this.glows;
+    g.begin();
+    racers.forEach((r, i) => {
+      if (!r.visible) return;
+      const k = KINDS[r.kind];
+      const fx = Math.sin(r.yaw), fz = Math.cos(r.yaw), rx = -fz, rz = fx;
+      const back = -k.len / 2 + 0.05, front = k.len / 2;
+      const lampY = r.y + (r.kind === "scooter" ? 0.62 : r.kind === "auto" ? 0.86 : 0.76);
+      const tailW = r.kind === "scooter" ? 0 : k.wid * 0.36;
+      for (const s of tailW ? [-1, 1] : [0]) g.add(r.x + fx * back + rx * s * tailW, lampY, r.z + fz * back + rz * s * tailW, 0.32, "#ff2412", 1.1, -fx, -fz);
+      g.add(r.x + fx * front, r.y + (r.kind === "auto" ? 0.98 : r.kind === "scooter" ? 1.3 : 0.76), r.z + fz * front, 0.8, "#fff1cf", 0.9, fx, fz);
+      if (r.boosting) {
+        const fl = 0.9 + Math.sin(time * 40 + i) * 0.25;
+        g.add(r.x + fx * (back - 0.45), r.y + 0.45, r.z + fz * (back - 0.45), 0.75 * fl, "#ff8a2a", 1.1);
+        g.add(r.x + fx * (back - 0.25), r.y + 0.45, r.z + fz * (back - 0.25), 0.4 * fl, "#9fe0ff", 1.1);
+      }
+      if (r.drift && r.level > 0) {
+        for (const s of [-1, 1]) g.add(r.x + fx * back + rx * s * k.wid * 0.5, r.y + 0.15, r.z + fz * back + rz * s * k.wid * 0.5, 0.35 + r.level * 0.12, LEVEL_COLOR[r.level]!, 1.6);
+        if (Math.random() < 0.6) this.sparksAt({ x: r.x + fx * back, y: r.y - 0.2, z: r.z + fz * back }, LEVEL_COLOR[r.level]!, 1, 3);
+      }
+      // trails stretch only at speed
+      this.trails.push(i, r.x + fx * back, lampY, r.z + fz * back, r.wrecked ? 0 : Math.min(1, Math.max(0, (r.speed - 22) / 12)) * (r.boosting ? 1 : 0.6));
+      // wheel spray off the wet road
+      if (!r.wrecked && r.speed > 18 && Math.random() < (this.q.prerendered ? 0.25 : 0.6)) {
+        const s = Math.random() < 0.5 ? -1 : 1;
+        this.spray.emit(r.x + fx * back + rx * s * k.wid * 0.4, r.y + 0.2, r.z + fz * back + rz * s * k.wid * 0.4, -fx * 3, 1.2, -fz * 3, 0.5, 0.5 + r.speed * 0.015);
+      }
+    });
+    for (const c of traffic) {
+      const fx = Math.sin(c.yaw), fz = Math.cos(c.yaw), rx = -fz, rz = fx;
+      for (const s of [-1, 1]) {
+        g.add(c.x + fx * c.len * 0.5 + rx * s * 0.85, c.y + 1.1, c.z + fz * c.len * 0.5 + rz * s * 0.85, 1.3, "#fff3d6", 1.0, fx, fz);
+        g.add(c.x - fx * c.len * 0.5 + rx * s * 0.95, c.y + 1.2, c.z - fz * c.len * 0.5 + rz * s * 0.95, 0.5, "#ff2a10", 1.2, -fx, -fz);
+      }
+    }
+    for (const p of pickups) if (p.on) g.add(p.x, p.y + 1.1, p.z, 2.0, "#ffc94a", 0.5 + Math.sin(time * 4) * 0.15);
+    this.spray.update(dt, "#9aa6aa", 0.35);
+    g.end();
+    this.trails.commit();
+    this.rain.update(time);
+    this.sparks.update(dt);
+    this.debris.update(dt);
+    this.world.update(time);
+    // monsoon lightning every so often
+    this.nextFlash -= dt;
+    if (this.nextFlash <= 0) {
+      this.nextFlash = 11 + Math.random() * 9;
+      this.flashT = 1;
+    }
+    const f = this.flashT > 0 ? Math.max(0, this.flashT) * (0.6 + 0.4 * Math.sin(this.flashT * 40)) : 0;
+    this.flashT = Math.max(0, this.flashT - dt * 2.2);
+    this.fog.color.copy(this.fogBase).lerp(new THREE.Color("#eef3ff"), f * 0.5);
+    (this.scene.background as THREE.Color).copy(this.fog.color);
+    (this.world.sky.material as THREE.MeshBasicMaterial).color.setScalar(1 + f * 0.6);
+    this.hemi.intensity = (this.q.prerendered ? 1.6 : 0.6) * (1 + f * 1.5);
+    this.actors.flash(f);
+    if (this.cine) this.cine.setBloom(0.18 + f * 0.5);
+  }
+
+  /** Draws every view. */
+  draw(views: DrawView[], time: number) {
+    const W = this.width, H = this.height;
+    const list: View[] = views.map((v) => {
+      const px = { x: Math.round(v.rect.x * W), y: Math.round(H - (v.rect.y + v.rect.h) * H), w: Math.round(v.rect.w * W), h: Math.round(v.rect.h * H) };
+      const gx = v.rect.x > 0 ? 2 : 0, gy = v.rect.y + v.rect.h < 0.999 ? 2 : 0;
+      px.x += gx; px.w -= gx; px.y += gy; px.h -= gy;
+      v.camera.aspect = px.w / px.h;
+      v.camera.updateProjectionMatrix();
+      return {
+        camera: v.camera, ...px,
+        before: () => {
+          this.world.sky.position.copy(v.camera.position);
+          this.actors.view(v.camera, time);
+          if (this.sun && v.focus) {
+            this.sun.target.position.set(v.focus.x, v.focus.y, v.focus.z);
+            this.sun.position.set(v.focus.x - 30, v.focus.y + 60, v.focus.z + 25);
+            this.sun.target.updateMatrixWorld();
+          }
+        },
+      };
+    });
+    if (this.cine && this.mv) {
+      this.mv.views = list;
+      const composer = this.cine.composer!;
+      for (const p of composer.passes) if (p instanceof GTAOPass) { p.scene = this.scene; p.camera = list[0]!.camera; }
+      this.renderer.info.autoReset = false;
+      this.renderer.info.reset();
+      composer.render();
+    } else renderViews(this.renderer, this.scene, list);
+  }
+
+  dispose() {
+    this.world?.dispose();
+    this.actors?.dispose();
+    this.cine ? this.cine.dispose() : this.renderer.dispose();
+  }
+}
