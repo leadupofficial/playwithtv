@@ -79,7 +79,28 @@ Every response carries:
   is why the validation library runs in "jitless" mode. Pages can't be framed by other sites.
 - **HSTS:** browsers only use HTTPS for the site.
 - **Permissions-Policy:** motion sensors and screen wake are allowed; the camera, microphone, location and
-  payments are explicitly blocked.
+  payments are explicitly blocked (the camera is allowed on the phone controller page only, see below).
+
+### Camera games (the phone controller page only)
+
+Camera games (e.g. Squat Rocket) track the player's body **on the phone** with MediaPipe Pose. The video never
+leaves the phone: it is not drawn, recorded or uploaded, and only moves ("squat", "jump") and a few numbers
+(lean, squat depth, tracking ok) are sent to the TV over the normal input channel. All MediaPipe files and the
+model are self-hosted under `/vendor/mediapipe-0.10.35/` (no CDN, and the pinned 0.10.x has no telemetry);
+`connect-src 'self'` is unchanged.
+
+The responses for the phone controller page (`/join` and `/controller`, any query string) differ in exactly two
+ways:
+- `script-src 'self' 'wasm-unsafe-eval'`: lets the page compile WebAssembly (`WebAssembly.instantiate`), which
+  the body tracker needs. It does **not** allow JavaScript `eval`, `new Function` or inline scripts; scripts
+  still only come from our own origin.
+- `Permissions-Policy: camera=(self)`: the camera may be used by our own page (the browser still asks the
+  player, after an on-screen explanation).
+
+A page's policy comes from the response that loaded the document, so the TV, admin and every other page keep
+the strict policy. The home page's "Join with my phone" link does a full page load for this reason. Tests:
+`apps/server/test/security.test.ts` (headers per route) and `e2e/csp.spec.ts` (the real model runs on the phone
+page with no CSP violations and no requests to other origins).
 - **No-referrer:** invite links never leak to other sites through the browser's Referer header.
 
 ## Code, contributions and CI

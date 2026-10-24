@@ -6,7 +6,7 @@ Statuses: **concept** = idea only, hidden from TVs · **prototype** = partly pla
 (objective, motion input, rules, scoring, end state, rematch) with automated tests · **released** = also passed the
 real-device controller test ([real-device-test.md](real-device-test.md)).
 
-Built: 12 · concepts: 39.
+Built: 13 · concepts: 39.
 
 ## Prioritisation matrix
 
@@ -66,6 +66,7 @@ Within a phase, order by validated demand, controller reliability, cost and repl
 | 49 | 🎮 World Quest Challenge | E · Family & social | 1–8 | 4 | concept | solo, couch-party | none |
 | 50 | 🎮 Motion Mini-Games Festival | E · Family & social | 1–8 | 4 | concept | couch-party, team-versus, tournament | none |
 | – | 🥊 Ring Kings Boxing | C · Competitive | 1–2 | 2 | **playable** | solo-challenge, duo-versus | unit+e2e |
+| – | 🚀 Squat Rocket | D · Co-op & adventure | 1–4 | 5 | **playable** | solo, couch-party, team-coop | unit+e2e |
 
 ## Built games: motion mappings
 
@@ -201,3 +202,16 @@ Hold: **upright** · gyroscope: unused · assets: all visuals and sounds (drawn 
 - **pitch**: tip forward to step in, slightly back to step out, far back to guard
 - **roll**: lean to slip a punch
 - **shake**: get up after a knockdown
+
+### 🚀 Squat Rocket
+
+A camera fitness game: prop your phone up and squat to pump fuel into your rocket, jump to dodge meteors, lean to steer into stars, then everyone does jumping jacks to power the team shield through an asteroid storm. The phone tracks your body itself: the video never leaves it. Seated mode, three intensities, and buttons for anyone without a camera.
+
+Hold: **any** · gyroscope: unused · assets: all visuals and sounds (drawn and synthesised in code) (original); three.js renderer (MIT); rocket, meteor and base models (Kenney Space Kit) (CC0 1.0); sound effects (Kenney Sci-Fi Sounds, Interface Sounds) (CC0 1.0); body tracking runtime (MediaPipe Tasks Vision 0.10.35) and Pose Landmarker lite model, self-hosted (Apache-2.0)
+
+- **camera: squat (seated: arm raise)**: pump fuel / boost
+- **camera: jump (seated: punch)**: dodge a meteor
+- **camera: lean**: steer into stars
+- **camera: jumping jack (seated: arms wide and up)**: power the team shield
+- **camera: both hands on head**: pause
+- **push / flick-up / shake (motion mode)**: pump / dodge / jack
