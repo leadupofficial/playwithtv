@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
 import "./styles.css";
+import "./fonts.css"; // self-hosted Tamil / Devanagari / display fonts
 import { TvApp } from "./tv/TvApp";
 import { JoinApp } from "./phone/JoinApp";
 import { AdminApp } from "./admin/AdminApp";
