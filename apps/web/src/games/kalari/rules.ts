@@ -113,9 +113,11 @@ export type FState =
 export interface Stats {
   hits: number; damage: number; kos: number; ringouts: number; parries: number; blocks: number; rolls: number;
   specials: number; maxCombo: number; roundWins: number; comebacks: number; walls: number; falls: number;
+  /** Guardians: style points (variety, combos, parries, ring-outs). */
+  style: number;
 }
 export const newStats = (): Stats => ({
-  hits: 0, damage: 0, kos: 0, ringouts: 0, parries: 0, blocks: 0, rolls: 0, specials: 0, maxCombo: 0, roundWins: 0, comebacks: 0, walls: 0, falls: 0,
+  hits: 0, damage: 0, kos: 0, ringouts: 0, parries: 0, blocks: 0, rolls: 0, specials: 0, maxCombo: 0, roundWins: 0, comebacks: 0, walls: 0, falls: 0, style: 0,
 });
 
 export interface Fighter {
@@ -123,6 +125,11 @@ export interface Fighter {
   cpu: boolean;
   slot: number;
   char: FighterId;
+  /** Fighters only hit other teams: every fighter is its own team in versus (1…4); guardians are 0, clay golems -1. */
+  team: number;
+  /** A clay golem (Guardians mode). Dormant golems wait with alive = false and state "out". */
+  foe: boolean;
+  maxHealth: number;
   x: number; y: number; z: number;
   vx: number; vy: number; vz: number;
   face: number;
@@ -158,6 +165,8 @@ export interface KalariInput {
 }
 export const IDLE: KalariInput = { x: 0, z: 0, strike: false, heavy: false, guard: false, roll: false, special: false };
 
+export type Mode = "versus" | "guardians";
+
 export type Phase = "intro" | "countdown" | "fight" | "roundEnd" | "podium";
 
 export interface Arena {
@@ -169,6 +178,9 @@ export interface Arena {
 }
 
 export interface Match {
+  mode: Mode;
+  /** Guardians: the current wave (1-based) and how many there are; the team's style meter (decays). */
+  wave: number; maxWaves: number; style: number;
   phase: Phase;
   t: number; time: number;
   round: number; maxRounds: number; roundsToWin: number;
@@ -202,6 +214,9 @@ export type KalariEvent =
   | { kind: "ringout"; id: string; by: string | null; last: boolean }
   | { kind: "ko"; id: string; by: string | null; last: boolean }
   | { kind: "time-warning" }
+  | { kind: "wave"; n: number; foes: number }
+  | { kind: "wave-clear"; n: number; last: boolean }
+  | { kind: "wiped" }
   | { kind: "round-end"; winner: string | null; reason: "ko" | "time" }
   | { kind: "match-end"; winner: string | null };
 

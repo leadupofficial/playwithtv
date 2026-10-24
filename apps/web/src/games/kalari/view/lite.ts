@@ -11,7 +11,7 @@ import { pickAnim, sheetFrame, type SheetClip } from "../anim";
 import type { ArenaDef } from "../arenas";
 import { Director } from "../director";
 import type { FighterId, KalariEvent, Match } from "../rules";
-import { A, LITE, glowTexture, playerRing, type Look, type StageView } from "./common";
+import { A, CLAY, LITE, glowTexture, playerRing, type Look, type StageView } from "./common";
 import { Effects } from "./effects";
 
 /** Two sheets per fighter: a (standing moves, tightly framed) and b (rolls, specials, cheers, KOs). */
@@ -83,7 +83,7 @@ export class LiteView implements StageView {
     this.scene.add(this.shadows);
     for (const [c, sheets] of assets.sheets) {
       const list = sheets.map((sheet) => {
-        const b = new SpriteBatch(sheet, 4);
+        const b = new SpriteBatch(sheet, 8);
         b.mesh.renderOrder = 2;
         this.scene.add(b.mesh);
         return b;
@@ -155,11 +155,12 @@ export class LiteView implements StageView {
       let pick = pickAnim(f, m, cheer.has(f.id));
       if (order) {
         const place = order.indexOf(f.id);
+        if (place < 0) visible = false; // golems leave the stage for the ceremony
         x = [0, -2.2, 2.2, 4.4][place] ?? 0;
         z = [-1.2, -0.6, -0.6, 0.6][place] ?? 0;
         y = 0;
         face = 0;
-        visible = true;
+        visible = place >= 0;
         pick = place === 0 || place === 1 ? { clip: "cheer", progress: null } : place === 2 ? { clip: "idle", progress: null } : { clip: "ko", progress: 1 };
       }
       if (f.state === "fall") y = f.y;
@@ -173,7 +174,7 @@ export class LiteView implements StageView {
         const frame = sheetFrame(pick, clips, this.time + f.slot * 0.37);
         b.set(s.i, {
           x, y, z, heading: face, scale: 0.85, time: (frame + 0.5) / b.sheet.manifest.fps, visible,
-          tint: fl > 0 ? "#ffffff" : null, tintStrength: fl > 0 ? 0.6 : 0,
+          tint: fl > 0 ? "#ffffff" : s.look.foe ? CLAY : null, tintStrength: fl > 0 ? 0.6 : s.look.foe ? 1 : 0,
           opacity: f.state === "fall" ? Math.max(0, 1 - f.t / 1.2) : 1,
         });
       }

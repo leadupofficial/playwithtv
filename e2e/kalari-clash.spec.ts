@@ -164,6 +164,51 @@ test("Kalari Clash with the touchpad: drag to move, tap to strike, swipe to roll
   expect(await tv.evaluate(() => (window as unknown as { __csp: string[] }).__csp)).toEqual([]);
 });
 
+test("Kalari Clash Guardians: a player and a CPU ally fight off waves of clay golems to the podium", async ({ browser }) => {
+  test.setTimeout(240_000);
+  const { tv, code } = await kalariTv(browser, `quality=${TIER}&arena=rooftop&mode=guardians`);
+  const a = await joinPhone(browser, code, "Asha");
+  await start(tv);
+  await ready(tv, a, "Asha");
+  await expect(tv.locator(".kalari-mode-pick[data-mode=guardians]")).toBeVisible({ timeout: 15_000 });
+  await press(a, "STRIKE");
+  type G = Dbg & { mode: string; wave: number; style: number };
+  const k = stateOf(tv) as () => Promise<G>;
+  await expect.poll(async () => (await k()).phase, { timeout: 30_000 }).toBe("fight");
+  const s0 = await k();
+  expect(s0.mode).toBe("guardians");
+  expect(s0.players.filter((p) => p.name === "Clay Golem" && p.alive).length).toBe(2); // wave 1
+  const move = await thumb(a);
+  let shot = false;
+  const until = Date.now() + 180_000;
+  while (Date.now() < until) {
+    const s = await k();
+    if (s.phase === "podium") break;
+    if (s.phase === "fight") {
+      const me = s.players.find((p) => p.name === "Asha")!;
+      const foes = s.players.filter((p) => p.name === "Clay Golem" && p.alive);
+      const g = foes.sort((x, y) => Math.hypot(x.x - me.x, x.z - me.z) - Math.hypot(y.x - me.x, y.z - me.z))[0];
+      if (me.alive && g) {
+        const d = Math.hypot(g.x - me.x, g.z - me.z) || 1;
+        await move((g.x - me.x) / d, -(g.z - me.z) / d);
+        if (d < 2.6) await press(a, me.meter >= 100 ? "SPECIAL" : "STRIKE").catch(() => undefined);
+      }
+      if (!shot && s.players.some((p) => p.hits > 1)) {
+        shot = true;
+        await tv.screenshot({ path: `test-results/kalari-guardians-${TIER}.png` });
+      }
+    }
+    await tv.waitForTimeout(60);
+  }
+  const end = await k();
+  expect(end.phase).toBe("podium");
+  expect(end.players.filter((p) => p.name !== "Clay Golem").reduce((n, p) => n + p.hits, 0)).toBeGreaterThan(3);
+  await expect(tv.locator("[data-award]").first()).toBeVisible({ timeout: 5000 });
+  await tv.screenshot({ path: `test-results/kalari-guardians-podium-${TIER}.png` });
+  await expect(a.getByText(/Kalari Champion!|You came/)).toBeVisible({ timeout: 20_000 });
+  expect(await tv.evaluate(() => (window as unknown as { __csp: string[] }).__csp)).toEqual([]);
+});
+
 for (const tier of ["lite", "high", "ultra"] as const) {
   for (const arena of ["courtyard", "docks", "rooftop"] as const) {
     test(`Kalari Clash renders the ${arena} in the ${tier} tier`, async ({ browser }) => {

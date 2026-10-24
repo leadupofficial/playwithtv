@@ -27,7 +27,7 @@ export function hittable(f: Fighter): boolean {
 export function nearestOpponent(m: Match, f: Fighter): Fighter | null {
   let best: Fighter | null = null, bd = Infinity;
   for (const o of m.fighters) {
-    if (o === f || !o.alive || o.state === "fall") continue;
+    if (o === f || !o.alive || o.state === "fall" || o.team === f.team) continue;
     const d = Math.hypot(o.x - f.x, o.z - f.z);
     if (d < bd) { bd = d; best = o; }
   }
@@ -42,6 +42,7 @@ function softLock(m: Match, f: Fighter) {
 
 /** Meter for dealing or taking damage; trailing fighters charge 50 % faster (comeback). */
 export function gainMeter(m: Match, f: Fighter, amount: number, ev: KalariEvent[]) {
+  if (f.foe) return; // clay golems have no special
   const before = f.meter;
   f.meter = Math.min(METER_MAX, f.meter + amount * (f.underdog ? 1.5 : 1));
   if (before < METER_MAX && f.meter >= METER_MAX) ev.push({ kind: "special-ready", id: f.id });
@@ -49,7 +50,7 @@ export function gainMeter(m: Match, f: Fighter, amount: number, ev: KalariEvent[
 
 /** Knockback speed for a hit: grows as the victim's health falls (Smash-style), scaled by weight and comebacks. */
 export function knockback(base: number, attacker: Fighter, victim: Fighter): number {
-  const hurt = 0.45 + (MAX_HEALTH - victim.health) / 90; // fresh fighters hold their ground; hurt ones fly
+  const hurt = 0.45 + (MAX_HEALTH - victim.health * (MAX_HEALTH / victim.maxHealth)) / 90; // fresh fighters hold their ground; hurt ones fly
   const bonus = (attacker.underdog ? 1.15 : 1) * (victim.underdog ? 0.88 : 1);
   return base * hurt * character(victim.char).weight * bonus;
 }
@@ -72,6 +73,7 @@ function applyHit(m: Match, by: Fighter, on: Fighter, o: { move: MoveId | "speci
   if (on.state === "guard" && facingHit && !o.unblockable) {
     if (on.guardT <= PARRY_WINDOW && o.move !== "special") {
       on.stats.parries++;
+      addStyle(m, on, 50);
       gainMeter(m, on, 18, ev);
       setState(by, "stagger");
       by.stun = PARRY_STUN;
@@ -96,7 +98,7 @@ function applyHit(m: Match, by: Fighter, on: Fighter, o: { move: MoveId | "speci
     return;
   }
   const counter = on.state === "attack" && on.move !== null && on.t < MOVES[on.move].startup; // caught mid-windup
-  const dmg = Math.round(o.damage * character(by.char).power * (counter ? 1.25 : 1) * 10) / 10;
+  const dmg = Math.round(o.damage * character(by.char).power * (counter ? 1.25 : 1) * (by.foe ? 0.6 : 1) * 10) / 10;
   const kb = knockback(o.kb, by, on) * (counter ? 1.15 : 1);
   on.health = Math.max(0, on.health - dmg);
   on.vx = nx * kb; on.vz = nz * kb;
@@ -114,6 +116,8 @@ function applyHit(m: Match, by: Fighter, on: Fighter, o: { move: MoveId | "speci
   by.stats.hits++;
   by.stats.damage += dmg;
   by.stats.maxCombo = Math.max(by.stats.maxCombo, by.combo);
+  addStyle(m, by, (o.move === "special" ? 15 : 8) * Math.min(5, by.combo));
+  addStyle(m, on, -15);
   if (o.move !== "special") gainMeter(m, by, dmg * 1.7, ev); // a special never pays for the next one
   gainMeter(m, on, dmg * 0.6, ev);
   ev.push({ kind: "hit", by: by.id, on: on.id, move: o.move, damage: dmg, kb, x: on.x, y: on.y, z: on.z, combo: by.combo, launch, counter });
@@ -128,7 +132,7 @@ function applyHit(m: Match, by: Fighter, on: Fighter, o: { move: MoveId | "speci
 function inCone(m: Match, f: Fighter, reach: number, arc: number, skip: string[]): Fighter[] {
   const out: Fighter[] = [];
   for (const o of m.fighters) {
-    if (o === f || !hittable(o) || skip.includes(o.id)) continue;
+    if (o === f || o.team === f.team || !hittable(o) || skip.includes(o.id)) continue;
     const dx = o.x - f.x, dz = o.z - f.z;
     const d = Math.hypot(dx, dz) - RADIUS * 0.6;
     if (d > reach) continue;
@@ -252,7 +256,7 @@ export function updateFighter(m: Match, f: Fighter, inp: KalariInput, dt: number
   // movement
   const grounded = f.y <= 0 && f.vy <= 0;
   if (f.state === "ok" || f.state === "guard") {
-    const speed = character(f.char).speed * (f.state === "guard" ? GUARD_SPEED : 1);
+    const speed = character(f.char).speed * (f.state === "guard" ? GUARD_SPEED : 1) * (f.foe ? 0.72 : 1);
     const fast = Math.hypot(f.vx, f.vz) > speed * 1.2; // knockback slides out rather than stopping dead
     const k = fast ? 1 - Math.exp(-FRICTION * dt) : Math.min(1, ACCEL * dt);
     f.vx += (mx * speed - f.vx) * k;
@@ -307,8 +311,20 @@ function credit(m: Match, f: Fighter): string | null {
   return f.lastHitBy && m.time - f.lastHitAt < CREDIT_WINDOW ? f.lastHitBy : null;
 }
 
+/** Teams that still have someone standing (every fighter is a team in versus). */
+export function teamsStanding(m: Match): number {
+  return new Set(m.fighters.filter((o) => o.alive).map((o) => o.team)).size;
+}
+
 function lastStanding(m: Match): boolean {
-  return m.fighters.filter((o) => o.alive).length <= 1;
+  return teamsStanding(m) <= 1;
+}
+
+/** Guardians: style points for the guardian who earned them and the team meter. */
+export function addStyle(m: Match, f: Fighter | undefined, points: number) {
+  if (m.mode !== "guardians" || !f || f.foe) return;
+  f.stats.style = Math.max(0, f.stats.style + points);
+  m.style = Math.max(0, Math.min(600, m.style + points));
 }
 
 export function knockOut(m: Match, f: Fighter, ev: KalariEvent[]) {
@@ -334,6 +350,7 @@ export function ringOut(m: Match, f: Fighter, ev: KalariEvent[]) {
     const k = m.fighters.find((o) => o.id === by)!;
     k.stats.kos++;
     k.stats.ringouts++;
+    addStyle(m, k, 80);
   }
   const last = lastStanding(m);
   if (last) m.lastKoAt = m.time;

@@ -16,7 +16,10 @@ export const HDRI_URL: Record<string, string> = {
 /** Lite camera: must match tools/blender/kalari/arenas.py (VIEW_W, PITCH, LOOK). */
 export const LITE = { viewW: 24, pitchDeg: 30, look: new THREE.Vector3(0, 1.5, -3.5) };
 
-export interface Look { id: string; name: string; color: string; char: FighterId; cpu: boolean }
+export interface Look { id: string; name: string; color: string; char: FighterId; cpu: boolean; /** a clay golem (Guardians) */ foe?: boolean }
+
+/** Terracotta for the clay golems. */
+export const CLAY = "#b8643a";
 
 export interface StageView {
   readonly renderer: THREE.WebGLRenderer;

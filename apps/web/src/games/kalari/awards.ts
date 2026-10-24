@@ -7,7 +7,10 @@ export interface Award { emoji: string; title: string; detail: string; playerId:
 export function awards(m: Match): Award[] {
   const top = standings(m);
   const out: Award[] = [];
-  if (top[0] && top[0].stats.roundWins > 0) out.push({ emoji: "👑", title: "Kalari Champion", detail: `${top[0].stats.roundWins} round${top[0].stats.roundWins === 1 ? "" : "s"} won`, playerId: top[0].id });
+  if (m.mode === "guardians" && top[0]) {
+    const cleared = top[0].stats.roundWins;
+    out.push({ emoji: "🛡", title: "Top Guardian", detail: `${top[0].stats.style} style · ${cleared} wave${cleared === 1 ? "" : "s"} cleared`, playerId: top[0].id });
+  } else if (top[0] && top[0].stats.roundWins > 0) out.push({ emoji: "👑", title: "Kalari Champion", detail: `${top[0].stats.roundWins} round${top[0].stats.roundWins === 1 ? "" : "s"} won`, playerId: top[0].id });
   const best = (pick: (s: Match["fighters"][number]["stats"]) => number, min: number) => {
     let who = null as Match["fighters"][number] | null;
     for (const f of m.fighters) if (pick(f.stats) >= min && (!who || pick(f.stats) > pick(who.stats))) who = f;

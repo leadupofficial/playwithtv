@@ -57,7 +57,7 @@ export function KalariGame({ players, bridge, paused, onFinish }: GameProps) {
   if (stage === "select" || !picks || !quality.ready) {
     return (
       <div className="kalari-root">
-        <Select humans={humans} kit={kit.current} controls={controls.current} quick={QUICK} initialArena={params.get("arena")}
+        <Select humans={humans} kit={kit.current} controls={controls.current} quick={QUICK} initialArena={params.get("arena")} initialMode={params.get("mode") === "guardians" ? "guardians" : "versus"}
           onDone={(p) => { controls.current!.flush(); setPicks(p); setStage("fight"); }} />
       </div>
     );
@@ -84,12 +84,17 @@ function Clash({ humans, kit, controls, bridge, paused, onFinish, picks, profile
   useEffect(() => {
     let alive = true, raf = 0;
     let view: StageView | null = null, juice: Juice | null = null;
-    // entrants: people first, then CPUs on the fighters nobody picked
+    // entrants: people first, then CPUs on the fighters nobody picked (Guardians: one CPU ally for a lone player,
+    // then four clay golems in the pool for the waves)
+    const guardians = picks.mode === "guardians";
     const looks: Look[] = humans.map((p) => ({ id: p.id, name: p.name, color: p.color, char: picks.chars.get(p.id) ?? "simha", cpu: false }));
     const free = ROSTER.map((c) => c.id).filter((c) => !looks.some((l) => l.char === c));
-    for (let i = 0; looks.length < 4; i++) {
+    for (let i = 0; looks.length < (guardians ? 2 : 4); i++) {
       const char: FighterId = free[i] ?? ROSTER[i % ROSTER.length]!.id;
       looks.push({ id: `cpu${i}`, name: CPU_NAMES[i]!, color: CPU_COLORS.find((c) => !looks.some((l) => l.color.toLowerCase() === c))!, char, cpu: true });
+    }
+    if (guardians) {
+      for (let i = 0; i < 4; i++) looks.push({ id: `golem${i}`, name: "Clay Golem", color: "#b5653a", char: ROSTER[(i + 1) % ROSTER.length]!.id, cpu: true, foe: true });
     }
     const lookMap = new Map(looks.map((l) => [l.id, l]));
     const chars = looks.map((l) => l.char);
@@ -108,12 +113,13 @@ function Clash({ humans, kit, controls, bridge, paused, onFinish, picks, profile
         vibrate: (id, ms) => human(id) && bridge.event(id, "vibrate", { ms }),
         toast: (id, text, tone) => human(id) && kit.toast(id, text, tone),
       });
-      const m: Match = newMatch(looks.map((l) => ({ id: l.id, cpu: l.cpu, char: l.char })), {
+      const m: Match = newMatch(looks.map((l) => ({ id: l.id, cpu: l.cpu, char: l.char, foe: l.foe })), {
+        mode: picks.mode, waves: QUICK ? 2 : 5,
         seed: (Math.random() * 2 ** 31) >>> 0, arena: arena.id,
         roundSeconds: QUICK ? 20 : 90, introSeconds: QUICK ? 1.6 : 4.2, countdownSeconds: QUICK ? 2 : 3,
       });
-      juice.announcer.say("KALARI CLASH", { color: "#ffd23f", size: 130, ms: QUICK ? 1500 : 3800, sub: arena.name });
-      const brains = new Map<string, Brain>(m.fighters.filter((f) => f.cpu).map((f, i) => [f.id, newBrain(17 + i * 31)]));
+      juice.announcer.say(guardians ? "GUARDIANS" : "KALARI CLASH", { color: "#ffd23f", size: 130, ms: QUICK ? 1500 : 3800, sub: guardians ? `Defend the ${arena.name} from the clay golems!` : arena.name });
+      const brains = new Map<string, Brain>(m.fighters.filter((f) => f.cpu).map((f, i) => [f.id, newBrain(17 + i * 31, f.foe ? "easy" : "normal")]));
       const inputs = new Map<string, KalariInput>();
       const cheer = new Set<string>();
       const startedAt = Date.now();
@@ -155,7 +161,7 @@ function Clash({ humans, kit, controls, bridge, paused, onFinish, picks, profile
                 const order = standings(m).map((f) => f.id);
                 view!.podium(order);
                 const cards = awards(m).map((a) => ({ emoji: a.emoji, title: a.title, detail: a.detail, name: lookMap.get(a.playerId)?.name ?? "?", color: lookMap.get(a.playerId)?.color ?? "#fff" }));
-                showAwards(overlay.current!, "🏆 KALARI CHAMPIONS 🏆", cards);
+                showAwards(overlay.current!, guardians ? (m.fighters.some((f) => !f.foe && f.alive) ? "🛡 GUARDIANS OF THE KALARI 🛡" : "🗿 THE GOLEMS WIN THIS TIME 🗿") : "🏆 KALARI CHAMPIONS 🏆", cards);
                 for (const r of placings(new Map(m.fighters.map((f) => [f.id, score(f)])))) {
                   if (!human(r.playerId)) continue;
                   kit.outcome(r.playerId, r.place === 1 ? "Kalari Champion!" : `You came ${ORD[r.place - 1]}`, r.place === 1 ? "👑" : r.place === 2 ? "🥈" : "🥋");
@@ -174,7 +180,7 @@ function Clash({ humans, kit, controls, bridge, paused, onFinish, picks, profile
           setLetterbox(view!.director.inCloseUp || m.phase === "intro");
           const r = view!.renderer.info.render;
           setDebug(JSON.stringify({
-            phase: m.phase, round: m.round, left: Math.ceil(m.roundLeft), fps, calls: r.calls, tris: r.triangles, tier, arena: arena.id,
+            phase: m.phase, mode: m.mode, wave: m.wave, style: Math.round(m.style), round: m.round, left: Math.ceil(m.roundLeft), fps, calls: r.calls, tris: r.triangles, tier, arena: arena.id,
             winner: m.matchWinner, roundWinner: m.roundWinner,
             players: m.fighters.map((f) => ({
               id: f.id, name: lookMap.get(f.id)!.name, char: f.char, cpu: f.cpu, x: +f.x.toFixed(2), z: +f.z.toFixed(2), alive: f.alive, state: f.state,
@@ -189,7 +195,8 @@ function Clash({ humans, kit, controls, bridge, paused, onFinish, picks, profile
           }
           setHud({
             phase: m.phase, round: m.round, roundsToWin: m.roundsToWin, left: m.roundLeft,
-            fighters: m.fighters.map((f) => ({ id: f.id, name: lookMap.get(f.id)!.name, color: lookMap.get(f.id)!.color, char: f.char, health: f.health, meter: f.meter, wins: f.stats.roundWins, alive: f.alive, cpu: f.cpu })),
+            guardians: guardians ? { wave: m.wave, waves: m.maxWaves, style: m.style, foes: m.fighters.filter((f) => f.foe && f.alive).length } : null,
+            fighters: m.fighters.filter((f) => !f.foe).map((f) => ({ id: f.id, name: lookMap.get(f.id)!.name, color: lookMap.get(f.id)!.color, char: f.char, health: (f.health / f.maxHealth) * 100, meter: f.meter, wins: f.stats.roundWins, alive: f.alive, cpu: f.cpu })),
           });
         }
         if (now - lastPhone > 300) {
@@ -198,7 +205,8 @@ function Clash({ humans, kit, controls, bridge, paused, onFinish, picks, profile
             if (f.cpu) continue;
             const c = character(f.char);
             kit.status(f.id, {
-              text: m.phase === "podium" ? "Match over!" : !f.alive ? "Out for this round: cheer them on!" : f.meter >= 100 ? `🔥 ${c.special.name} READY: press SPECIAL!` : `${c.name} · Round ${m.round} · ${"⭐".repeat(f.stats.roundWins) || "no wins yet"}`,
+              text: m.phase === "podium" ? "Match over!" : !f.alive ? (guardians ? "Down! Your team can still clear the wave" : "Out for this round: cheer them on!") :
+                guardians && f.meter < 100 ? `🛡 Wave ${m.wave}/${m.maxWaves} · style ${f.stats.style}` : f.meter >= 100 ? `🔥 ${c.special.name} READY: press SPECIAL!` : `${c.name} · Round ${m.round} · ${"⭐".repeat(f.stats.roundWins) || "no wins yet"}`,
               bars: f.alive ? [
                 { label: "Health", value: f.health / 100, color: f.health < 30 ? "#ff4d4d" : "#ffd23f" },
                 { label: "Special", value: f.meter / 100, color: f.meter >= 100 ? "#ff7a00" : c.color },

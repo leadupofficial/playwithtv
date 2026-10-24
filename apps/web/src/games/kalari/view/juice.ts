@@ -82,7 +82,12 @@ export class Juice {
     for (const e of events) {
       switch (e.kind) {
         case "phase":
-          if (e.phase === "countdown") {
+          if (e.phase === "countdown" && m.mode === "guardians") {
+            const n = m.fighters.filter((f) => f.foe && f.alive).length;
+            announcer.say(m.wave === m.maxWaves ? "FINAL WAVE" : `WAVE ${m.wave}`, { color: "#7fe3ff", size: 130, ms: 1100, sub: `${n} clay golems rise from the water!` });
+            sfx.play(m.wave === m.maxWaves ? "vofinal" : "gong", { volume: 0.9 });
+            for (const f of m.fighters) if (f.foe && f.alive) fx.splash(f.x, -0.2, f.z);
+          } else if (e.phase === "countdown") {
             const final = m.round > 1 && (m.round === m.maxRounds || m.fighters.some((f) => f.stats.roundWins === m.roundsToWin - 1));
             announcer.say(final ? "FINAL ROUND" : `ROUND ${m.round}`, { color: "#ffd23f", size: 130, ms: 1000 });
             sfx.play(final ? "vofinal" : "voround", { volume: 0.9 });
@@ -204,6 +209,16 @@ export class Juice {
             fx.confetti(at(w.x, 2, w.z).clone());
           } else announcer.say("DRAW!", { size: 150, ms: 2400, sub: "Nobody takes this round" });
           if (e.reason === "time") sfx.play("votime", { volume: 0.9 });
+          break;
+        case "wave-clear": {
+          announcer.say(e.last ? "ALL WAVES CLEARED!" : "WAVE CLEARED!", { color: "#7fe3ff", size: 120, ms: 2600, sub: e.last ? "The kalari is safe. Guardians, take a bow!" : "Catch your breath: more are coming" });
+          sfx.play("win", { volume: 0.8 });
+          for (const f of m.fighters) if (!f.foe && f.alive) fx.confetti(at(f.x, 2, f.z).clone(), "#7fe3ff", 18);
+          break;
+        }
+        case "wiped":
+          announcer.say("THE GOLEMS WIN", { color: "#c97a4a", size: 120, ms: 2600, sub: "Every guardian is down" });
+          sfx.play("vogameover", { volume: 0.9 });
           break;
         case "match-end":
           sfx.play("vogameover", { volume: 0.9 });

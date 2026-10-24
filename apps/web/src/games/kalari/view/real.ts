@@ -16,7 +16,7 @@ import { ACTIONS, pickAnim } from "../anim";
 import type { ArenaDef } from "../arenas";
 import { Director } from "../director";
 import type { FighterId, KalariEvent, Match } from "../rules";
-import { A, HDRI_URL, playerRing, type Look, type StageView } from "./common";
+import { A, CLAY, HDRI_URL, playerRing, type Look, type StageView } from "./common";
 import { Effects } from "./effects";
 
 export interface RealAssets { arena: GLTF; anims: GLTF; fighters: Map<FighterId, GLTF> }
@@ -101,6 +101,10 @@ export class RealView implements StageView {
         // the palette texture carries an alpha channel: render the fighters fully opaque
         for (const mat of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) Object.assign(mat, { transparent: false, opacity: 1, alphaTest: 0, depthWrite: true });
       });
+      if (look.foe) { // a clay golem: the same body fired in terracotta
+        c.tint(CLAY, 0.85, () => true);
+        c.model.traverse((o) => { const mm = (o as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined; if (mm?.isMeshStandardMaterial) mm.roughness = 0.85; });
+      }
       const ring = playerRing(look.color);
       this.scene.add(c.root, ring);
       c.play(ACTIONS[look.char].idle, { fade: 0 });
@@ -142,6 +146,7 @@ export class RealView implements StageView {
       }
     });
     this.scene.add(this.podiumGroup.group);
+    for (const [id, ch] of this.chars) if (!order.includes(id)) { ch.c.root.visible = false; ch.ring.visible = false; }
     order.forEach((id, i) => {
       const ch = this.chars.get(id)!;
       ch.c.root.visible = true;
@@ -178,7 +183,7 @@ export class RealView implements StageView {
       const ch = this.chars.get(f.id)!;
       const c = ch.c;
       if (this.podiumGroup) {
-        c.update(realDt);
+        if (c.root.visible) c.update(realDt);
         continue;
       }
       c.root.visible = f.state !== "out";

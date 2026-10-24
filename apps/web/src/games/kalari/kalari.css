@@ -54,3 +54,9 @@
 .kalari-arena-pick { margin-top: 26px; font-size: 34px; background: rgba(0,0,0,.55); padding: 8px 30px; border-radius: 999px; border: 3px solid #ffd23f; }
 .kalari-select .hint { font-size: 26px; margin-top: 12px; opacity: .85; text-shadow: 0 2px 0 #000; }
 .kalari-loading { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: 54px; background: center/cover no-repeat; text-shadow: 0 4px 0 #000; }
+.kalari-mode-pick { margin-top: 22px; font-size: 36px; color: #fff; background: linear-gradient(90deg, rgba(196,30,42,.85), rgba(224,166,48,.85)); padding: 8px 34px; border-radius: 999px; box-shadow: 0 6px 0 rgba(0,0,0,.35); }
+.kalari-mode-pick[data-mode="guardians"] { background: linear-gradient(90deg, rgba(14,138,106,.9), rgba(29,63,143,.9)); }
+.kalari-mode-pick span { font-size: 22px; opacity: .8; }
+.kalari-wave { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); }
+.kalari-style { margin-top: 8px; text-align: center; font-size: 26px; color: #fff; background: rgba(24,14,30,.85); border: 3px solid #7fe3ff; border-radius: 16px; padding: 2px 10px; }
+.kalari-style b { font-size: 44px; color: #7fe3ff; margin-right: 8px; }
