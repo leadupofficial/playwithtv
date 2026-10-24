@@ -128,3 +128,20 @@ Licence files: `LICENSE-kaykit.txt`, `LICENSE-polyhaven.txt` (and `sprites/LICEN
 `blender -b --factory-startup -P tools/blender/scenes/gully_lane.py -- --work <tmp> --hdri <2k hdr> --glb
 apps/web/public/assets/gully/lane.glb --bake-ao 2048 --render apps/web/public/assets/gully --samples 96` and
 `sh tools/blender/scenes/gully_sprites.sh <tmp>`.
+
+## Kalari Clash (`apps/web/public/assets/kalari-clash/`)
+
+Made with `tools/blender/kalari/` (commands in each script's docstring). Licence files next to the outputs:
+`LICENSE-kaykit-adventurers.txt`, `LICENSE-ambientcg.txt`, `LICENSE-polyhaven.txt`.
+
+| Source | Author | Licence | Source URL | Files made from it |
+|---|---|---|---|---|
+| KayKit Character Pack: Adventurers 1.0 (full GLBs with all 76 clips) | Kay Lousberg | CC0 1.0 | https://kaylousberg.itch.io/kaykit-adventurers | `simha.glb`, `mayil.glb`, `puli.glb`, `ashwa.glb` (restyled by `fighters.py`: weapons, helmets, hats and capes removed except Mayil's cape, palettes repainted, sash/turban/headband/peacock crest/bamboo staff modelled), `anims.glb` (31 clips), `*-sprites.webp/json` (8-direction sheets rendered by `fighter_sprites.py`) |
+| PavingStones070, PavingStones138, RoofingTiles012A, Planks037A | Lennart Demes, ambientCG | CC0 1.0 | https://ambientcg.com | textures inside `courtyard.glb`, `docks.glb`, `rooftop.glb` (512 px, tinted) and the lighting of `*-lite.webp` / `*-card.webp` |
+| HDRIs Qwantani Dusk 2, Kloppenheim 06 (pure skies) | Greg Zaal, Poly Haven | CC0 1.0 | https://polyhaven.com | `qwantani_dusk_2_puresky_512.hdr`, `kloppenheim_06_puresky_512.hdr` (shipped), 2k versions light the backdrops (not shipped) |
+| HDRI Kloofendal Overcast (pure sky) | Greg Zaal, Poly Haven | CC0 1.0 | https://polyhaven.com | the 1k file is shared from `assets/cinematic/showroom/`; 2k lit `docks-lite.webp` |
+| Kenney Impact Sounds, Interface Sounds, RPG Audio, Voiceover Pack | Kenney | CC0 1.0 | https://kenney.nl/assets | reused from `assets/kenney-audio/` (no new files) |
+
+The arenas themselves (temple courtyard, harbour docks, coconut-grove rooftop: geometry, palms, lamps, boats) are
+modelled procedurally by `arenas.py` / `arena_kit.py` and are original to this repository. Fighter names and
+designs (Simha, Mayil, Puli, Ashwa) are original.

@@ -103,3 +103,12 @@ atlas (`--bake-ao 2048`, via `export_glb.bake_ao`), exports `lane.glb`, renders 
 and writes the camera rigs to JSON for three.js. `scenes/gully_cast.py` prepares a KayKit kid (team jersey, a bat in
 the hand slot) as a .blend for `render_sprites.py --anim-from`; `scenes/gully_sprites.sh` renders every sheet.
 `render_sprites.py --trim-start N` skips the first N frames of a clip (some KayKit clips open on a bind-pose key).
+
+## Game-specific scripts
+
+`tools/blender/kalari/` (KALARI CLASH) builds on the scripts above: `fighters.py` restyles KayKit characters (palette
+repaint, modelled accessories) and exports mesh-only GLBs plus one shared clip library; `fighter_sprites.py` renders
+several clips into one sheet per set (manifest field `clips: {name: {start, frames, fps, loop}}`; EEVEE by default,
+~0.4 s a cell, with the game drawing the contact shadow); `arenas.py` + `arena_kit.py` model three arenas
+procedurally and export each as a GLB plus a lite backdrop rendered through the game's orthographic camera;
+`shrink_hdri.py` makes 512 px runtime HDRIs.

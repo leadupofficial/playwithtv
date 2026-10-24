@@ -1,0 +1,10 @@
+ambientCG materials used by Kalari Clash (baked into courtyard.glb, docks.glb, rooftop.glb as 512 px JPEGs, tinted)
+
+PavingStones070  https://ambientcg.com/view?id=PavingStones070   (laterite floor, terraces)
+PavingStones138  https://ambientcg.com/view?id=PavingStones138   (granite rims, walls, wharf)
+RoofingTiles012A https://ambientcg.com/view?id=RoofingTiles012A  (terracotta roofs)
+Planks037A       https://ambientcg.com/view?id=Planks037A        (pier deck)
+
+Created by Lennart Demes, ambientCG.com.
+Licence: CC0 1.0 Universal (public domain dedication), https://creativecommons.org/publicdomain/zero/1.0/
+See https://docs.ambientcg.com/license/. No attribution required; we credit the author anyway.

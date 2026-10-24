@@ -369,6 +369,33 @@ const IMPLEMENTED: GameManifest[] = [
     ],
     controlModes: ["motion", "buttons", "touchpad"], automatedTestStatus: "unit+e2e",
   },
+  {
+    id: "kalari-clash",
+    title: "Kalari Clash",
+    description: "A Kalaripayattu-inspired martial-arts brawler for up to four. Pick Simha, Mayil, Puli or Ashwa, chain STRIKE-STRIKE-STRIKE, break guards with HEAVY, parry with a well-timed GUARD, roll away, and charge a cinematic SPECIAL. Health and ring-outs at a lamp-lit temple pond, rainy harbour docks or a coconut-grove rooftop. Best of three, CPUs fill to four.",
+    categories: ["fighting", "versus", "party"],
+    tags: ["3d", "cinematic", "brawler", "martial-arts", "kerala", "multiplayer", "vs-cpu", "rounds"],
+    minPlayers: 1, maxPlayers: 4, version: "1.0.0", executionMode: "browser", controller: "game", orientation: "landscape",
+    estimatedAssetKb: 10800, difficulty: "medium", sessionMinutes: 6,
+    accessibility: ["cpu-opponents", "soft-lock-aim", "comeback-meter-for-trailing-players", "buttons-default", "large-text", "three-render-tiers"],
+    colors: ["#c41e2a", "#ffd23f"], emoji: "🥋", playable: true,
+    category: "competitive", modes: ["solo-challenge", "couch-party"], completionStatus: "playable", phase: 5,
+    sensorRequirements: { accelerometer: true, gyroscope: "unused" },
+    motionMappings: [
+      { motion: "roll / pitch", action: "move" }, { motion: "push", action: "strike (a hard push: HEAVY)" },
+      { motion: "pull", action: "guard for half a second" }, { motion: "flick", action: "dodge-roll" }, { motion: "shake", action: "SPECIAL" },
+    ],
+    calibrationProfile: "flat", difficultyLevels: ["cpu"],
+    licenceInventory: [
+      { asset: "fighter bodies and animations: KayKit Character Pack Adventurers 1.0 by Kay Lousberg (restyled in Blender: new palettes, sashes, headwear, staff)", licence: "CC0 1.0", source: "https://kaylousberg.itch.io/kaykit-adventurers" },
+      { asset: "stone, roof-tile and plank textures: ambientCG PavingStones070, PavingStones138, RoofingTiles012A, Planks037A", licence: "CC0 1.0", source: "https://ambientcg.com" },
+      { asset: "HDRIs: Qwantani Dusk 2, Kloppenheim 06, Kloofendal Overcast (pure skies) from Poly Haven", licence: "CC0 1.0", source: "https://polyhaven.com" },
+      { asset: "arenas, sprite sheets and backdrops (modelled and rendered with tools/blender/kalari)", licence: "original", source: "this repository" },
+      { asset: "impact, interface and cloth sounds, announcer voice: Kenney Impact Sounds, Interface Sounds, RPG Audio, Voiceover Pack", licence: "CC0 1.0", source: "https://kenney.nl/assets" },
+      THREE,
+    ],
+    controlModes: ["buttons", "touchpad", "motion"], automatedTestStatus: "unit+e2e",
+  },
 ];
 
 /** Implemented games first, then the remaining catalogue concepts (hidden from TVs until built). */
