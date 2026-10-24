@@ -31,3 +31,6 @@ playwright-report/
 .certs/
 .run/
 .DS_Store
+
+# local tool state (agent worktrees, editor settings): never commit
+.claude/
