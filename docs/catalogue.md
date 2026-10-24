@@ -6,7 +6,7 @@ Statuses: **concept** = idea only, hidden from TVs · **prototype** = partly pla
 (objective, motion input, rules, scoring, end state, rematch) with automated tests · **released** = also passed the
 real-device controller test ([real-device-test.md](real-device-test.md)).
 
-Built: 14 · concepts: 39.
+Built: 15 · concepts: 39.
 
 ## Prioritisation matrix
 
@@ -68,6 +68,7 @@ Within a phase, order by validated demand, controller reliability, cost and repl
 | – | 🥊 Ring Kings Boxing | C · Competitive | 1–2 | 2 | **playable** | solo-challenge, duo-versus | unit+e2e |
 | – | 🚀 Squat Rocket | D · Co-op & adventure | 1–4 | 5 | **playable** | solo, couch-party, team-coop | unit+e2e |
 | – | 💥 Emoji Dhamaka | C · Competitive | 1–8 | 4 | **playable** | solo, couch-party | unit+e2e |
+| – | 🪶 Pillow Fort Brawl | C · Competitive | 1–4 | 4 | **playable** | solo-challenge, couch-party | unit+e2e |
 
 ## Built games: motion mappings
 
@@ -223,3 +224,15 @@ A TV quiz show for the whole family in English, Tamil or Hindi. Emoji reveal one
 
 Hold: **any** · gyroscope: unused · assets: game visuals (CSS and emoji) and synthesised drumroll and heartbeat (original); trivia questions, emoji puzzles and translations (content/trivia) (CC-BY-4.0); film facts: release years, directors, music directors (CC0); Noto Sans Tamil, Noto Sans Devanagari fonts (OFL-1.1); Baloo 2, Baloo Thambi 2 fonts (OFL-1.1); Interface Sounds, Music Jingles, Voiceover Pack (CC0)
 
+
+### 🪶 Pillow Fort Brawl
+
+A pillow fight on a giant bed, and the floor is lava! Hold SWING to charge a whack, let go to send friends flying off the edge. Knocked out? Come back as a ghost and drop socks and feathers on them. Best of three rounds, CPUs fill the bed to four.
+
+Hold: **flat** · gyroscope: unused · assets: HUD, ghosts, socks, lava and wallpaper textures (drawn in code) (original); characters and animations: KayKit Character Pack Adventurers 1.0 by Kay Lousberg (trimmed) (CC0 1.0); bedroom furniture and pillows: KayKit Furniture Bits 1.0 by Kay Lousberg (CC0 1.0); impact sounds: Kenney Impact Sounds (CC0 1.0); UI sounds: Kenney Interface Sounds (CC0 1.0); cloth whooshes: Kenney RPG Audio (CC0 1.0); announcer voice: Kenney Voiceover Pack (CC0 1.0); three.js renderer (MIT)
+
+- **roll**: move left/right
+- **pitch**: move forward/back
+- **push**: swing the pillow (a strong push: full SMASH)
+- **flick-left**: dodge
+- **flick-right**: dodge

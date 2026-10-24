@@ -16,6 +16,7 @@ const KartGame = lazy(() => import("./kart/KartGame").then((m) => ({ default: m.
 const SumoGame = lazy(() => import("./sumo/SumoGame").then((m) => ({ default: m.SumoGame })));
 const SquatRocketGame = lazy(() => import("./squat-rocket/SquatRocketGame").then((m) => ({ default: m.SquatRocketGame })));
 const DhamakaGame = lazy(() => import("./dhamaka/DhamakaGame").then((m) => ({ default: m.DhamakaGame })));
+const BrawlGame = lazy(() => import("./brawl/BrawlGame").then((m) => ({ default: m.BrawlGame })));
 
 /** TV-side implementations, keyed by catalogue id. Only games listed here can be started. */
 export const GAMES: Record<string, GameComponent> = {
@@ -33,4 +34,5 @@ export const GAMES: Record<string, GameComponent> = {
   "memory-wave": MemoryGame,
   "squat-rocket": SquatRocketGame,
   "emoji-dhamaka": DhamakaGame,
+  "pillow-fort-brawl": BrawlGame,
 };
