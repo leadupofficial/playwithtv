@@ -7,19 +7,36 @@
  *
  * Only plain glTF/GLB: no Draco, meshopt or KTX2 (they need WebAssembly, which our CSP does not allow).
  * KHR_mesh_quantization is fine (three decodes it natively).
+ *
+ * CSP note: three's GLTFLoader normally decodes embedded (GLB) textures with ImageBitmapLoader, which fetch()es
+ * a blob: URL; our CSP's connect-src blocks that, so textures silently fail in production. The loader here
+ * registers a plugin that decodes them through an <img> element instead (img-src allows blob:).
  */
 import * as THREE from "three";
-import { GLTFLoader, type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { GLTFLoader, type GLTF, type GLTFParser } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { clone as skeletonClone } from "three/examples/jsm/utils/SkeletonUtils.js";
 
 const cache = new Map<string, Promise<GLTF>>();
+
+/** GLTFLoader plugin: load every texture image through an <img> (TextureLoader) rather than fetch + ImageBitmap. */
+function imageElementTextures(parser: GLTFParser) {
+  const textureLoader = new THREE.TextureLoader(parser.options.manager);
+  return {
+    name: "pwtv_image_element_textures",
+    loadTexture(textureIndex: number) {
+      const def = (parser.json as { textures: Array<{ source?: number }> }).textures[textureIndex];
+      if (def?.source === undefined) return null; // other plugins (e.g. extension-only sources) handle it
+      return parser.loadTextureImage(textureIndex, def.source, textureLoader);
+    },
+  };
+}
 let loader: GLTFLoader | null = null;
 
 /** Loads a glTF/GLB once; later calls with the same URL share the result (clone before adding to a scene). */
 export function loadGltf(url: string): Promise<GLTF> {
   let p = cache.get(url);
   if (!p) {
-    loader ??= new GLTFLoader();
+    loader ??= new GLTFLoader().register(imageElementTextures);
     p = loader.loadAsync(url);
     p.catch(() => cache.delete(url)); // a failed load can be retried
     cache.set(url, p);

@@ -6,6 +6,11 @@ type BrawlDbg = { phase: string; round: number; left: number; fps: number; calls
 
 async function brawlTv(browser: Browser) {
   const tv = await (await browser.newContext({ viewport: { width: 1280, height: 720 }, ignoreHTTPSErrors: true })).newPage();
+  // the 3D assets (GLB with embedded textures → blob: images) and sounds must load under the CSP
+  await tv.addInitScript(() => {
+    (window as unknown as { __csp: string[] }).__csp = [];
+    document.addEventListener("securitypolicyviolation", (e) => (window as unknown as { __csp: string[] }).__csp.push(`${e.violatedDirective} ${e.blockedURI}`));
+  });
   await tv.goto("/tv?quick=1");
   return { tv, code: await tvCode(tv) };
 }
@@ -101,7 +106,7 @@ test("Pillow Fort Brawl with buttons (the default): two phones and CPUs play a w
   const asha = end.players.find((p) => p.name === "Asha")!, ravi = end.players.find((p) => p.name === "Ravi")!;
   expect(asha.got!.hold).toBeGreaterThan(3);           // SWING presses reached the TV
   expect(asha.swings).toBeGreaterThan(2);              // and the hold-to-charge button swung the pillow
-  expect(ravi.swings + ravi.dodges).toBeGreaterThan(1);
+  expect(ravi.got!.hold + ravi.got!.dodge).toBeGreaterThan(2);  // the second phone's SWING and DODGE reached the TV
   expect(end.players.reduce((k, p) => k + p.falls, 0)).toBeGreaterThanOrEqual(3); // ring-outs every round
   expect(end.players.reduce((k, p) => k + p.wins, 0)).toBeGreaterThanOrEqual(2);
   expect(end.calls).toBeLessThan(110);                 // draw-call budget for TV GPUs
@@ -109,6 +114,7 @@ test("Pillow Fort Brawl with buttons (the default): two phones and CPUs play a w
   await expect(a.getByText(/Pillow Champion!|You came/)).toBeVisible({ timeout: 15_000 });
   await expect(b.getByText(/Pillow Champion!|You came/)).toBeVisible({ timeout: 15_000 });
   await expect(tv.getByRole("button", { name: /Rematch/ })).toBeVisible({ timeout: 20_000 });
+  expect(await tv.evaluate(() => (window as unknown as { __csp: string[] }).__csp)).toEqual([]);
 });
 
 test("Pillow Fort Brawl with the touchpad: drag to move, tap to swing, swipe to dodge", async ({ browser }) => {

@@ -170,3 +170,6 @@ static scenery that shares a material (`BufferGeometryUtils.mergeGeometries`), i
 lazy-load the game in `registry.ts`. Expose the frame rate and `renderer.info.render.calls` in your debug
 attribute. Assets: CC0 glTF/GLB only, without Draco/meshopt/KTX2 (no WebAssembly under our CSP), trimmed to the
 files you use, credited in `ASSETS.md` and `licenceInventory`.
+Load models with the kit's `loadGltf()`, not a bare `GLTFLoader`: three's default path decodes GLB textures by
+`fetch()`ing a `blob:` URL, which our CSP's `connect-src` blocks in production (textures silently go missing);
+the kit decodes them through an `<img>` instead.
