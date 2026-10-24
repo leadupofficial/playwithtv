@@ -1,15 +1,34 @@
 import { useEffect, useRef, useState } from "react";
-import type { ControllerType, GameResult, PlayerView, RoomView } from "@playwithtv/protocol";
+import type { ControlMode, ControlSpec, ControllerType, GameResult, PlayerView, RoomView } from "@playwithtv/protocol";
 import { HubSocket, type SocketStatus } from "../net";
 import { AVATARS } from "../avatars";
 import type { PhoneSession } from "./JoinApp";
 import { InputSender } from "./inputSender";
 import { PhoneMotion, goLandscape, motionSupported, requestMotionPermission, savedSensitivity } from "./motion";
-import { MotionPad, type MotionLayout, type PadEvent } from "./MotionPad";
+import { GamePad, type PadEvent } from "./GamePad";
 import { t } from "../i18n";
 import { PhoneLink } from "../rtc";
 import { ScreenWake, type WakeState } from "./wakeLock";
 import { InstallBanner } from "../InstallBanner";
+
+const PICKS_KEY = "pwtv.controls";
+const MODE_LABEL: Record<ControlMode, string> = { buttons: "🎮 Buttons", motion: "🎯 Motion", hybrid: "⚡ Hybrid", touchpad: "👆 Touchpad" };
+
+/** Each player's preferred control mode per game, remembered on this phone. */
+function loadPicks(): Record<string, ControlMode> {
+  try {
+    return JSON.parse(localStorage.getItem(PICKS_KEY) ?? "{}");
+  } catch {
+    return {};
+  }
+}
+function savePicks(p: Record<string, ControlMode>) {
+  try {
+    localStorage.setItem(PICKS_KEY, JSON.stringify(p));
+  } catch {
+    /* private mode: remembered for this visit only */
+  }
+}
 
 export function buzz(ms: number | number[]) {
   try {
@@ -20,8 +39,8 @@ export function buzz(ms: number | number[]) {
 }
 
 /**
- * The phone in a room. Setup uses taps (join, allow motion, ready); once a game starts the phone is a
- * motion-only controller (MotionPad) and the TV shows everything.
+ * The phone in a room. Setup uses taps (join, allow motion, ready); once a game starts the phone becomes the
+ * game's controller (GamePad) in the mode this player picked: buttons, motion, hybrid or touchpad.
  */
 export function Controller({ session, onLeave }: { session: PhoneSession; onLeave: (forget: boolean) => void }) {
   const [status, setStatus] = useState<SocketStatus>("connecting");
@@ -33,6 +52,7 @@ export function Controller({ session, onLeave }: { session: PhoneSession; onLeav
   const [started, setStarted] = useState(false);
   const [motionState, setMotionState] = useState<"unknown" | "ok" | "denied" | "unsupported">("unknown");
   const [recentre, setRecentre] = useState(0);
+  const [picks, setPicks] = useState<Record<string, ControlMode>>(loadPicks);
   const socket = useRef<HubSocket | null>(null);
   const input = useRef<InputSender | null>(null);
   const motion = useRef(new PhoneMotion());
@@ -90,6 +110,17 @@ export function Controller({ session, onLeave }: { session: PhoneSession; onLeav
   }
 
   const me: PlayerView | undefined = room?.players.find((p) => p.id === session.playerId);
+  const spec = layout.type === "game" ? (layout.data as unknown as ControlSpec | undefined) : undefined;
+  const modes = (spec?.modes ?? []).filter((m) => (m === "motion" || m === "hybrid" ? motionState === "ok" : true));
+  const mode: ControlMode | undefined = spec ? (picks[spec.title] && modes.includes(picks[spec.title]!) ? picks[spec.title] : modes[0]) : undefined;
+  const nextMode = () => {
+    if (!spec || !mode || modes.length < 2) return;
+    const next = modes[(modes.indexOf(mode) + 1) % modes.length]!;
+    const p = { ...picks, [spec.title]: next };
+    setPicks(p);
+    savePicks(p);
+    input.current?.release();
+  };
 
   if (fatal) {
     return (
@@ -118,7 +149,8 @@ export function Controller({ session, onLeave }: { session: PhoneSession; onLeav
               {me ? `${AVATARS[me.avatar].emoji} ${me.name}` : "…"}
             </span>
             <span className="row" style={{ gap: 8 }}>
-              {motionState === "ok" && layout.type !== "lobby" && <button className="chip" onClick={() => setRecentre((n) => n + 1)}>⟳ {t("ctl.recentre")}</button>}
+              {mode && modes.length > 1 && <button className="chip mode-chip" onClick={nextMode} aria-label="Change controls">{MODE_LABEL[mode]} ⇄</button>}
+              {(mode === "motion" || mode === "hybrid") && <button className="chip" onClick={() => setRecentre((n) => n + 1)}>⟳ {t("ctl.recentre")}</button>}
               <span className="chip" aria-live="polite" data-link={latency.direct ? "direct" : "server"}>
                 <span className={`dot ${status === "open" ? "on" : ""}`} />
                 {status !== "open" ? (status === "reconnecting" ? "Reconnecting…" : "Connecting…")
@@ -134,16 +166,17 @@ export function Controller({ session, onLeave }: { session: PhoneSession; onLeav
           {wakeState !== "on" && <div className="wake-hint" data-wake={wakeState}>{t("ctl.wake")}</div>}
           <video className="keep-awake" ref={(el) => wake.current.attach(el)} src="/keepawake.mp4" muted playsInline loop preload="auto" aria-hidden />
           <div className="ctl-body">
-            {motionState === "unsupported" || motionState === "denied" ? (
+            {spec && !mode ? (
               <div className="ctl-message">{motionState === "denied" ? t("ctl.denied") : t("ctl.noSensors")}</div>
             ) : layout.type === "lobby" ? (
               <Lobby room={room} me={me} data={layout.data} motion={motion.current} onReady={(r) => socket.current?.send({ type: "player.ready", ready: r })} />
-            ) : input.current ? (
-              <MotionPad
-                key={layout.n}
+            ) : input.current && spec && mode ? (
+              <GamePad
+                key={`${layout.n}-${mode}`}
                 input={input.current}
                 motion={motion.current}
-                layout={(layout.data ?? {}) as MotionLayout}
+                spec={spec}
+                mode={mode}
                 lastEvent={lastEvent}
                 color={me?.color ?? "#7c3aed"}
                 recentre={recentre}

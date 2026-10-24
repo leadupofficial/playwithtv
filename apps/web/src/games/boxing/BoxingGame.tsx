@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { GameResult } from "@playwithtv/protocol";
-import { STRONG } from "@playwithtv/motion";
+import type { ControlSpec, GameResult } from "@playwithtv/protocol";
 import type { GameProps } from "../types";
 import { AVATARS } from "../../avatars";
 import {
@@ -9,47 +8,59 @@ import {
 } from "./engine";
 import { H, W, animate, draw, newView, type View } from "./render";
 import { Sfx } from "./audio";
-import { MotionPlayers, type MotionControl } from "../motionKit";
-import { MotionTutorial } from "../MotionTutorial";
+import { ControlPlayers } from "../controlKit";
+import { ControlTutorial } from "../ControlTutorial";
 
 const QUICK = typeof location !== "undefined" && new URLSearchParams(location.search).get("quick") === "1";
 const CPU_NAMES = ["Tiger Mani", "Iron Selvam", "Thunder Raja", "Cobra Kumar"];
-export const CONTROLS: MotionControl[] = [
-  { motion: "push", label: "jab (push hard: power punch)" },
-  { motion: "flick-left", label: "hook (or flick right)" },
-  { motion: "flick-up", label: "uppercut" },
-  { motion: "pitch", label: "tip forward: step in · back: step out · far back: guard" },
-  { motion: "roll", label: "lean to slip a punch" },
-  { motion: "shake", label: "get up after a knockdown" },
-];
+/** Buttons first: precise, fast punches feel best on a pad. Motion stays available for a workout. */
+export const CONTROLS: ControlSpec = {
+  title: "Ring Kings Boxing",
+  modes: ["buttons", "hybrid", "motion"],
+  stick: "arrows-h",
+  tilt: "steer",
+  actions: [
+    { id: "jab", label: "JAB", color: "#e2384d", gestures: ["push"] },
+    { id: "hook", label: "HOOK", color: "#e07a1f", gestures: ["flick-left", "flick-right"] },
+    { id: "upper", label: "UPPER", color: "#b8329b", gestures: ["flick-up"] },
+    { id: "super", label: "⚡ SUPER", color: "#4f46e5", strongOf: "jab" },
+    { id: "block", label: "🛡 BLOCK", color: "#1f6fd6", hold: true },
+    { id: "dodge", label: "DODGE", color: "#2e8b57" },
+    { id: "mash", label: "GET UP", color: "#ff5d73", gestures: ["shake"] },
+  ],
+  hints: {
+    buttons: "◀ ▶ to move, punch with the buttons, hold BLOCK",
+    hybrid: "Tip the phone forward/back to step, punch with the buttons",
+    motion: "Push to jab, flick sideways to hook, flick up for an uppercut, tip back to guard, shake to get up",
+  },
+};
 
 // Tilt thresholds on the normalised pitch/roll axes (≈ degrees past the dead zone / 28)
 const STEP_IN = 0.35, STEP_OUT = -0.3, GUARD = -0.6, SLIP = 0.9;
 
 type Punch = "jab" | "hook" | "upper" | "super" | "dodge" | "mash";
 
-/** Ring Kings Boxing on the TV: one player against the CPU, or two players head to head. Motion only. */
+/** Ring Kings Boxing on the TV: one player against the CPU, or two players head to head. */
 export function BoxingGame({ players, bridge, paused, onFinish, sponsor }: GameProps) {
   const humans = useRef(players.filter((p) => p.connected).slice(0, 2)).current;
-  const kit = useRef<MotionPlayers | null>(null);
-  kit.current ??= new MotionPlayers(bridge, humans.map((p) => p.id));
+  const kit = useRef<ControlPlayers | null>(null);
+  kit.current ??= new ControlPlayers(bridge, humans.map((p) => p.id), CONTROLS);
   const [practising, setPractising] = useState(true);
   useEffect(() => {
     kit.current!.start();
-    kit.current!.controls("all", "Ring Kings Boxing", CONTROLS);
     return () => kit.current!.dispose();
   }, []);
   if (practising) {
     return (
       <div className="tv" style={{ background: "#07051a" }}>
-        <MotionTutorial title="🥊 Ring Kings Boxing" players={humans} kit={kit.current} controls={CONTROLS} practice={["push", "flick-up"]} quick={QUICK} onDone={() => setPractising(false)} />
+        <ControlTutorial title="🥊 Ring Kings Boxing" players={humans} kit={kit.current} practice={["jab"]} quick={QUICK} onDone={() => setPractising(false)} />
       </div>
     );
   }
   return <Fight humans={humans} kit={kit.current} bridge={bridge} paused={paused} onFinish={onFinish} sponsor={sponsor} />;
 }
 
-function Fight({ humans, kit, bridge, paused, onFinish, sponsor }: Omit<GameProps, "players"> & { humans: GameProps["players"]; kit: MotionPlayers }) {
+function Fight({ humans, kit, bridge, paused, onFinish, sponsor }: Omit<GameProps, "players"> & { humans: GameProps["players"]; kit: ControlPlayers }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [debug, setDebug] = useState("");
   const pausedRef = useRef(paused);
@@ -81,19 +92,21 @@ function Fight({ humans, kit, bridge, paused, onFinish, sponsor }: Omit<GameProp
     const rnd = () => ((rand = (rand * 16807) % 2147483647) / 2147483647);
 
     const fighterOf = (id: string) => (id === a.id ? a : b);
-    const offGesture = kit.onGesture((pid, g) => {
+    const offAction = kit.onAction((pid, action) => {
       const q = pending.get(pid);
       if (!q) return;
-      if (fighterOf(pid).state === "down") return void q.push("mash"); // any move counts towards getting up
-      if (g.kind === "shake") return;
-      const punch: Punch = g.kind === "push" ? (g.strength >= STRONG ? (fighterOf(pid).superMeter >= 1 ? "super" : "upper") : "jab")
-        : g.kind === "flick-left" || g.kind === "flick-right" ? "hook"
-        : g.kind === "flick-up" ? "upper"
-        : "jab";
-      if (q.length < 3) q.push(punch);
+      if (fighterOf(pid).state === "down") return void q.push("mash"); // any button or move counts towards getting up
+      if (action === "mash" || action === "block") return;
+      // SUPER only lands with a full meter; before that it is a strong uppercut
+      const punch = (action === "super" && fighterOf(pid).superMeter < 1 ? "upper" : action) as Punch;
+      if (q.length < 3 && ["jab", "hook", "upper", "super", "dodge"].includes(punch)) q.push(punch);
     });
 
-    /** Turns a phone's tilt and queued gestures into this step's controls (one action per step). */
+    /**
+     * Turns a phone's controls into this step's controls (one action per step). Buttons: ◀ ▶ move on screen,
+     * BLOCK is held. Hybrid: tip forward/back to step towards/away from the opponent. Motion: tip to step,
+     * tip far back to guard, lean to slip.
+     */
     const controlsFor = (id: string): Controls => {
       const q = pending.get(id);
       if (!q) return NO_CONTROLS;
@@ -102,13 +115,20 @@ function Fight({ humans, kit, bridge, paused, onFinish, sponsor }: Omit<GameProp
       const forward = facing(me, me === a ? b : a) === 1 ? "right" : "left";
       const back = forward === "right" ? "left" : "right";
       const c: Controls = { ...NO_CONTROLS, mash: 0 };
-      if (m.ok) {
-        c.block = m.pitch < GUARD;
+      const mode = kit.mode(id);
+      if (m.ok && (mode === "buttons" || mode === "touchpad")) {
+        c.block = m.held("block");
+        if (m.x > 0.5) c.right = true;
+        else if (m.x < -0.5) c.left = true;
+      } else if (m.ok) {
+        c.block = m.held("block") || (mode === "motion" && m.pitch < GUARD);
         if (m.pitch > STEP_IN) c[forward] = true;
         else if (m.pitch < STEP_OUT && !c.block) c[back] = true;
-        const lean = Math.abs(m.roll) > SLIP;
-        if (lean && !leaning.get(id)) c.dodge = true;
-        leaning.set(id, lean);
+        if (mode === "motion") {
+          const lean = Math.abs(m.roll) > SLIP;
+          if (lean && !leaning.get(id)) c.dodge = true;
+          leaning.set(id, lean);
+        }
       }
       c.mash = q.filter((x) => x === "mash").length;
       const rest = q.filter((x) => x !== "mash");
@@ -145,7 +165,7 @@ function Fight({ humans, kit, bridge, paused, onFinish, sponsor }: Omit<GameProp
           sfx.crowd(2.2);
           view.banner = { text: "DOWN!", color: "#ff5d73", t: 0, dur: 1.2 };
           if (human(e.on)) {
-            kit.toast(e.on, "DOWN! Shake your phone to get up", "bad");
+            kit.toast(e.on, "DOWN! Tap GET UP fast (or shake)", "bad");
             bridge.event(e.on, "vibrate", { ms: 600 });
           }
         } else if (e.kind === "up") {
@@ -201,7 +221,7 @@ function Fight({ humans, kit, bridge, paused, onFinish, sponsor }: Omit<GameProp
         for (const x of [a, b]) {
           if (!human(x.id)) continue;
           kit.status(x.id, {
-            text: x.state === "down" ? `Shake to get up! ${x.mashCount}/${x.mashNeeded}` : `Round ${fight.round}`,
+            text: x.state === "down" ? `GET UP! Tap GET UP or shake · ${x.mashCount}/${x.mashNeeded}` : `Round ${fight.round}`,
             bars: [
               { label: "Health", value: x.hp / 100, color: x.hp > 30 ? "#3ee08f" : "#ffd23f" },
               { label: "Stamina", value: x.stamina / 100, color: "#ffd23f" },
@@ -228,7 +248,7 @@ function Fight({ humans, kit, bridge, paused, onFinish, sponsor }: Omit<GameProp
     raf = requestAnimationFrame(frame);
     return () => {
       cancelAnimationFrame(raf);
-      offGesture();
+      offAction();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -23,8 +23,8 @@ export const JOIN_CODE_PATTERN = new RegExp(`^[A-Z2-9]{${JOIN_CODE_LENGTH}}$`);
 
 // ---- shared shapes ----------------------------------------------------------------
 
-/** "motion" is the one in-game controller: tilt + gestures, no touch (see @playwithtv/motion). "lobby" is setup. */
-export const ControllerType = z.enum(["lobby", "motion"]);
+/** "game" is the one in-game controller, drawn from the game's ControlSpec (see controls.ts). "lobby" is setup. */
+export const ControllerType = z.enum(["lobby", "game"]);
 export type ControllerType = z.infer<typeof ControllerType>;
 
 export const Avatar = z.enum(["tiger", "peacock", "elephant", "cobra", "parrot", "lotus", "mango", "rocket"]);
@@ -234,8 +234,11 @@ export const GameManifest = z.object({
   assetManifest: z.array(z.object({ path: z.string(), kb: z.number() })).optional(),
   licenceInventory: z.array(z.object({ asset: z.string(), licence: z.string(), source: z.string() })).optional(),
   automatedTestStatus: z.enum(["none", "unit", "unit+e2e"]),
+  /** Control modes the game offers on phones, best first (see controls.ts). */
+  controlModes: z.array(z.enum(["buttons", "motion", "hybrid", "touchpad"])).optional(),
 });
 export type GameManifest = z.infer<typeof GameManifest>;
 
 export { CATALOG, findGame } from "./catalog.js";
 export * from "./ads.js";
+export * from "./controls.js";

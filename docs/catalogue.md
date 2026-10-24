@@ -90,7 +90,7 @@ Hold: **upright** · gyroscope: optional · assets: all visuals and sounds (draw
 
 ### 🧠 Tamil Trivia Royale
 
-Quiz rounds in Tamil and English. Turn your phone to move your marker to an answer on the TV, then push it towards the TV to lock in.
+Quiz rounds in Tamil and English. Tap your answer's colour on your phone, or turn the phone to aim and push to lock in.
 
 Hold: **upright** · gyroscope: unused · assets: all visuals and sounds (drawn and synthesised in code) (original); questions (original)
 
@@ -99,7 +99,7 @@ Hold: **upright** · gyroscope: unused · assets: all visuals and sounds (drawn 
 
 ### 🥊 Ring Kings Boxing
 
-Box a CPU champion or a friend with your phone as your fists: push to jab, flick sideways to hook, flick up for an uppercut, tip back to guard. Shake to get up!
+Box a CPU champion or a friend: punch, block and dodge on your phone's buttons, or box with motion (push to jab, flick to hook). Land the SUPER punch, beat the 10-count!
 
 Hold: **upright** · gyroscope: unused · assets: all visuals and sounds (drawn and synthesised in code) (original)
 

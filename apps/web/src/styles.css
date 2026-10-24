@@ -136,29 +136,54 @@ button { font-family: inherit; color: inherit; }
 /* ---------- motion controller (phone) ---------- */
 .mini { height: 12px; border-radius: 6px; background: rgba(255,255,255,0.12); overflow: hidden; }
 .mini > div { height: 100%; transition: width 0.2s; }
-.motion-pad { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; border: 3px solid; border-radius: 22px; padding: 12px; text-align: center; min-height: 0; }
+.pad-panel { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; border: 3px solid; border-radius: 22px; padding: 12px; text-align: center; }
 .calib { display: flex; flex-direction: column; align-items: center; gap: 14px; font-size: 20px; }
 .calib-ring { width: 64px; height: 64px; border-radius: 50%; border: 6px solid; border-right-color: transparent; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.mp-title { color: var(--muted); font-weight: 700; }
 .mp-watch { font-size: 30px; font-weight: 800; }
-.mp-status { font-size: 18px; }
-.mp-bars { display: grid; gap: 4px; width: min(420px, 100%); }
-.mp-bar { display: grid; grid-template-columns: 80px 1fr; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
-.mp-flash { min-height: 34px; font-size: 26px; font-weight: 800; color: var(--warn); transition: transform 0.1s; }
-.mp-flash.on { transform: scale(1.15); }
-.mp-row { display: flex; gap: 18px; align-items: center; }
 .tilt-dot-wrap { width: 96px; height: 96px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; flex: none; }
 .tilt-dot { width: 18px; height: 18px; border-radius: 50%; transition: transform 0.05s linear; }
-.mp-controls { margin: 0; padding: 0; list-style: none; text-align: left; font-size: 13px; color: var(--muted); display: grid; gap: 2px; }
-.mp-controls b { color: var(--ink); }
+
+/* ---------- game pad (phone/GamePad.tsx): one controller, four modes ---------- */
+.game-pad { flex: 1; display: flex; flex-direction: column; gap: 8px; min-height: 0; border: 3px solid; border-radius: 22px; padding: 8px; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.pad-info { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: 13px; color: var(--muted); min-height: 22px; }
+.pad-title { font-weight: 700; color: var(--ink); }
+.pad-status { color: var(--ink); }
+.pad-bar { display: inline-flex; align-items: center; gap: 6px; }
+.pad-bar .mini { width: 90px; display: inline-block; height: 8px; }
+.pad-bar .mini > span { display: block; height: 100%; }
+.pad-flash { margin-left: auto; font-weight: 800; color: var(--warn); font-size: 15px; transition: transform 0.1s; }
+.pad-flash.on { transform: scale(1.1); }
+.pad-body { flex: 1; display: flex; gap: 12px; min-height: 0; }
+.pad-left { flex: 1; display: flex; align-items: center; justify-content: center; min-width: 0; }
+.pad-left.wide { flex: 2; }
+.pad-left.tilt-side { flex-direction: column; gap: 10px; text-align: center; }
+.pad-right { flex: 1.4; display: flex; min-width: 0; }
+.pad-right.narrow { flex: 0.8; }
+.pad-motion { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; }
+.stick { position: relative; width: min(100%, 46vh, 220px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,0.1), rgba(255,255,255,0.03)); border: 2px solid var(--line); touch-action: none; display: grid; place-items: center; }
+.stick-knob { width: 40%; height: 40%; border-radius: 50%; background: linear-gradient(180deg, #8b7bff, #5b4bd6); box-shadow: 0 6px 14px rgba(0,0,0,0.4); pointer-events: none; transition: transform 0.03s linear; }
+.arrows { display: grid; gap: 10px; width: 100%; height: 100%; }
+.arrows.two { grid-template-columns: 1fr 1fr; }
+.arrows.four { grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr 1fr 1fr; }
+.arrows.four .arrow-up { grid-area: 1 / 2; } .arrows.four .arrow-left { grid-area: 2 / 1; }
+.arrows.four .arrow-right { grid-area: 2 / 3; } .arrows.four .arrow-down { grid-area: 3 / 2; }
+.arrow { border: 0; border-radius: 18px; background: #3b3f73; color: #fff; font-size: 34px; touch-action: none; box-shadow: inset 0 -5px 0 rgba(0,0,0,0.25); }
+.arrow.held { filter: brightness(1.35); transform: scale(0.96); }
+.action-grid { flex: 1; display: grid; gap: 10px; grid-auto-rows: 1fr; }
+.action { border: 0; border-radius: 18px; background: #3b3f73; color: #fff; font-weight: 800; font-size: 20px; min-height: 52px; touch-action: none; box-shadow: inset 0 -5px 0 rgba(0,0,0,0.25); transition: transform 0.06s, filter 0.06s; }
+.action:active, .action.held { transform: scale(0.95); filter: brightness(1.3); }
+.touchpad { width: 100%; height: 100%; border-radius: 18px; border: 2px dashed var(--line); background: rgba(255,255,255,0.04); display: grid; place-items: center; touch-action: none; }
+.touchpad-hint { color: var(--muted); font-size: 14px; pointer-events: none; }
+.mode-chip { font-weight: 700; }
 .sens { display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: var(--muted); }
 
 /* ---------- motion tutorial (TV) ---------- */
 .tutorial { position: absolute; inset: 0; padding: 54px 96px; display: flex; flex-direction: column; align-items: center; gap: 22px; text-align: center; }
-.tut-controls { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; max-width: 1600px; }
-.tut-controls li { background: var(--glass); border: 1px solid var(--line); border-radius: 0.8em; padding: 0.4em 0.9em; font-size: 0.85em; display: flex; gap: 0.5em; }
-.tut-controls b { color: var(--warn); }
+.tut-modes { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; max-width: 1700px; }
+.tut-modes li { background: var(--glass); border: 1px solid var(--line); border-radius: 0.8em; padding: 0.4em 0.9em; font-size: 0.78em; display: flex; flex-direction: column; gap: 0.15em; max-width: 520px; text-align: left; }
+.tut-modes b { color: var(--warn); }
+.tut-mode { margin-left: auto; font-size: 0.8em; color: var(--muted); }
 .tut-players { display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; }
 .tut-card { width: 330px; border: 3px solid; border-radius: 1em; padding: 0.7em; background: var(--glass); display: flex; flex-direction: column; align-items: center; gap: 0.4em; transition: transform 0.2s; }
 .tut-card.ready { transform: scale(1.04); background: rgba(62,224,143,0.12); }

@@ -1,20 +1,24 @@
 import { expect, test, type Page } from "@playwright/test";
-import { gesture, newPhonePage, pose, practiseUntilReady, startController, tvCode, upright } from "./helpers";
+import { gesture, newPhonePage, pose, practiseUntilReady, press, startController, tvCode, upright } from "./helpers";
 
 async function tvInvite(tv: Page) {
   return tv.evaluate(() => JSON.parse(sessionStorage.getItem("pwtv.tv.room") ?? "{}")) as Promise<{ joinCode: string; inviteToken: string }>;
 }
 
-/** Each phone turns to its answer (Priya far left, Karthik far right) and pushes towards the TV to lock it. */
-async function answer(tv: Page, phones: Array<[Page, string, number]>, n: number) {
+/**
+ * Priya plays with buttons (taps the first answer); Karthik plays with motion (turns far right to the last
+ * answer and pushes towards the TV). Both end up locked in on the TV.
+ */
+async function answer(tv: Page, priya: Page, karthik: Page, n: number) {
   await expect(tv.getByText(new RegExp(`Question ${n} / `))).toBeVisible({ timeout: 20_000 });
   await expect(tv.locator(".q-ta")).toBeVisible({ timeout: 20_000 });
-  for (const [p, name, roll] of phones) {
-    await expect(p.locator(".mp-watch")).toBeVisible({ timeout: 10_000 }); // calibrated (a reloaded phone recalibrates)
-    await pose(p, upright(roll));
-    await gesture(p, "push");
-    await expect(tv.locator(".answered .chip.in", { hasText: name })).toBeVisible({ timeout: 5_000 });
-  }
+  await expect(priya.locator('.game-pad[data-mode="buttons"]')).toBeVisible({ timeout: 10_000 });
+  await press(priya, "▲");
+  await expect(tv.locator(".answered .chip.in", { hasText: "Priya" })).toBeVisible({ timeout: 5_000 });
+  await expect(karthik.locator(".mp-watch")).toBeVisible({ timeout: 10_000 }); // calibrated (a reloaded phone recalibrates)
+  await pose(karthik, upright(30));
+  await gesture(karthik, "push");
+  await expect(tv.locator(".answered .chip.in", { hasText: "Karthik" })).toBeVisible({ timeout: 5_000 });
 }
 
 test("scan, connect, play: two phones play a full Tamil Trivia match, rematch and reconnect", async ({ browser }) => {
@@ -37,7 +41,7 @@ test("scan, connect, play: two phones play a full Tamil Trivia match, rematch an
   await startController(a);
   await expect(a.getByText("You're in!")).toBeVisible();
 
-  const b = await newPhonePage(browser);
+  const b = await newPhonePage(browser, { "Tamil Trivia Royale": "motion" });
   await b.goto(`/join?i=${invite.inviteToken}`);
   await b.getByLabel("Your name").fill("Karthik");
   await b.getByRole("button", { name: "Join as guest" }).click();
@@ -55,11 +59,12 @@ test("scan, connect, play: two phones play a full Tamil Trivia match, rematch an
   await tv.keyboard.press("Enter");
   await tv.getByRole("button", { name: /Start Tamil Trivia Royale/ }).click();
 
-  // 8. phones become motion controllers: calibrate + practise on the TV, then answer by tilt and push
-  await practiseUntilReady(tv, a, "Priya", ["push"]);
+  // 8. phones become controllers in each player's own mode: Priya buttons (the default), Karthik motion
+  await practiseUntilReady(tv, a, "Priya", []);
   await practiseUntilReady(tv, b, "Karthik", ["push"]);
-  const both: Array<[Page, string, number]> = [[a, "Priya", -30], [b, "Karthik", 30]];
-  for (let q = 1; q <= 3; q++) await answer(tv, both, q);
+  await expect(tv.locator('.tut-card[data-player="Priya"]')).toHaveAttribute("data-mode", "buttons");
+  await expect(tv.locator('.tut-card[data-player="Karthik"]')).toHaveAttribute("data-mode", "motion");
+  for (let q = 1; q <= 3; q++) await answer(tv, a, b, q);
 
   // 10. results on TV and phones
   await expect(tv.getByText(/wins!/)).toBeVisible({ timeout: 20_000 });
@@ -67,9 +72,9 @@ test("scan, connect, play: two phones play a full Tamil Trivia match, rematch an
 
   // 11. rematch without reloading
   await tv.getByRole("button", { name: /Rematch/ }).click();
-  await practiseUntilReady(tv, a, "Priya", ["push"]);
+  await practiseUntilReady(tv, a, "Priya", []);
   await practiseUntilReady(tv, b, "Karthik", ["push"]);
-  await answer(tv, both, 1);
+  await answer(tv, a, b, 1);
 
   // 9. a phone drops out (tab closed / phone locked) and comes back on the same phone with the same identity
   await b.goto("about:blank");
@@ -80,8 +85,8 @@ test("scan, connect, play: two phones play a full Tamil Trivia match, rematch an
   await startController(b);
   await expect(karthikChip).not.toHaveClass(/off/);    // same identity, back in the match
   await expect(tv.locator(".answered .chip")).toHaveCount(2);
-  await answer(tv, both, 2);                           // the reloaded phone's gestures count again
-  await answer(tv, both, 3);
+  await answer(tv, a, b, 2);                           // the reloaded phone's gestures count again
+  await answer(tv, a, b, 3);
 
   await expect(tv.getByText(/wins!/)).toBeVisible({ timeout: 20_000 });
   await tv.getByRole("button", { name: /Choose another game/ }).click();

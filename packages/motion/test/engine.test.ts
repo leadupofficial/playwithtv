@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { HoldTimer, MotionEngine, MotionReader, TraceBuilder, frameAxes, pose, replay, strongKey, toScreen, v, zoneOf } from "../src/index.js";
+import { ControlReader, HoldTimer, MotionEngine, TraceBuilder, frameAxes, pose, replay, toScreen, v, zoneOf } from "../src/index.js";
 
 const UP = pose(0, 0);
 const kinds = (t: ReturnType<typeof replay>) => t.gestures.map((g) => g.kind);
@@ -114,32 +114,37 @@ describe("gestures", () => {
 });
 
 describe("wire format", () => {
-  it("TV reader turns counters into gestures once, and ignores old counters after a reconnect", () => {
-    const tv = new MotionReader();
-    expect(tv.update({ taps: { push: 5, calibrated: 1 } })).toEqual([]);
+  it("TV reader turns counters into actions once, and ignores old counters after a reconnect", () => {
+    const tv = new ControlReader();
+    expect(tv.update({ taps: { jab: 5, calibrated: 1 } })).toEqual([]);
     expect(tv.calibrations).toBe(1);
-    const g = tv.update({ axes: { roll: 0.4, ok: 1 }, taps: { push: 6, [strongKey("push")]: 1, "flick-up": 1, calibrated: 1 } });
-    expect(g.map((x) => [x.kind, x.strength])).toEqual([["push", 2], ["flick-up", 1]]);
-    expect(tv.roll).toBe(0.4);
-    expect(tv.ok).toBe(true);
-    expect(tv.update({ axes: { roll: 0.4, ok: 1 }, taps: { push: 6, "flick-up": 1 } })).toEqual([]);
+    const a = tv.update({ axes: { x: 0.4, y: -0.2, ok: 1, m: 2 }, taps: { jab: 7, hook: 1, calibrated: 1 }, buttons: { block: true } });
+    expect(a).toEqual(["jab", "jab", "hook"]);
+    expect([tv.x, tv.y, tv.ok, tv.mode, tv.held("block"), tv.held("jab")]).toEqual([0.4, -0.2, true, 2, true, false]);
+    expect(tv.update({ axes: { x: 0.4, ok: 1 }, taps: { jab: 7, hook: 1 } })).toEqual([]);
+  });
+
+  it("falls back to tilt for movement when x/y are absent", () => {
+    const tv = new ControlReader();
+    tv.update({ axes: { roll: 0.5, pitch: -0.3, ok: 1 } });
+    expect([tv.x, tv.y]).toEqual([0.5, -0.3]);
   });
 
   it("a phone that reloads (counters restart at zero) keeps working after a reconnect", () => {
-    const tv = new MotionReader();
-    tv.update({ taps: { push: 7 } });
-    tv.update({ taps: { push: 8 } });
-    expect(tv.update({ taps: { push: 0 } })).toEqual([]);           // reload detected: new baseline
-    expect(tv.update({ taps: { push: 1 } }).map((g) => g.kind)).toEqual(["push"]);
+    const tv = new ControlReader();
+    tv.update({ taps: { boost: 7 } });
+    tv.update({ taps: { boost: 8 } });
+    expect(tv.update({ taps: { boost: 0 } })).toEqual([]);           // reload detected: new baseline
+    expect(tv.update({ taps: { boost: 1 } })).toEqual(["boost"]);
     tv.clear();                                                       // disconnect
-    expect(tv.update({ taps: { push: 1 } })).toEqual([]);
-    expect(tv.update({ taps: { push: 2 } }).map((g) => g.kind)).toEqual(["push"]);
+    expect(tv.update({ taps: { boost: 1 } })).toEqual([]);
+    expect(tv.update({ taps: { boost: 2 } })).toEqual(["boost"]);
   });
 
-  it("frameAxes reports ok only when calibrated and live", () => {
+  it("frameAxes reports ok only when calibrated and live, and mirrors tilt as movement", () => {
     const e = new MotionEngine();
     e.push({ t: 16, gravity: UP });
-    expect(frameAxes(e.frame(16)).ok).toBe(1);
+    expect(frameAxes(e.frame(16))).toMatchObject({ ok: 1, x: 0, y: 0 });
     expect(frameAxes(e.frame(2000)).ok).toBe(0);
   });
 });

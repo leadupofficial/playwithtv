@@ -1,16 +1,16 @@
 import { expect, test } from "@playwright/test";
-import { gesture, joinPhone, pose, practiseUntilReady, tvCode, upright } from "./helpers";
+import { gesture, joinPhone, pose, practiseUntilReady, press, tvCode, upright } from "./helpers";
 
 test("Sky Gyro Racer: two phones race split-screen, steer by turning and boost with a push", async ({ browser }) => {
   test.setTimeout(180_000);
   const tv = await (await browser.newContext({ viewport: { width: 1280, height: 720 }, ignoreHTTPSErrors: true })).newPage();
   await tv.goto("/tv?quick=1");
   const code = await tvCode(tv);
-  const a = await joinPhone(browser, code, "Ravi");
-  const b = await joinPhone(browser, code, "Divya");
+  const a = await joinPhone(browser, code, "Ravi");                                  // hybrid (the default)
+  const b = await joinPhone(browser, code, "Divya", { "Sky Gyro Racer": "motion" });
   await tv.locator(".game-card", { hasText: "Sky Gyro Racer" }).click();
   await tv.getByRole("button", { name: /Start Sky Gyro Racer/ }).click();
-  await practiseUntilReady(tv, a, "Ravi", ["push"]);
+  await practiseUntilReady(tv, a, "Ravi", ["btn:BOOST"]);
   await practiseUntilReady(tv, b, "Divya", ["push"]);
 
   const race = () => tv.locator("[data-racer]").getAttribute("data-racer").then((s) => JSON.parse(s || "{}"));
@@ -18,8 +18,10 @@ test("Sky Gyro Racer: two phones race split-screen, steer by turning and boost w
   await expect(tv.locator(".racer-hud")).toHaveCount(2);            // split screen
   await pose(a, upright(25));                                       // Ravi steers right…
   await expect.poll(async () => (await race()).ships?.[0]?.dist ?? 0).toBeGreaterThan(30);
-  await gesture(b, "push");                                         // …Divya boosts
+  await gesture(b, "push");                                         // …Divya boosts by pushing (motion)
   await expect.poll(async () => (await race()).ships?.[1]?.boosts ?? 0, { timeout: 5_000 }).toBeGreaterThan(0);
+  await press(a, "BOOST");                                          // …and Ravi with the button (hybrid)
+  await expect.poll(async () => (await race()).ships?.[0]?.boosts ?? 0, { timeout: 5_000 }).toBeGreaterThan(0);
   await tv.screenshot({ path: "test-results/racer-split.png" });
   await pose(a, upright(0));
 

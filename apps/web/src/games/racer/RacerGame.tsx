@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { PlayerView } from "@playwithtv/protocol";
 import type { GameProps } from "../types";
-import { MotionPlayers, type MotionControl } from "../motionKit";
-import { MotionTutorial } from "../MotionTutorial";
+import type { ControlSpec } from "@playwithtv/protocol";
+import { ControlPlayers } from "../controlKit";
+import { ControlTutorial } from "../ControlTutorial";
 import { AVATARS } from "../../avatars";
 import { t } from "../../i18n";
 import { makeTrack, newRace, standings, stepRace, type Controls } from "./engine";
@@ -13,28 +14,35 @@ import "./racer.css";
 const QUICK = typeof location !== "undefined" && new URLSearchParams(location.search).get("quick") === "1";
 const GATES = QUICK ? 6 : 24;
 const TIME_LIMIT = QUICK ? 60 : 150;
-const CONTROLS: MotionControl[] = [
-  { motion: "roll", label: "steer" },
-  { motion: "pitch", label: "tip away to dive, towards you to climb" },
-  { motion: "push", label: "boost (uses one energy)" },
-];
+/** Hybrid first: tilting the phone like a wheel steers best, and a thumb on BOOST never misfires. */
+const CONTROLS: ControlSpec = {
+  title: "Sky Gyro Racer",
+  modes: ["hybrid", "motion", "buttons"],
+  stick: "joystick",
+  tilt: "steer",
+  actions: [{ id: "boost", label: "🔥 BOOST", color: "#ff7a00", gestures: ["push"] }],
+  hints: {
+    hybrid: "Turn the phone like a steering wheel, tip to climb or dive, tap BOOST",
+    motion: "Turn to steer, tip to climb or dive, push towards the TV to boost",
+    buttons: "Joystick to steer and climb, tap BOOST",
+  },
+};
 const DT = 1 / 60;
 
 /** Sky Gyro Racer: 1–4 ships, split screen, steer by turning the phone, push to boost. */
 export function RacerGame({ players, bridge, paused, onFinish }: GameProps) {
   const racers = useRef(players.filter((p) => p.connected).slice(0, 4)).current;
-  const kit = useRef<MotionPlayers | null>(null);
-  kit.current ??= new MotionPlayers(bridge, racers.map((p) => p.id));
+  const kit = useRef<ControlPlayers | null>(null);
+  kit.current ??= new ControlPlayers(bridge, racers.map((p) => p.id), CONTROLS);
   const [practising, setPractising] = useState(true);
   useEffect(() => {
     kit.current!.start();
-    kit.current!.controls("all", "Sky Gyro Racer", CONTROLS);
     return () => kit.current!.dispose();
   }, []);
   if (practising) {
     return (
       <div className="tv racer-tv">
-        <MotionTutorial title="🚀 Sky Gyro Racer" players={racers} kit={kit.current} controls={CONTROLS} practice={["push"]} quick={QUICK} onDone={() => setPractising(false)} />
+        <ControlTutorial title="🚀 Sky Gyro Racer" players={racers} kit={kit.current} practice={["boost"]} quick={QUICK} onDone={() => setPractising(false)} />
       </div>
     );
   }
@@ -43,7 +51,7 @@ export function RacerGame({ players, bridge, paused, onFinish }: GameProps) {
 
 interface ShipHud { place: number; gates: number; energy: number; boost: boolean; finished: boolean; speed: number }
 
-function Race({ racers, kit, paused, onFinish }: { racers: PlayerView[]; kit: MotionPlayers; paused: boolean; onFinish: GameProps["onFinish"] }) {
+function Race({ racers, kit, paused, onFinish }: { racers: PlayerView[]; kit: ControlPlayers; paused: boolean; onFinish: GameProps["onFinish"] }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
@@ -66,14 +74,14 @@ function Race({ racers, kit, paused, onFinish }: { racers: PlayerView[]; kit: Mo
     const sfx = new Engines();
     const boostQueued = new Set<string>();
     const boosts = new Map(racers.map((p) => [p.id, 0]));
-    const offGesture = kit.onGesture((id, g) => g.kind === "push" && boostQueued.add(id));
+    const offAction = kit.onAction((id, a) => a === "boost" && boostQueued.add(id));
     const startedAt = Date.now();
     let raf = 0, last = performance.now(), acc = 0, lastHud = 0, frames = 0, fps = 0, fpsT = performance.now();
     let finishedReported = false;
 
     const tilt = () => new Map(racers.map((p) => {
       const m = kit.get(p.id);
-      return [p.id, m.ok ? { steer: m.roll, climb: m.pitch } : { steer: 0, climb: 0 }];
+      return [p.id, m.ok ? { steer: m.x, climb: m.y } : { steer: 0, climb: 0 }];
     }));
 
     const frame = (now: number) => {
@@ -120,7 +128,7 @@ function Race({ racers, kit, paused, onFinish }: { racers: PlayerView[]; kit: Mo
     raf = requestAnimationFrame(frame);
     return () => {
       cancelAnimationFrame(raf);
-      offGesture();
+      offAction();
       scene.dispose();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

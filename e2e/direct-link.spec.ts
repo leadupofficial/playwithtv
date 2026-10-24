@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { gesture, newPhonePage, startController, tvCode } from "./helpers";
+import { newPhonePage, press, startController, tvCode } from "./helpers";
 
 async function join(browser: import("@playwright/test").Browser, code: string, name: string, query = "") {
   const page = await newPhonePage(browser); // with the synthetic motion sensor
@@ -31,7 +31,7 @@ test("a phone on the same network links directly to the TV; with direct links of
   for (const [phone, name] of [[near, "Near"], [far, "Far"]] as const) {
     const card = tv.locator(`.tut-card[data-player="${name}"]`);
     await expect(card).toContainText("✓", { timeout: 10_000 });
-    await gesture(phone, "push");
+    await press(phone, "BOOST");                      // hybrid pad's button
     await expect(card).toHaveClass(/ready/, { timeout: 10_000 });
   }
 });

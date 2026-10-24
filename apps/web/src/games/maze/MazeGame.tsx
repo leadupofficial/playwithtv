@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { PlayerView } from "@playwithtv/protocol";
 import type { GameProps } from "../types";
-import { MotionPlayers, type MotionControl } from "../motionKit";
-import { MotionTutorial } from "../MotionTutorial";
+import type { ControlSpec } from "@playwithtv/protocol";
+import { ControlPlayers } from "../controlKit";
+import { ControlTutorial } from "../ControlTutorial";
 import { placings } from "../scoring";
 import { AVATARS } from "../../avatars";
 import { t } from "../../i18n";
@@ -14,27 +15,34 @@ import "./maze.css";
 
 const QUICK = typeof location !== "undefined" && new URLSearchParams(location.search).get("quick") === "1";
 const LEVEL_DEFS = QUICK ? LEVELS.slice(0, 1) : LEVELS;
-const CONTROLS: MotionControl[] = [
-  { motion: "roll", label: "tilt the maze left / right" },
-  { motion: "pitch", label: "tilt it forward / back" },
-];
+const CONTROLS: ControlSpec = {
+  title: "Gravity Maze 3D",
+  modes: ["motion", "buttons", "touchpad"],
+  stick: "joystick",
+  tilt: "tray",
+  actions: [],
+  hints: {
+    motion: "Hold the phone flat like a tray and tilt it",
+    buttons: "Push the joystick the way you want the maze to tip",
+    touchpad: "Touch and drag towards where the ball should roll",
+  },
+};
 const DT = 1 / 60;
 
 /** Gravity Maze 3D: phone held flat like a tray tilts the board. Players take turns on the same levels. */
 export function MazeGame({ players, bridge, paused, onFinish }: GameProps) {
   const order = useRef(players.filter((p) => p.connected).slice(0, 4)).current;
-  const kit = useRef<MotionPlayers | null>(null);
-  kit.current ??= new MotionPlayers(bridge, order.map((p) => p.id));
+  const kit = useRef<ControlPlayers | null>(null);
+  kit.current ??= new ControlPlayers(bridge, order.map((p) => p.id), CONTROLS);
   const [practising, setPractising] = useState(true);
   useEffect(() => {
     kit.current!.start();
-    kit.current!.controls("all", "Gravity Maze 3D · hold your phone flat", CONTROLS);
     return () => kit.current!.dispose();
   }, []);
   if (practising) {
     return (
       <div className="tv maze-tv">
-        <MotionTutorial title="🌀 Gravity Maze 3D · hold your phone flat like a tray" players={order} kit={kit.current} controls={CONTROLS}
+        <ControlTutorial title="🌀 Gravity Maze 3D" players={order} kit={kit.current}
           practice={[]} quick={QUICK} onDone={() => setPractising(false)} />
       </div>
     );
@@ -45,7 +53,7 @@ export function MazeGame({ players, bridge, paused, onFinish }: GameProps) {
 type Phase = "turn" | "play" | "cleared" | "done";
 interface Hud { phase: Phase; player: number; level: number; time: number; coins: number; falls: number; message: string }
 
-function MazePlay({ order, kit, paused, onFinish }: { order: PlayerView[]; kit: MotionPlayers; paused: boolean; onFinish: GameProps["onFinish"] }) {
+function MazePlay({ order, kit, paused, onFinish }: { order: PlayerView[]; kit: ControlPlayers; paused: boolean; onFinish: GameProps["onFinish"] }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
@@ -67,7 +75,7 @@ function MazePlay({ order, kit, paused, onFinish }: { order: PlayerView[]; kit: 
     const say = (text: string) => { message = text; messageT = 2; };
     const current = () => order[player]!;
     const announceTurn = () => {
-      for (const p of order) kit.status(p.id, { text: p.id === current().id ? "Your turn! Hold the phone flat and tilt" : `Watch: ${current().name} is playing` });
+      for (const p of order) kit.status(p.id, { text: p.id === current().id ? "Your turn! Tilt the maze" : `Watch: ${current().name} is playing` });
       kit.toast(current().id, "Your turn!", "good");
     };
     const loadLevel = () => {
@@ -117,8 +125,9 @@ function MazePlay({ order, kit, paused, onFinish }: { order: PlayerView[]; kit: 
       const real = Math.min(0.1, (now - last) / 1000);
       last = now;
       const m = kit.get(current().id);
-      const tiltX = phase === "play" && m.ok ? m.roll : 0;
-      const tiltY = phase === "play" && m.ok ? -m.pitch : 0;
+      // x right, y forward/up: the ball rolls the way the board (or the stick) points
+      const tiltX = phase === "play" && m.ok ? m.x : 0;
+      const tiltY = phase === "play" && m.ok ? -m.y : 0;
       if (!pausedRef.current) {
         acc += real;
         phaseT += real;

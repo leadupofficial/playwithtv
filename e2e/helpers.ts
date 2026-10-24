@@ -46,12 +46,11 @@ function installSensor() {
   }, 16);
 }
 
+export type Mode = "buttons" | "motion" | "hybrid" | "touchpad";
+
 /** Opens a phone with the synthetic sensor, joins with the code and taps the controller's start gate. */
-export async function joinPhone(browser: Browser, code: string, name: string) {
-  const ctx = await browser.newContext({ ...PHONE, ignoreHTTPSErrors: true });
-  await ctx.grantPermissions(["accelerometer", "gyroscope"]); // what the user allows on a real phone
-  await ctx.addInitScript(installSensor);
-  const page = await ctx.newPage();
+export async function joinPhone(browser: Browser, code: string, name: string, modes: Record<string, Mode> = {}) {
+  const page = await newPhonePage(browser, modes);
   await page.goto("/join");
   await page.getByLabel("TV code").fill(code);
   await page.getByLabel("Your name").fill(name);
@@ -60,11 +59,27 @@ export async function joinPhone(browser: Browser, code: string, name: string) {
   return page;
 }
 
-export async function newPhonePage(browser: Browser) {
+export async function newPhonePage(browser: Browser, modes: Record<string, Mode> = {}) {
   const ctx = await browser.newContext({ ...PHONE, ignoreHTTPSErrors: true });
-  await ctx.grantPermissions(["accelerometer", "gyroscope"]);
+  await ctx.grantPermissions(["accelerometer", "gyroscope"]); // what the user allows on a real phone
   await ctx.addInitScript(installSensor);
+  // preset control modes per game title (what a player would pick with the mode chip)
+  if (Object.keys(modes).length) await ctx.addInitScript((m) => localStorage.setItem("pwtv.controls", JSON.stringify(m)), modes);
   return ctx.newPage();
+}
+
+/** Taps an on-screen action button by its label (buttons / hybrid / touchpad modes). */
+export async function press(page: Page, label: string | RegExp) {
+  await page.locator(".game-pad .action", { hasText: label }).first().dispatchEvent("pointerdown", {}, { timeout: 5000 });
+  await page.waitForTimeout(120);
+}
+
+/** Holds an on-screen arrow (◀ ▶ ▲ ▼) or hold-button for `ms`. */
+export async function hold(page: Page, selector: string, ms: number) {
+  const el = page.locator(`.game-pad ${selector}`).first();
+  await el.dispatchEvent("pointerdown", { pointerId: 7 }, { timeout: 5000 });
+  await page.waitForTimeout(ms);
+  await el.dispatchEvent("pointerup", { pointerId: 7 });
 }
 
 export async function startController(page: Page) {
@@ -98,11 +113,17 @@ export async function tvCode(tv: Page) {
   return (await el.textContent())!.trim();
 }
 
-/** Waits for the TV's calibration/practice screen to show this player as ready. */
-export async function practiseUntilReady(tv: Page, phone: Page, name: string, moves: Array<keyof typeof DIRS>) {
+/**
+ * Waits for the TV's get-ready screen to show this player as ready. `moves` are gestures (motion mode) or
+ * "btn:LABEL" to press an on-screen button (buttons / hybrid modes).
+ */
+export async function practiseUntilReady(tv: Page, phone: Page, name: string, moves: Array<keyof typeof DIRS | `btn:${string}`>) {
   const card = tv.locator(`.tut-card[data-player="${name}"]`);
   await expect(card).toBeVisible({ timeout: 15_000 });
-  await expect(card).toContainText("✓", { timeout: 10_000 });     // calibrated
-  for (const m of moves) await gesture(phone, m);
+  await expect(card).toContainText("✓", { timeout: 10_000 });     // controller live (and calibrated if tilting)
+  for (const m of moves) {
+    if (m.startsWith("btn:")) await press(phone, m.slice(4));
+    else await gesture(phone, m as keyof typeof DIRS);
+  }
   await expect(card).toHaveClass(/ready/, { timeout: 10_000 });
 }

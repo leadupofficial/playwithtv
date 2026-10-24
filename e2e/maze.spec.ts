@@ -28,3 +28,24 @@ test("Gravity Maze 3D: a phone held flat tilts the board and rolls the ball into
   await expect(phone.getByText(/Maze complete!/)).toBeVisible({ timeout: 10_000 });
   await expect(tv.getByRole("button", { name: /Rematch/ })).toBeVisible({ timeout: 15_000 });
 });
+
+test("Gravity Maze 3D with the joystick: pushing it right rolls the ball right", async ({ browser }) => {
+  test.setTimeout(120_000);
+  const tv = await (await browser.newContext({ viewport: { width: 1280, height: 720 }, ignoreHTTPSErrors: true })).newPage();
+  await tv.goto("/tv?quick=1");
+  const code = await tvCode(tv);
+  const phone = await joinPhone(browser, code, "Stick", { "Gravity Maze 3D": "buttons" });
+  await tv.locator(".game-card", { hasText: "Gravity Maze 3D" }).click();
+  await tv.getByRole("button", { name: /Start Gravity Maze 3D/ }).click();
+  await practiseUntilReady(tv, phone, "Stick", []);
+  const maze = () => tv.locator("[data-maze]").getAttribute("data-maze").then((s) => JSON.parse(s || "{}"));
+  await expect.poll(async () => (await maze()).phase, { timeout: 15_000 }).toBe("play");
+  const start = (await maze()).x;
+  const stick = phone.locator(".game-pad .stick");
+  const box = (await stick.boundingBox())!;
+  await phone.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await phone.mouse.down();
+  await phone.mouse.move(box.x + box.width * 0.95, box.y + box.height / 2, { steps: 5 });
+  await expect.poll(async () => (await maze()).x, { timeout: 5_000 }).toBeGreaterThan(start + 2);
+  await phone.mouse.up();
+});

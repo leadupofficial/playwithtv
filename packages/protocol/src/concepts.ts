@@ -70,7 +70,7 @@ const COLORS: Record<GameCategory, [string, string]> = {
 
 export const CONCEPTS: GameManifest[] = ROWS.map(([no, id, title, category, min, max, phase, modes, pitch]) => ({
   id, title, description: pitch, categories: [category], tags: [], minPlayers: min, maxPlayers: max,
-  version: "0.0.0", executionMode: "browser", controller: "motion", orientation: "landscape", estimatedAssetKb: 0,
+  version: "0.0.0", executionMode: "browser", controller: "game", orientation: "landscape", estimatedAssetKb: 0,
   difficulty: "medium", sessionMinutes: 5, accessibility: [], colors: COLORS[category], emoji: "🎮", playable: false,
   catalogueNo: no, category, modes, completionStatus: "concept", phase, automatedTestStatus: "none",
 }));

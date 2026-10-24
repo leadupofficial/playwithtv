@@ -4,17 +4,33 @@ import type { GameProps } from "../types";
 import { AVATARS } from "../../avatars";
 import { QUESTIONS } from "./questions";
 import { makeRounds, placings, points, QUESTION_MS, ROUNDS } from "./engine";
-import { MotionPlayers, type MotionControl } from "../motionKit";
-import { MotionTutorial } from "../MotionTutorial";
+import type { ControlSpec } from "@playwithtv/protocol";
+import { ControlPlayers } from "../controlKit";
+import { ControlTutorial } from "../ControlTutorial";
 import "./trivia.css";
 
 type Phase = "tutorial" | "intro" | "question" | "reveal" | "board" | "done";
-const CONTROLS: MotionControl[] = [{ motion: "roll", label: "move your marker to an answer" }, { motion: "push", label: "lock it in" }];
+export const SHAPES = ["▲", "◆", "●", "■"];
+const COLORS = ["#e2384d", "#1f7ae0", "#e0a21f", "#23a55a"];
+/** Buttons first: four big answer buttons in the TV's colours. Motion: turn to aim, push to lock in. */
+const CONTROLS: ControlSpec = {
+  title: "Tamil Trivia Royale",
+  modes: ["buttons", "motion"],
+  stick: "none",
+  tilt: "aim",
+  actions: [
+    ...SHAPES.map((s, i) => ({ id: `a${i}`, label: s, color: COLORS[i] })),
+    { id: "lock", label: "Lock", gestures: ["push" as const], buttonIn: [] },
+  ],
+  hints: {
+    buttons: "Tap the shape and colour of your answer",
+    motion: "Turn the phone to move your marker, push towards the TV to lock it in",
+  },
+};
 /** ?quick=1 on the TV URL: 3 short rounds, used by the end-to-end tests and for quick demos. */
 const QUICK = typeof location !== "undefined" && new URLSearchParams(location.search).get("quick") === "1";
 const SCALE = QUICK ? 0.25 : 1;
 const PHASE_MS: Record<Exclude<Phase, "tutorial" | "question" | "done">, number> = { intro: 3000 * SCALE, reveal: 4200 * SCALE, board: 3200 * SCALE };
-export const SHAPES = ["▲", "◆", "●", "■"];
 
 interface Answer { option: number; msLeft: number }
 
@@ -30,25 +46,25 @@ export function TriviaGame({ players, bridge, paused, onFinish, sponsor }: GameP
   const [answers, setAnswers] = useState<Map<string, Answer>>(new Map());
   const [scores, setScores] = useState<Map<string, number>>(() => new Map(players.map((p) => [p.id, 0])));
   const [gained, setGained] = useState<Map<string, number>>(new Map());
-  const kit = useMemo(() => new MotionPlayers(bridge, players.map((p) => p.id)), [bridge]); // eslint-disable-line react-hooks/exhaustive-deps
+  const kit = useMemo(() => new ControlPlayers(bridge, players.map((p) => p.id), CONTROLS), [bridge]); // eslint-disable-line react-hooks/exhaustive-deps
   const [aims, setAims] = useState<Map<string, number>>(new Map());
   const live = useRef({ phase, left, answers, round });
   live.current = { phase, left, answers, round };
   const startedAt = useRef(Date.now());
   const r = rounds[round]!;
-  const aimOf = (id: string) => zoneOf(kit.get(id).roll, 4);
+  const aimOf = (id: string) => zoneOf(kit.get(id).x, 4);
 
   useEffect(() => {
     kit.start();
-    kit.controls("all", "Tamil Trivia Royale", CONTROLS);
     return () => kit.dispose();
   }, [kit]);
 
-  // A push locks the answer under the player's marker; the first lock per question counts.
-  useEffect(() => kit.onGesture((pid, g) => {
+  // An answer button picks that answer; a push (motion) locks the answer under the marker. First one counts.
+  useEffect(() => kit.onAction((pid, action) => {
     const { phase: ph, left: ms, answers: ans } = live.current;
-    if (g.kind !== "push" || ph !== "question" || ans.has(pid) || !players.some((p) => p.id === pid)) return;
-    const opt = aimOf(pid);
+    if (ph !== "question" || ans.has(pid) || !players.some((p) => p.id === pid)) return;
+    const opt = action === "lock" ? aimOf(pid) : /^a[0-3]$/.test(action) ? Number(action[1]) : null;
+    if (opt === null) return;
     setAnswers(new Map(ans).set(pid, { option: opt, msLeft: ms }));
     kit.toast(pid, `Locked in ${SHAPES[opt]}`);
     bridge.event(pid, "vibrate", { ms: 40 });
@@ -101,7 +117,7 @@ export function TriviaGame({ players, bridge, paused, onFinish, sponsor }: GameP
     setGained(new Map());
     setPhase("question");
     setLeft(QUESTION_MS);
-    kit.status("all", { text: `Question ${idx + 1} / ${rounds.length}: aim and push to answer` });
+    kit.status("all", { text: `Question ${idx + 1} / ${rounds.length}` });
     void rr;
   }
 
@@ -137,7 +153,7 @@ export function TriviaGame({ players, bridge, paused, onFinish, sponsor }: GameP
       {phase === "question" && <div className="timebar"><div style={{ width: `${(left / QUESTION_MS) * 100}%` }} /></div>}
 
       {phase === "tutorial" && (
-        <MotionTutorial title="🧠 Tamil Trivia Royale" players={players} kit={kit} controls={CONTROLS} practice={["push"]} quick={QUICK}
+        <ControlTutorial title="🧠 Tamil Trivia Royale" players={players} kit={kit} practice={[]} quick={QUICK}
           onDone={() => { setPhase("intro"); setLeft(PHASE_MS.intro); }} />
       )}
 
@@ -168,7 +184,7 @@ export function TriviaGame({ players, bridge, paused, onFinish, sponsor }: GameP
                   </span>
                   {phase === "question" && (
                     <span className="aimers">
-                      {players.filter((p) => !answers.has(p.id) && aims.get(p.id) === i).map((p) => (
+                      {players.filter((p) => !answers.has(p.id) && kit.mode(p.id) === "motion" && aims.get(p.id) === i).map((p) => (
                         <span key={p.id} style={{ borderColor: p.color }}>{AVATARS[p.avatar].emoji}</span>
                       ))}
                     </span>

@@ -12,6 +12,7 @@ import { AdSlot, PresentedBy, adsEnabled } from "./AdSlot";
 import { countImpression, pickSponsor, setImpressionSink, useSponsors } from "./sponsors";
 import { TvInputs } from "../rtc";
 import { TvInstallChip } from "../InstallBanner";
+import { MODE_ICON } from "../games/controlKit";
 
 const ROOM_KEY = "pwtv.tv.room";
 
@@ -242,7 +243,7 @@ export function TvApp() {
                   >
                     <span className="emoji">{g.emoji}</span>
                     <span className="title">{g.title}</span>
-                    <span className="meta">{g.minPlayers === g.maxPlayers ? `${g.minPlayers}` : `${g.minPlayers}–${g.maxPlayers}`} players · ~{g.sessionMinutes} min</span>
+                    <span className="meta">{g.minPlayers === g.maxPlayers ? `${g.minPlayers}` : `${g.minPlayers}–${g.maxPlayers}`} players · ~{g.sessionMinutes} min{g.controlModes ? ` · ${g.controlModes.map((m) => MODE_ICON[m]).join(" ")}` : ""}</span>
                   </button>
                 ))}
               </div>

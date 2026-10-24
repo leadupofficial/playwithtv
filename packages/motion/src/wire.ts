@@ -1,53 +1,66 @@
-import { GESTURES, type Gesture, type GestureKind, type MotionFrame } from "./engine.js";
+import type { MotionFrame } from "./engine.js";
 
 /**
- * How motion travels inside the protocol's generic controller state (axes in [-1, 1], tap counters):
- *   axes.roll, axes.pitch, axes.yaw   normalised tilt / turn rate
- *   axes.ok                           1 while sensors are live and calibrated, 0 otherwise
- *   taps["push"] …                    one counter per gesture kind; taps["push!"] etc. count strong ones
+ * How a controller's state travels inside the protocol (axes in [-1, 1], tap counters, held buttons):
+ *   axes.x, axes.y                    movement from any mode: stick, tilt or touchpad (x right, y up/forward)
+ *   axes.roll, axes.pitch, axes.yaw   raw tilt (motion and hybrid modes)
+ *   axes.ok                           1 while the controller is ready (sensors live and calibrated, or buttons)
+ *   axes.m                            the mode: 0 buttons, 1 motion, 2 hybrid, 3 touchpad
+ *   taps[action]                      a counter per game action (the phone maps gestures/swipes to actions)
+ *   buttons[action]                   held actions
  *   taps["calibrated"]                increments each time the player finishes calibrating
  * Counters (not events) survive a lost packet: the TV diffs them against the last state it saw.
  */
 export const STRONG = 2;
-export const strongKey = (k: GestureKind) => `${k}!`;
 
 export function frameAxes(f: MotionFrame): Record<string, number> {
   const ok = f.calibrated && !f.health.stale ? 1 : 0;
-  return { roll: f.roll, pitch: f.pitch, yaw: f.yaw, ok };
+  return { x: f.roll, y: f.pitch, roll: f.roll, pitch: f.pitch, yaw: f.yaw, ok };
 }
 
 export interface WireState {
   axes?: Record<string, number>;
   taps?: Record<string, number>;
+  buttons?: Record<string, boolean>;
 }
 
-/** TV side: one per player. Turns successive controller states into tilt plus new gestures. */
-export class MotionReader {
+/** TV side: one per player. Turns successive controller states into movement, held actions and new taps. */
+export class ControlReader {
   private taps: Record<string, number> | null = null;
+  private heldNow: Record<string, boolean> = {};
+  x = 0;
+  y = 0;
   roll = 0;
   pitch = 0;
   yaw = 0;
   ok = false;
+  /** 0 buttons, 1 motion, 2 hybrid, 3 touchpad */
+  mode = 0;
   calibrations = 0;
   lastUpdate = 0;
 
-  /** Returns the gestures performed since the previous state (strong ones have strength >= STRONG). */
-  update(s: WireState, now = Date.now()): Gesture[] {
+  /** Returns the actions tapped since the previous state (an action tapped twice appears twice, at most 3). */
+  update(s: WireState, now = Date.now()): string[] {
     this.lastUpdate = now;
-    this.roll = s.axes?.roll ?? 0;
-    this.pitch = s.axes?.pitch ?? 0;
-    this.yaw = s.axes?.yaw ?? 0;
-    this.ok = (s.axes?.ok ?? 0) > 0.5;
+    const a = s.axes ?? {};
+    this.roll = a.roll ?? 0;
+    this.pitch = a.pitch ?? 0;
+    this.yaw = a.yaw ?? 0;
+    this.x = a.x ?? this.roll;
+    this.y = a.y ?? this.pitch;
+    this.ok = (a.ok ?? 0) > 0.5;
+    this.mode = Math.round(a.m ?? 0);
+    this.heldNow = { ...s.buttons };
     const taps = s.taps ?? {};
-    const out: Gesture[] = [];
+    const out: string[] = [];
     // A reloaded phone counts from zero again: any counter going backwards means a new controller session.
     if (this.taps && Object.keys(this.taps).some((k) => (taps[k] ?? 0) < (this.taps![k] ?? 0))) this.taps = null;
-    // first state after (re)connecting: adopt the counters without replaying old gestures
+    // first state after (re)connecting: adopt the counters without replaying old taps
     if (this.taps) {
-      for (const k of GESTURES) {
+      for (const k of Object.keys(taps)) {
+        if (k === "calibrated") continue;
         const n = Math.min(3, (taps[k] ?? 0) - (this.taps[k] ?? 0));
-        const strong = Math.min(n, (taps[strongKey(k)] ?? 0) - (this.taps[strongKey(k)] ?? 0));
-        for (let i = 0; i < n; i++) out.push({ kind: k, strength: i < strong ? STRONG : 1, t: now });
+        for (let i = 0; i < n; i++) out.push(k);
       }
       if ((taps.calibrated ?? 0) > (this.taps.calibrated ?? 0)) this.calibrations++;
     } else if ((taps.calibrated ?? 0) > 0) this.calibrations = 1;
@@ -55,10 +68,15 @@ export class MotionReader {
     return out;
   }
 
-  /** Player disconnected: drop held tilt, and adopt the next counters as a fresh baseline. */
+  held(action: string): boolean {
+    return !!this.heldNow[action];
+  }
+
+  /** Player disconnected: drop movement and held actions, adopt the next counters as a fresh baseline. */
   clear() {
-    this.roll = this.pitch = this.yaw = 0;
+    this.x = this.y = this.roll = this.pitch = this.yaw = 0;
     this.ok = false;
+    this.heldNow = {};
     this.taps = null;
   }
 }
