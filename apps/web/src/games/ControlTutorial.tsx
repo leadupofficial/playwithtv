@@ -6,7 +6,7 @@ import { MODE_ICON, type ControlPlayers } from "./controlKit";
 
 const MAX_MS = 30_000;
 const COUNTDOWN = 3;
-const MODE_TITLE: Record<ControlMode, string> = { buttons: "Buttons", motion: "Motion", hybrid: "Hybrid", touchpad: "Touchpad" };
+const MODE_TITLE: Record<ControlMode, string> = { buttons: "Buttons", motion: "Motion", hybrid: "Hybrid", touchpad: "Touchpad", camera: "Camera" };
 
 /**
  * Get-ready screen before every game, on the TV. It explains each control mode the game offers (players pick

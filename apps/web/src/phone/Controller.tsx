@@ -12,7 +12,7 @@ import { ScreenWake, type WakeState } from "./wakeLock";
 import { Lobby } from "./Lobby";
 
 const PICKS_KEY = "pwtv.controls";
-const MODE_LABEL: Record<ControlMode, string> = { buttons: "🎮 Buttons", motion: "🎯 Motion", hybrid: "⚡ Hybrid", touchpad: "👆 Touchpad" };
+const MODE_LABEL: Record<ControlMode, string> = { buttons: "🎮 Buttons", motion: "🎯 Motion", hybrid: "⚡ Hybrid", touchpad: "👆 Touchpad", camera: "📷 Camera" };
 
 /** Each player's preferred control mode per game, remembered on this phone. */
 function loadPicks(): Record<string, ControlMode> {

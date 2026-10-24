@@ -5,13 +5,15 @@ import type { MotionFrame } from "./engine.js";
  *   axes.x, axes.y                    movement from any mode: stick, tilt or touchpad (x right, y up/forward)
  *   axes.roll, axes.pitch, axes.yaw   raw tilt (motion and hybrid modes)
  *   axes.ok                           1 while the controller is ready (sensors live and calibrated, or buttons)
- *   axes.m                            the mode code / 3 (0 buttons, 1/3 motion, 2/3 hybrid, 1 touchpad)
+ *   axes.m                            the mode code / 4 (0 buttons, 1/4 motion, 2/4 hybrid, 3/4 touchpad, 1 camera)
  *   taps[action]                      a counter per game action (the phone maps gestures/swipes to actions)
  *   buttons[action]                   held actions
  *   taps["calibrated"]                increments each time the player finishes calibrating
  * Counters (not events) survive a lost packet: the TV diffs them against the last state it saw.
  */
 export const STRONG = 2;
+/** Same as MODE_DIVISOR in @playwithtv/protocol (this package has no dependencies): 5 modes, codes 0..4. */
+export const MODE_DIVISOR = 4;
 
 export function frameAxes(f: MotionFrame): Record<string, number> {
   const ok = f.calibrated && !f.health.stale ? 1 : 0;
@@ -34,7 +36,7 @@ export class ControlReader {
   pitch = 0;
   yaw = 0;
   ok = false;
-  /** 0 buttons, 1 motion, 2 hybrid, 3 touchpad */
+  /** 0 buttons, 1 motion, 2 hybrid, 3 touchpad, 4 camera */
   mode = 0;
   calibrations = 0;
   lastUpdate = 0;
@@ -49,7 +51,7 @@ export class ControlReader {
     this.x = a.x ?? this.roll;
     this.y = a.y ?? this.pitch;
     this.ok = (a.ok ?? 0) > 0.5;
-    this.mode = Math.round((a.m ?? 0) * 3); // sent as code / 3 (axes are clamped to [-1, 1])
+    this.mode = Math.round((a.m ?? 0) * MODE_DIVISOR); // sent as code / MODE_DIVISOR (axes are clamped to [-1, 1])
     this.heldNow = { ...s.buttons };
     const taps = s.taps ?? {};
     const out: string[] = [];

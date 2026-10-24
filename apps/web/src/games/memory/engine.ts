@@ -99,8 +99,8 @@ export function timing(round: number): { stepMs: number; gapMs: number } {
 }
 
 /** Time to repeat `len` steps. Gestures take longer than taps, so motion players get more time (fair mixed modes). */
-export function inputLimit(len: number, mode: "buttons" | "motion" | "hybrid" | "touchpad" = "buttons"): number {
-  const per = mode === "motion" ? 1500 : mode === "touchpad" ? 1000 : 850;
+export function inputLimit(len: number, mode: "buttons" | "motion" | "hybrid" | "touchpad" | "camera" = "buttons"): number {
+  const per = mode === "motion" || mode === "camera" ? 1500 : mode === "touchpad" ? 1000 : 850;
   return 3000 + len * per;
 }
 
