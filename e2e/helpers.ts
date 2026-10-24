@@ -117,13 +117,57 @@ export async function tvCode(tv: Page) {
  * Waits for the TV's get-ready screen to show this player as ready. `moves` are gestures (motion mode) or
  * "btn:LABEL" to press an on-screen button (buttons / hybrid modes).
  */
-export async function practiseUntilReady(tv: Page, phone: Page, name: string, moves: Array<keyof typeof DIRS | `btn:${string}`>) {
+export async function practiseUntilReady(tv: Page, phone: Page, name: string, moves: Array<keyof typeof DIRS | `btn:${string}` | `pad:${PadMove}`>) {
   const card = tv.locator(`.tut-card[data-player="${name}"]`);
   await expect(card).toBeVisible({ timeout: 15_000 });
   await expect(card).toContainText("✓", { timeout: 10_000 });     // controller live (and calibrated if tilting)
   for (const m of moves) {
     if (m.startsWith("btn:")) await press(phone, m.slice(4));
+    else if (m.startsWith("pad:")) await padMove(phone, m.slice(4) as PadMove);
     else await gesture(phone, m as keyof typeof DIRS);
   }
   await expect(card).toHaveClass(/ready/, { timeout: 10_000 });
+}
+
+// ---- touchpad mode: a finger on `.game-pad .touchpad` (pad axes: x right, y up, both in [-1, 1]) ----
+
+/** Page coordinates for a point in touchpad axes. */
+export async function padPoint(page: Page, x: number, y: number) {
+  const box = (await page.locator(".game-pad .touchpad").boundingBox({ timeout: 5000 }))!;
+  const c = (v: number) => Math.max(-0.98, Math.min(0.98, v));
+  return { x: box.x + ((c(x) + 1) / 2) * box.width, y: box.y + ((1 - c(y)) / 2) * box.height };
+}
+
+/** Drags a finger across the touchpad from one point to another over `ms` (a quick, long drag is also a swipe). */
+export async function padDrag(page: Page, from: [number, number], to: [number, number], ms = 200, steps = 8) {
+  const a = await padPoint(page, from[0], from[1]);
+  const b = await padPoint(page, to[0], to[1]);
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  for (let i = 1; i <= steps; i++) {
+    await page.mouse.move(a.x + ((b.x - a.x) * i) / steps, a.y + ((b.y - a.y) * i) / steps);
+    await page.waitForTimeout(ms / steps);
+  }
+  await page.mouse.up();
+}
+
+/** A quick tap on the touchpad. */
+export async function padTap(page: Page, x = 0, y = 0) {
+  const p = await padPoint(page, x, y);
+  await page.mouse.move(p.x, p.y);
+  await page.mouse.down();
+  await page.mouse.up();
+  await page.waitForTimeout(150);
+}
+
+export type PadMove = "tap" | "swipe-up" | "swipe-down" | "swipe-left" | "swipe-right";
+const SWIPES: Record<Exclude<PadMove, "tap">, [[number, number], [number, number]]> = {
+  "swipe-up": [[0, -0.6], [0, 0.6]], "swipe-down": [[0, 0.6], [0, -0.6]], "swipe-left": [[0.6, 0], [-0.6, 0]], "swipe-right": [[-0.6, 0], [0.6, 0]],
+};
+/** A tap or a swipe on the touchpad. */
+export async function padMove(page: Page, m: PadMove) {
+  if (m === "tap") return padTap(page);
+  const [from, to] = SWIPES[m];
+  await padDrag(page, from, to, 120, 4);
+  await page.waitForTimeout(150);
 }

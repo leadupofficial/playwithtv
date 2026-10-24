@@ -1,0 +1,25 @@
+.jumper-tv, .jumper { background: #0b0820; }
+.jumper { position: absolute; inset: 0; overflow: hidden; }
+.jumper-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.jumper-col { position: absolute; top: 0; bottom: 0; box-sizing: border-box; padding: 22px 22px; pointer-events: none; }
+.jc-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 26px; }
+.jc-top .chip { font-size: 30px; background: rgba(8, 6, 30, 0.72); border-width: 3px; max-width: 75%; overflow: hidden; white-space: nowrap; }
+.jc-power { min-width: 64px; height: 64px; display: grid; place-items: center; font-size: 40px; border-radius: 18px; background: rgba(8, 6, 30, 0.6); border: 2px solid rgba(255, 255, 255, 0.3); }
+.jc-score { margin-top: 10px; display: flex; align-items: baseline; gap: 18px; text-shadow: 0 3px 10px #000, 0 0 2px #000; }
+.jc-score b { font-size: 64px; font-weight: 900; }
+.jc-score span { font-size: 34px; font-weight: 700; color: #ffe14d; }
+.jc-out { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(5, 3, 20, 0.62); }
+.jc-out b { font-size: 84px; font-weight: 900; color: #ff5d73; text-shadow: 0 4px 16px #000; }
+.jc-out span { font-size: 40px; font-weight: 700; }
+.jumper-side { position: absolute; left: 60px; top: 160px; width: 420px; display: flex; flex-direction: column; gap: 14px; }
+.jumper-side h2 { margin: 0 0 6px; font-size: 44px; }
+.js-world { display: flex; justify-content: space-between; padding: 16px 24px; border-radius: 18px; background: rgba(255, 255, 255, 0.06); font-size: 30px; opacity: 0.55; }
+.js-world.on { opacity: 1; background: rgba(255, 225, 77, 0.18); border: 2px solid #ffe14d; }
+.js-world.done { opacity: 0.85; }
+.js-world span { color: #ffe14d; }
+.jumper-timer { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); padding: 8px 28px; border-radius: 999px; background: rgba(8, 6, 30, 0.75); font-size: 36px; font-weight: 800; pointer-events: none; }
+.jumper-timer.solo { left: auto; right: 90px; bottom: auto; top: 170px; transform: none; font-size: 64px; padding: 18px 40px; }
+.jumper-count { position: absolute; inset: 0; display: grid; place-items: center; font-size: 220px; font-weight: 900; text-shadow: 0 8px 30px #000; pointer-events: none; }
+.jumper-count.go { color: #7cf29c; animation: jgo 1s ease-out forwards; }
+.jumper-count.end { color: #ffe14d; font-size: 160px; }
+@keyframes jgo { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(1.4); } }

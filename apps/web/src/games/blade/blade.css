@@ -1,0 +1,15 @@
+.blade-tv, .blade { background: #10002b; }
+.blade { position: absolute; inset: 0; overflow: hidden; }
+.blade-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.blade-hud { position: absolute; left: 0; right: 0; top: 18px; display: flex; justify-content: center; align-items: center; gap: 18px; flex-wrap: wrap; padding: 0 30px; pointer-events: none; }
+.bh-player { display: inline-flex; align-items: center; gap: 12px; padding: 10px 22px; border-radius: 999px; background: rgba(10, 4, 30, 0.72); border: 3px solid; font-size: 30px; font-weight: 700; }
+.bh-player b { font-size: 44px; font-weight: 900; margin-left: 6px; min-width: 2ch; text-align: right; }
+.bh-player.lead { box-shadow: 0 0 0 4px rgba(255, 209, 102, 0.6); }
+.bh-dot { width: 18px; height: 18px; border-radius: 50%; }
+.bh-time { padding: 10px 26px; border-radius: 999px; background: rgba(10, 4, 30, 0.72); font-size: 40px; font-weight: 900; }
+.bh-time.hurry { color: #ff5d73; animation: bhpulse 0.5s ease-in-out infinite alternate; }
+@keyframes bhpulse { from { transform: scale(1); } to { transform: scale(1.12); } }
+.blade-count { position: absolute; inset: 0; display: grid; place-items: center; font-size: 220px; font-weight: 900; text-shadow: 0 8px 30px #000; pointer-events: none; }
+.blade-count.go { color: #ffd166; animation: bgo 1s ease-out forwards; }
+.blade-count.end { color: #ffd166; font-size: 170px; }
+@keyframes bgo { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(1.4); } }
