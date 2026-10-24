@@ -17,7 +17,7 @@ export const CONTROLS: ControlSpec = {
   stick: "joystick",
   tilt: "tray",
   actions: [
-    { id: "swing", label: "🪶 SWING", color: "#ff5d73", hold: true, gestures: ["push"], swipes: ["tap"], buttonIn: ["buttons", "touchpad"] },
+    { id: "swing", label: "🪶 HOLD to SWING", color: "#ff5d73", hold: true, gestures: ["push"], swipes: ["tap"], buttonIn: ["buttons", "touchpad"] },
     { id: "smash", label: "SMASH", color: "#ff5d73", strongOf: "swing", buttonIn: [] },
     { id: "dodge", label: "💨 DODGE", color: "#3a86ff", gestures: ["flick-left", "flick-right", "flick-up", "flick-down"], swipes: ["swipe-left", "swipe-right", "swipe-up", "swipe-down"], buttonIn: ["buttons"] },
   ],
@@ -38,9 +38,14 @@ export class BrawlControls {
   private swing = new Map<string, number>();
   private dodge = new Set<string>();
   private offs: Array<() => void> = [];
+  /** Actions received per player (swing taps, smashes, dodges, SWING presses), for the debug state. */
+  readonly received = new Map<string, { swing: number; smash: number; dodge: number; hold: number }>();
 
   constructor(private kit: ControlPlayers, private bridge: GameBridge, ids: string[]) {
-    for (const id of ids) this.held.set(id, { down: false, pressed: false, released: false });
+    for (const id of ids) {
+      this.held.set(id, { down: false, pressed: false, released: false });
+      this.received.set(id, { swing: 0, smash: 0, dodge: 0, hold: 0 });
+    }
   }
 
   /** Subscribes to the phones (idempotent, like ControlPlayers.start). */
@@ -51,7 +56,10 @@ export class BrawlControls {
       const h = this.held.get(id);
       if (!h) return;
       const down = !!state.buttons?.swing;
-      if (down && !h.down) h.pressed = true;
+      if (down && !h.down) {
+        h.pressed = true;
+        this.received.get(id)!.hold++;
+      }
       if (!down && h.down) h.released = true;
       h.down = down;
     }));
@@ -60,6 +68,8 @@ export class BrawlControls {
       if (h) Object.assign(h, { down: false, pressed: false, released: false });
     }));
     this.offs.push(kit.onAction((id, action) => {
+      const r = this.received.get(id);
+      if (r && (action === "swing" || action === "smash" || action === "dodge")) r[action]++;
       if (action === "swing") this.swing.set(id, Math.max(this.swing.get(id) ?? 0, TAP_POWER));
       if (action === "smash") this.swing.set(id, 1);
       if (action === "dodge") this.dodge.add(id);

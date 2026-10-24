@@ -13,7 +13,14 @@ import { Hud, type HudState } from "./Hud";
 export { CONTROLS };
 const QUICK = typeof location !== "undefined" && new URLSearchParams(location.search).get("quick") === "1";
 const MAX_FIGHTERS = 4;
-const CPU_CREW: Array<[string, string]> = [["Captain Cushion", "#ff9f1c"], ["Duvet Diva", "#2ec4b6"], ["Sir Snooze", "#b5179e"], ["Pyjama Pip", "#7bd389"]];
+const CPU_CREW: Array<[string, string]> = [["Captain Cushion", "#ff9f1c"], ["Duvet Diva", "#2ec4b6"], ["Sir Snooze", "#b5179e"], ["Pyjama Pip", "#7bd389"], ["Nightcap Ned", "#f4f1de"], ["Lady Snuggles", "#8d6e63"]];
+
+/** Rough RGB distance between two hex colours (0..441). */
+function colourGap(a: string, b: string) {
+  const n = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const [x, y] = [n(a), n(b)];
+  return Math.hypot(x[0]! - y[0]!, x[1]! - y[1]!, x[2]! - y[2]!);
+}
 const ORD = ["1st", "2nd", "3rd", "4th"];
 
 /** Pillow Fort Brawl on the TV: up to 4 players (CPUs fill the bed to 4), best of three rounds. */
@@ -26,9 +33,9 @@ export function BrawlGame({ players, bridge, paused, onFinish }: GameProps) {
   // start loading the 3D assets while everyone practises
   const assets = useRef<Promise<ArenaAssets> | null>(null);
   const [progress, setProgress] = useState(0);
-  assets.current ??= loadArenaAssets(setProgress);
   const [practising, setPractising] = useState(true);
   useEffect(() => {
+    assets.current ??= loadArenaAssets(setProgress);
     kit.current!.start();
     controls.current!.start();
     const id = setInterval(() => controls.current!.practise(), 100);
@@ -45,7 +52,7 @@ export function BrawlGame({ players, bridge, paused, onFinish }: GameProps) {
       </div>
     );
   }
-  return <Brawl humans={humans} kit={kit.current} controls={controls.current} bridge={bridge} paused={paused} onFinish={onFinish} assets={assets.current} progress={progress} />;
+  return <Brawl humans={humans} kit={kit.current} controls={controls.current} bridge={bridge} paused={paused} onFinish={onFinish} assets={assets.current ?? loadArenaAssets()} progress={progress} />;
 }
 
 function Brawl({ humans, kit, controls, bridge, paused, onFinish, assets, progress }: {
@@ -67,8 +74,9 @@ function Brawl({ humans, kit, controls, bridge, paused, onFinish, assets, progre
       if (!alive) return;
       const looks = new Map<string, { name: string; color: string; cpu: boolean }>();
       for (const p of humans) looks.set(p.id, { name: p.name, color: p.color, cpu: false });
-      const used = new Set(humans.map((p) => p.color.toLowerCase()));
-      const crew = CPU_CREW.filter(([, c]) => !used.has(c));
+      // CPU colours as far as possible from the players' lobby colours (so every fighter reads at a glance)
+      const gap = (c: string) => Math.min(999, ...humans.map((p) => colourGap(c, p.color.toLowerCase())));
+      const crew = [...CPU_CREW].sort((x, y) => gap(y[1]) - gap(x[1]));
       for (let i = 0; looks.size < MAX_FIGHTERS; i++) {
         const [name, color] = crew[i % crew.length]!;
         looks.set(`cpu${i}`, { name, color, cpu: true });
@@ -87,6 +95,7 @@ function Brawl({ humans, kit, controls, bridge, paused, onFinish, assets, progre
       arena.announcer.say("PILLOW FORT BRAWL", { color: "#ffd23f", size: 120, ms: QUICK ? 1500 : 3600, sub: "The floor is lava! Knock everyone off the bed" });
       const brains = new Map<string, Brain>(m.fighters.filter((f) => f.cpu).map((f) => [f.id, newBrain()]));
       const inputs = new Map<string, BrawlInput>();
+      const swings = new Map<string, number>(); // per fighter, for the debug state
       const startedAt = Date.now();
       let last = performance.now(), acc = 0, frames = 0, fps = 0, fpsT = last, lastDebug = 0, lastPhone = 0, podiumAt = 0, reported = false;
       let lastPhase = m.phase;
@@ -113,6 +122,7 @@ function Brawl({ humans, kit, controls, bridge, paused, onFinish, assets, progre
             for (const f of m.fighters) inputs.set(f.id, f.cpu ? cpuInput(m, f, brains.get(f.id)!, DT) : controls.read(f.id));
             const ev = step(m, DT, inputs);
             if (ev.length) arena!.handle(ev, m);
+            for (const e of ev) if (e.kind === "swing") swings.set(e.id, (swings.get(e.id) ?? 0) + 1);
             if (m.phase !== lastPhase) {
               if (m.phase === "countdown") controls.flush();
               if (m.phase === "podium") {
@@ -134,7 +144,8 @@ function Brawl({ humans, kit, controls, bridge, paused, onFinish, assets, progre
             phase: m.phase, round: m.round, left: Math.ceil(m.roundLeft), fps, calls: arena!.renderer.info.render.calls, tris: arena!.renderer.info.render.triangles, chaos: m.chaos?.kind ?? null, roundWinner: m.roundWinner, winner: m.matchWinner,
             players: m.fighters.map((f) => ({
               id: f.id, name: looks.get(f.id)!.name, cpu: f.cpu, x: +f.x.toFixed(2), z: +f.z.toFixed(2), alive: f.alive, state: f.state,
-              damage: Math.round(f.damage), wins: f.stats.roundWins, kos: f.stats.kos, hits: f.stats.hits, score: score(f),
+              damage: Math.round(f.damage), wins: f.stats.roundWins, kos: f.stats.kos, hits: f.stats.hits, swings: swings.get(f.id) ?? 0,
+              dodges: f.stats.dodges, hazards: f.stats.hazards, falls: f.stats.falls, score: score(f), got: controls.received.get(f.id) ?? null,
             })),
           }));
           setHud({

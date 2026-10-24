@@ -25,7 +25,7 @@ const SPAWN: Array<[number, number]> = [[-3, -1.8], [3, 1.8], [3, -1.8], [-3, 1.
 
 function makeFighter(id: string, cpu: boolean, slot: number): Fighter {
   return {
-    id, cpu, slot, x: 0, z: 0, y: 0, vx: 0, vz: 0, vy: 0, face: 0, state: "ok", t: 0, charge: 0, power: 0, queued: 0, queuedT: 0,
+    id, cpu, slot, x: 0, z: 0, y: 0, vx: 0, vz: 0, vy: 0, face: 0, state: "ok", t: 0, charge: 0, power: 0, queued: 0, queuedT: 0, dodgeQ: 0,
     hitDone: true, cooldown: 0, dodgeCd: 0, dodgeX: 0, dodgeZ: 1, stun: 0, damage: 0, lastHitBy: null, lastHitAt: -99,
     alive: true, slowed: 0, combo: 0, comboT: 0, underdog: false, ghostCd: 0, ghostDrops: 0, stats: newStats(),
   };
@@ -53,7 +53,7 @@ function resetRound(m: Match) {
   m.fighters.forEach((f, i) => {
     const [x, z] = SPAWN[i]!;
     Object.assign(f, {
-      x, z, y: 0, vx: 0, vz: 0, vy: 0, face: Math.atan2(-x, -z), state: "ok", t: 0, charge: 0, power: 0, queued: 0, queuedT: 0, hitDone: true,
+      x, z, y: 0, vx: 0, vz: 0, vy: 0, face: Math.atan2(-x, -z), state: "ok", t: 0, charge: 0, power: 0, queued: 0, queuedT: 0, dodgeQ: 0, hitDone: true,
       cooldown: 0, dodgeCd: 0, stun: 0, damage: 0, lastHitBy: null, lastHitAt: -99, alive: true, slowed: 0, combo: 0,
       comboT: 0, ghostCd: 0, underdog: best > 0 && f.stats.roundWins < best,
     });

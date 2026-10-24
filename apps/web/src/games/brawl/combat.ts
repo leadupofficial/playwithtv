@@ -86,7 +86,10 @@ export function updateFighter(m: Match, f: Fighter, inp: BrawlInput, dt: number,
   const canAct = f.state === "ok" || f.state === "charge";
 
   // dodge: a quick dash (cancels a charge), invulnerable while dashing
-  if (inp.dodge && canAct && f.dodgeCd === 0) {
+  if (inp.dodge) f.dodgeQ = 0.25;
+  f.dodgeQ = Math.max(0, f.dodgeQ - dt);
+  if (f.dodgeQ > 0 && canAct && f.dodgeCd === 0) {
+    f.dodgeQ = 0;
     const a = mag > 0.25 ? Math.atan2(mx, mz) : f.face;
     f.dodgeX = Math.sin(a);
     f.dodgeZ = Math.cos(a);

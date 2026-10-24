@@ -74,6 +74,8 @@ export interface Fighter {
   /** A swing asked for while busy, done as soon as possible (input buffering), and how long it is kept. */
   queued: number;
   queuedT: number;
+  /** A dodge asked for while busy (buffered like swings). */
+  dodgeQ: number;
   hitDone: boolean;
   cooldown: number;
   dodgeCd: number;
