@@ -146,3 +146,27 @@ Cover your default mode fully, and at least one other mode.
   and `shake`.
 - **No repeats:** one movement is one action, with a cooldown and settle time. Single knocks and noise are
   rejected.
+
+## The shared 3D kit (`apps/web/src/games/kit3d/`)
+
+Small, generic modules for real-looking 3D games that still run at 60 fps on a 1 GB Android TV (Mali-G31,
+fill-rate bound). Pillow Fort Brawl (`games/brawl/`) is the reference user.
+
+| Module | What it gives you |
+|---|---|
+| `assets.ts` | `loadGltf(url)` (cached per URL), `loadAll(urls, onProgress)`, `cloneModel()` (SkeletonUtils, so skinned copies animate alone), `cheapMaterials(root, "toon" \| "lambert")` (PBR → cheap, keeps the texture), `disposeTree()` |
+| `character.ts` | `Character`: an animated model with crossfading `play(clip, { once, timeScale, from })`, frozen `pose(clip, t)` / `resume()`, `attach(bone, obj)`, `tint()`, white hit `flash()`, `head()`. Structure `root → body → model`: move `root`, squash `body`. Clips from any file with the same rig bind by bone name |
+| `labels.ts` | `Labels`: crisp HTML labels that follow 3D points (name tags, pop words); `nameTag(name, colour)` |
+| `blobShadow.ts` | `blobShadow(radius)` and `fadeBlob(mesh, height)`: soft round shadows instead of shadow maps |
+| `juice.ts` | `GameClock` (hit-stop, slow motion), `Shake` (trauma-based, capped), `Squash` (squash-and-stretch spring), `Announcer` (big pop-in text) |
+| `followCamera.ts` | `FollowCamera`: fixed 3/4 angle that frames all given points (zooms out as players spread), `punch()` in on a moment, `orbit()` for intro flyovers |
+| `particles.ts` | `Particles`: pooled bursts in one InstancedMesh (one draw call), with drag, flutter and resting on a floor; `featherGeometry()`, `sparkleGeometry()` |
+| `podium.ts` | `Podium` (1-2-3 steps to stand characters on) and `showAwards(overlay, heading, cards)` |
+| `audio.ts` | `SampleBank`: WebAudio samples with per-play volume and pitch (random variants per name) |
+
+Rendering recipe the kit assumes: render at 1280×720 with `antialias: false` and pixel ratio 1, Lambert/Toon
+materials with a hemisphere light plus one directional light, fog, no shadow maps, no post-processing, merge
+static scenery that shares a material (`BufferGeometryUtils.mergeGeometries`), instance repeated things, and
+lazy-load the game in `registry.ts`. Expose the frame rate and `renderer.info.render.calls` in your debug
+attribute. Assets: CC0 glTF/GLB only, without Draco/meshopt/KTX2 (no WebAssembly under our CSP), trimmed to the
+files you use, credited in `ASSETS.md` and `licenceInventory`.

@@ -6,7 +6,7 @@ Statuses: **concept** = idea only, hidden from TVs · **prototype** = partly pla
 (objective, motion input, rules, scoring, end state, rematch) with automated tests · **released** = also passed the
 real-device controller test ([real-device-test.md](real-device-test.md)).
 
-Built: 12 · concepts: 39.
+Built: 13 · concepts: 39.
 
 ## Prioritisation matrix
 
@@ -66,6 +66,7 @@ Within a phase, order by validated demand, controller reliability, cost and repl
 | 49 | 🎮 World Quest Challenge | E · Family & social | 1–8 | 4 | concept | solo, couch-party | none |
 | 50 | 🎮 Motion Mini-Games Festival | E · Family & social | 1–8 | 4 | concept | couch-party, team-versus, tournament | none |
 | – | 🥊 Ring Kings Boxing | C · Competitive | 1–2 | 2 | **playable** | solo-challenge, duo-versus | unit+e2e |
+| – | 🪶 Pillow Fort Brawl | C · Competitive | 1–4 | 4 | **playable** | solo-challenge, couch-party | unit+e2e |
 
 ## Built games: motion mappings
 
@@ -201,3 +202,15 @@ Hold: **upright** · gyroscope: unused · assets: all visuals and sounds (drawn 
 - **pitch**: tip forward to step in, slightly back to step out, far back to guard
 - **roll**: lean to slip a punch
 - **shake**: get up after a knockdown
+
+### 🪶 Pillow Fort Brawl
+
+A pillow fight on a giant bed, and the floor is lava! Hold SWING to charge a whack, let go to send friends flying off the edge. Knocked out? Come back as a ghost and drop socks and feathers on them. Best of three rounds, CPUs fill the bed to four.
+
+Hold: **flat** · gyroscope: unused · assets: HUD, ghosts, socks, lava and wallpaper textures (drawn in code) (original); characters and animations: KayKit Character Pack Adventurers 1.0 by Kay Lousberg (trimmed) (CC0 1.0); bedroom furniture and pillows: KayKit Furniture Bits 1.0 by Kay Lousberg (CC0 1.0); impact sounds: Kenney Impact Sounds (CC0 1.0); UI sounds: Kenney Interface Sounds (CC0 1.0); cloth whooshes: Kenney RPG Audio (CC0 1.0); announcer voice: Kenney Voiceover Pack (CC0 1.0); three.js renderer (MIT)
+
+- **roll**: move left/right
+- **pitch**: move forward/back
+- **push**: swing the pillow (a strong push: full SMASH)
+- **flick-left**: dodge
+- **flick-right**: dodge
