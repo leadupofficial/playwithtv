@@ -30,7 +30,8 @@ export type PoseMove = "squat" | "jump" | "jack" | "raise" | "punch" | "hands-on
 
 /** Gesture names from the motion SDK (@playwithtv/motion), repeated here so the protocol has no dependency. */
 export type GestureName =
-  | "push" | "pull" | "flick-up" | "flick-down" | "flick-left" | "flick-right" | "twist-left" | "twist-right" | "shake";
+  | "push" | "pull" | "flick-up" | "flick-down" | "flick-left" | "flick-right" | "twist-left" | "twist-right" | "shake"
+  | "swing"; // a bat-style swing in any direction (strength reaches the TV as ControlReader.gesture)
 
 /** Touchpad swipes (a quick drag in one direction). */
 export type SwipeName = "swipe-up" | "swipe-down" | "swipe-left" | "swipe-right";

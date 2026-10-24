@@ -147,6 +147,10 @@ Cover your default mode fully, and at least one other mode.
   and `shake`.
 - **No repeats:** one movement is one action, with a cooldown and settle time. Single knocks and noise are
   rejected.
+- **Swings (bat, racket):** map the gesture `"swing"` (e.g. `gestures: ["swing"]`) and the phone also runs
+  `SwingDetector` (`packages/motion/src/swing.ts`): any direction, reported at the swing's peak, with a continuous
+  strength (~1.2 gentle, 2 a proper swing, 3+ a slog). Every gesture's strength reaches the TV with its tap as
+  `kit.get(id).gesture`. Gully Super Over times its shots with it.
 
 ## Camera fitness controllers
 

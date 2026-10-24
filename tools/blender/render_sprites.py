@@ -52,6 +52,7 @@ def args() -> argparse.Namespace:
     p.add_argument("--frames", type=int, default=1, help="animation frames per direction")
     p.add_argument("--fps", type=float, default=12)
     p.add_argument("--action", help="action (clip) name to sample; default: the first one found")
+    p.add_argument("--trim-start", type=float, default=0.0, help="skip this many frames at the start of the action")
     p.add_argument("--anim-from", help="a second file whose actions drive the model's rig (bones bind by name)")
     p.add_argument("--size", type=int, default=256, help="render size of one frame (px, square) before cropping")
     p.add_argument("--camera", default="ortho", choices=["ortho", "persp"])
@@ -200,6 +201,7 @@ def render_cells(a, root, rig, act, tmp: str, kind: str) -> list[str]:
     paths = []
     s = bpy.context.scene
     f0, f1 = (act.frame_range if act else (1, 1))
+    f0 = min(f1, f0 + a.trim_start)  # some clips open on a bind-pose key
     for d in range(a.directions):
         heading = a.angle0 + d * 2 * math.pi / a.directions
         root.rotation_euler = (0, 0, heading - FORWARD[a.forward])

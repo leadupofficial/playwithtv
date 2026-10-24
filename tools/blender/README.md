@@ -94,3 +94,12 @@ Outputs are in `apps/web/public/assets/cinematic/showroom/` and shown at `/tv/sh
 CC0 (Kenney, Quaternius, KayKit, Poly Haven) is preferred. CC-BY is allowed with attribution in `ASSETS.md` and the
 game manifest's `licenceInventory`. Never ship logos, brand names or number plates (strip branded textures before
 rendering), and no raw Mixamo files. Keep each pack's licence file next to its outputs.
+
+## Game scenes (`scenes/`)
+
+Whole levels built from Python so the real-time GLB and the lite tier's pre-rendered stills are the same place.
+`scenes/gully_lane.py` (Gully Super Over) builds the lane, merges it per material, optionally bakes one shared AO
+atlas (`--bake-ao 2048`, via `export_glb.bake_ao`), exports `lane.glb`, renders a still from each broadcast camera
+and writes the camera rigs to JSON for three.js. `scenes/gully_cast.py` prepares a KayKit kid (team jersey, a bat in
+the hand slot) as a .blend for `render_sprites.py --anim-from`; `scenes/gully_sprites.sh` renders every sheet.
+`render_sprites.py --trim-start N` skips the first N frames of a clip (some KayKit clips open on a bind-pose key).

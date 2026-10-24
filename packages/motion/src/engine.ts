@@ -1,4 +1,5 @@
 import { type Vec3, clamp, cross, deg, dot, len, lerp, norm, scale, sub, v } from "./vec.js";
+import { SwingDetector } from "./swing.js";
 
 /**
  * One sensor reading, already in screen axes (see toScreen).
@@ -21,6 +22,8 @@ export interface MotionSettings {
   twistThreshold: number;
   /** After a gesture, nothing new for this long; the phone must also settle before the next one. */
   cooldownMs: number;
+  /** Also detect "swing" (a bat swing in any direction, see swing.ts). Off unless a game maps it. */
+  swing?: boolean;
 }
 
 export const DEFAULT_SETTINGS: MotionSettings = {
@@ -29,8 +32,9 @@ export const DEFAULT_SETTINGS: MotionSettings = {
 
 /** The shared gesture vocabulary, relative to how the player held the phone at calibration. */
 export type GestureKind =
-  | "push" | "pull" | "flick-up" | "flick-down" | "flick-left" | "flick-right" | "twist-left" | "twist-right" | "shake";
-export const GESTURES: GestureKind[] = ["push", "pull", "flick-up", "flick-down", "flick-left", "flick-right", "twist-left", "twist-right", "shake"];
+  | "push" | "pull" | "flick-up" | "flick-down" | "flick-left" | "flick-right" | "twist-left" | "twist-right" | "shake"
+  | "swing";
+export const GESTURES: GestureKind[] = ["push", "pull", "flick-up", "flick-down", "flick-left", "flick-right", "twist-left", "twist-right", "shake", "swing"];
 
 /** strength = peak / threshold: 1 is a minimal deliberate gesture, 2+ is a strong one. */
 export interface Gesture { kind: GestureKind; strength: number; t: number }
@@ -82,6 +86,7 @@ export class MotionEngine {
   private lin = { armed: true, quietSince: 0, cooldown: 0, pending: null as Pending | null };
   private tw = { armed: true, quietSince: 0, cooldown: 0, pending: null as Pending | null };
   private shake = { lastSign: 0, flips: [] as number[], cooldown: 0, axis: "" };
+  private swingDetector = new SwingDetector();
 
   constructor(settings: Partial<MotionSettings> = {}) {
     this.settings = { ...DEFAULT_SETTINGS, ...settings };
@@ -124,6 +129,11 @@ export class MotionEngine {
     if (g2) out.push(g2);
     const g3 = this.shaking(a, s.t);
     if (g3) out.push(g3);
+    if (this.settings.swing) {
+      // reported at the peak's time (when the bat would meet the ball), with a continuous strength
+      const sw = this.swingDetector.push(lin, s.rotation ?? null, s.t);
+      if (sw) out.push({ kind: "swing", strength: sw.strength, t: sw.t });
+    }
     return out;
   }
 
