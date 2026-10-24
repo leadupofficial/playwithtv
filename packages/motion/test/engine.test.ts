@@ -118,7 +118,7 @@ describe("wire format", () => {
     const tv = new ControlReader();
     expect(tv.update({ taps: { jab: 5, calibrated: 1 } })).toEqual([]);
     expect(tv.calibrations).toBe(1);
-    const a = tv.update({ axes: { x: 0.4, y: -0.2, ok: 1, m: 2 }, taps: { jab: 7, hook: 1, calibrated: 1 }, buttons: { block: true } });
+    const a = tv.update({ axes: { x: 0.4, y: -0.2, ok: 1, m: 0.67 }, taps: { jab: 7, hook: 1, calibrated: 1 }, buttons: { block: true } });
     expect(a).toEqual(["jab", "jab", "hook"]);
     expect([tv.x, tv.y, tv.ok, tv.mode, tv.held("block"), tv.held("jab")]).toEqual([0.4, -0.2, true, 2, true, false]);
     expect(tv.update({ axes: { x: 0.4, ok: 1 }, taps: { jab: 7, hook: 1 } })).toEqual([]);
