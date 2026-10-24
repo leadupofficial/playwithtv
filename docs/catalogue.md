@@ -6,7 +6,7 @@ Statuses: **concept** = idea only, hidden from TVs · **prototype** = partly pla
 (objective, motion input, rules, scoring, end state, rematch) with automated tests · **released** = also passed the
 real-device controller test ([real-device-test.md](real-device-test.md)).
 
-Built: 13 · concepts: 39.
+Built: 14 · concepts: 39.
 
 ## Prioritisation matrix
 
@@ -67,6 +67,7 @@ Within a phase, order by validated demand, controller reliability, cost and repl
 | 50 | 🎮 Motion Mini-Games Festival | E · Family & social | 1–8 | 4 | concept | couch-party, team-versus, tournament | none |
 | – | 🥊 Ring Kings Boxing | C · Competitive | 1–2 | 2 | **playable** | solo-challenge, duo-versus | unit+e2e |
 | – | 🚀 Squat Rocket | D · Co-op & adventure | 1–4 | 5 | **playable** | solo, couch-party, team-coop | unit+e2e |
+| – | 💥 Emoji Dhamaka | C · Competitive | 1–8 | 4 | **playable** | solo, couch-party | unit+e2e |
 
 ## Built games: motion mappings
 
@@ -215,3 +216,10 @@ Hold: **any** · gyroscope: unused · assets: all visuals and sounds (drawn and 
 - **camera: jumping jack (seated: arms wide and up)**: power the team shield
 - **camera: both hands on head**: pause
 - **push / flick-up / shake (motion mode)**: pump / dodge / jack
+
+### 💥 Emoji Dhamaka
+
+A TV quiz show for the whole family in English, Tamil or Hindi. Emoji reveal one by one: buzz first on your phone to name the film or song. Wrong buzz? Everyone else can steal! Fact rounds, a film time machine and a double-or-nothing final.
+
+Hold: **any** · gyroscope: unused · assets: game visuals (CSS and emoji) and synthesised drumroll and heartbeat (original); trivia questions, emoji puzzles and translations (content/trivia) (CC-BY-4.0); film facts: release years, directors, music directors (CC0); Noto Sans Tamil, Noto Sans Devanagari fonts (OFL-1.1); Baloo 2, Baloo Thambi 2 fonts (OFL-1.1); Interface Sounds, Music Jingles, Voiceover Pack (CC0)
+

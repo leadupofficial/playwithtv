@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "playwithtv/trivia-pack",
+  "title": "Play With TV trivia question pack",
+  "description": "A pack of multilingual trivia questions. Only status=approved questions play, and a language plays only where its translation exists and is not an mt-draft. Text only: no images, audio, URLs or lyrics.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["pack", "title", "questions"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "pack": { "type": "string", "pattern": "^[a-z0-9-]+$", "maxLength": 40 },
+    "title": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "description": { "type": "string", "maxLength": 300 },
+    "questions": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/question" } }
+  },
+  "$defs": {
+    "text": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "translation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["prompt", "answers"],
+      "properties": {
+        "prompt": { "$ref": "#/$defs/text" },
+        "answers": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "string", "minLength": 1, "maxLength": 60 } },
+        "hint": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "status": { "enum": ["approved", "mt-draft"] }
+      }
+    },
+    "question": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "category", "difficulty", "type", "answers", "correct", "i18n", "source", "license", "author", "status", "regions"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$", "maxLength": 60 },
+        "category": { "enum": ["movies", "music", "general", "sports", "science", "geography", "food"] },
+        "difficulty": { "enum": ["easy", "medium", "hard"] },
+        "type": { "enum": ["mcq", "emoji", "order", "number"] },
+        "emoji": { "type": "array", "minItems": 3, "maxItems": 6, "items": { "type": "string", "minLength": 1, "maxLength": 16 } },
+        "answers": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "string", "minLength": 1, "maxLength": 60 } },
+        "correct": {
+          "oneOf": [
+            { "type": "integer", "minimum": 0, "maximum": 3 },
+            { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "integer", "minimum": 0, "maximum": 3 } }
+          ]
+        },
+        "values": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "number" } },
+        "i18n": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["en"],
+          "properties": {
+            "en": { "$ref": "#/$defs/translation" },
+            "ta": { "$ref": "#/$defs/translation" },
+            "hi": { "$ref": "#/$defs/translation" }
+          }
+        },
+        "source": { "type": "string", "pattern": "^(original|wikidata:Q[0-9]+(,Q[0-9]+)*)$" },
+        "license": { "enum": ["CC0", "CC-BY-4.0"] },
+        "author": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "status": { "enum": ["approved", "mt-draft"] },
+        "regions": { "type": "array", "minItems": 1, "items": { "enum": ["tn", "pan-india", "global"] } },
+        "tags": { "type": "array", "items": { "type": "string", "pattern": "^[a-z0-9-]+$", "maxLength": 24 } }
+      }
+    }
+  }
+}

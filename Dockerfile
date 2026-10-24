@@ -14,6 +14,7 @@ COPY packages/protocol packages/protocol
 COPY packages/motion packages/motion
 COPY apps/server apps/server
 COPY apps/web apps/web
+COPY content content
 RUN pnpm --filter @playwithtv/web build
 
 ENV NODE_ENV=production PORT=8080

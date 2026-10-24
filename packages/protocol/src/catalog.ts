@@ -258,6 +258,30 @@ const IMPLEMENTED: GameManifest[] = [
     ],
     controlModes: ["camera", "buttons", "motion"], automatedTestStatus: "unit+e2e",
   },
+  {
+    id: "emoji-dhamaka",
+    title: "Emoji Dhamaka",
+    description: "A TV quiz show for the whole family in English, Tamil or Hindi. Emoji reveal one by one: buzz first on your phone to name the film or song. Wrong buzz? Everyone else can steal! Fact rounds, a film time machine and a double-or-nothing final.",
+    categories: ["party", "quiz"],
+    tags: ["trivia", "emoji", "tamil", "hindi", "buzzer", "multiplayer"],
+    minPlayers: 1, maxPlayers: 8, version: "1.0.0", executionMode: "browser", controller: "game", orientation: "landscape",
+    estimatedAssetKb: 520, difficulty: "easy", sessionMinutes: 7,
+    accessibility: ["large-text", "colour-and-shape-answers", "per-phone-language", "comeback-bonus"],
+    colors: ["#ff2e63", "#7c3aed"], emoji: "💥", playable: true,
+    category: "competitive", modes: ["solo", "couch-party"], completionStatus: "playable", phase: 4,
+    sensorRequirements: { accelerometer: false, gyroscope: "unused" },
+    motionMappings: [],
+    difficultyLevels: ["mixed"],
+    licenceInventory: [
+      { asset: "game visuals (CSS and emoji) and synthesised drumroll and heartbeat", licence: "original", source: "this repository" },
+      { asset: "trivia questions, emoji puzzles and translations (content/trivia)", licence: "CC-BY-4.0", source: "this repository" },
+      { asset: "film facts: release years, directors, music directors", licence: "CC0", source: "https://www.wikidata.org" },
+      { asset: "Noto Sans Tamil, Noto Sans Devanagari fonts", licence: "OFL-1.1", source: "https://github.com/notofonts" },
+      { asset: "Baloo 2, Baloo Thambi 2 fonts", licence: "OFL-1.1", source: "https://github.com/EkType/Baloo2" },
+      { asset: "Interface Sounds, Music Jingles, Voiceover Pack", licence: "CC0", source: "https://kenney.nl/assets" },
+    ],
+    controlModes: ["buttons"], automatedTestStatus: "unit+e2e",
+  },
 ];
 
 /** Implemented games first, then the remaining catalogue concepts (hidden from TVs until built). */
