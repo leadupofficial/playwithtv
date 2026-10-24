@@ -127,7 +127,7 @@ export interface TerrainOpts {
 }
 
 export const LITE_TERRAIN: TerrainOpts = { spacing: 7, margin: 170, chunk: 110, trees: 230, rocks: 60, hedgeRows: 5, bakeLight: true, seed: 5 };
-export const HIGH_TERRAIN: TerrainOpts = { spacing: 4.5, margin: 200, chunk: 110, trees: 760, rocks: 140, hedgeRows: 9, bakeLight: false, seed: 5 };
+export const HIGH_TERRAIN: TerrainOpts = { spacing: 4.5, margin: 200, chunk: 110, trees: 520, rocks: 120, hedgeRows: 9, bakeLight: false, seed: 5 };
 
 const c = new THREE.Color();
 function albedo(ground: Ground, x: number, z: number, y: number, slope: number, out: THREE.Color) {
@@ -135,7 +135,7 @@ function albedo(ground: Ground, x: number, z: number, y: number, slope: number, 
   const n = ground.noise(x * 3, z * 3);
   if (y < WATER_Y + 0.8) return out.setRGB(0.16, 0.17, 0.12);
   if (rs.e < 3.2) return out.setRGB(0.36 + n * 0.04, 0.16, 0.09); // laterite verge
-  if (slope > 1.05) return out.setRGB(0.24 + n * 0.05, 0.23 + n * 0.04, 0.2); // wet rock
+  if (slope > 1.05) return n > 0.25 ? out.setRGB(0.07, 0.13 + n * 0.05, 0.05) : out.setRGB(0.12 + n * 0.04, 0.12 + n * 0.035, 0.105); // wet rock, mossy in places
   if (rs.side === "village" && rs.e < 22) return out.setRGB(0.17 + n * 0.03, 0.15, 0.07);
   if (rs.side === "estate") return out.setRGB(0.07 + n * 0.02, 0.19 + n * 0.04, 0.05);
   return out.setRGB(0.07 + n * 0.03, 0.17 + n * 0.05, 0.06 + n * 0.02);

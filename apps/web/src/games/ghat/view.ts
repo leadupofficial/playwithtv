@@ -53,8 +53,11 @@ export class GhatView {
 
   private constructor(readonly canvas: HTMLCanvasElement, readonly q: QualityProfile, readonly track: Track, players: number) {
     const lite = q.prerendered;
-    this.width = q.resolution.w;
-    this.height = q.resolution.h;
+    // split screen on ultra: every view re-renders the scene and its shadows, so draw at 1080p (the views are
+    // smaller anyway) and keep ultra's materials, shadows and post
+    const res = players > 1 && q.resolution.w > 1920 ? { w: 1920, h: 1080 } : q.resolution;
+    this.width = res.w;
+    this.height = res.h;
     this.fog = new THREE.Fog(FOG, lite ? 35 : 45, lite ? 300 : 420);
     this.scene.fog = this.fog;
     this.scene.background = new THREE.Color(FOG);
@@ -65,7 +68,7 @@ export class GhatView {
       this.renderer.setSize(this.width, this.height, false);
       this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     } else {
-      this.cine = createCinematic(canvas, q, { scene: this.scene, camera: this.extra[0] });
+      this.cine = createCinematic(canvas, { ...q, resolution: res }, { scene: this.scene, camera: this.extra[0] });
       this.renderer = this.cine.renderer;
       // ACES: more contrast and colour than AgX for a rainy, overcast scene (AgX greys it out)
       this.renderer.toneMapping = THREE.ACESFilmicToneMapping;

@@ -116,7 +116,7 @@ void main() {
   vec4 mv = modelViewMatrix * vec4(q, 1.0);
   vec4 mvp = modelViewMatrix * vec4(p, 1.0), mvt = modelViewMatrix * vec4(tail, 1.0);
   vec2 d = normalize(mvp.xy - mvt.xy + 1e-5);
-  mv.xy += vec2(-d.y, d.x) * position.x * 0.012 * -mv.z * 0.18;
+  mv.xy += vec2(-d.y, d.x) * position.x * 0.0032 * -mv.z;
   gl_Position = projectionMatrix * mv;
   float dist = length(q - c);
   vA = smoothstep(box * 0.5, box * 0.2, dist) * smoothstep(0.6, 2.0, dist);
@@ -141,7 +141,7 @@ export class Rain {
     g.instanceCount = count;
     const mat = new THREE.ShaderMaterial({
       vertexShader: RAIN_VERT, fragmentShader: RAIN_FRAG, transparent: true, depthWrite: false,
-      uniforms: { time: { value: 0 }, wind: { value: new THREE.Vector3(3, 0, 1.5) }, box: { value: box }, speed: { value: 19 }, alpha: { value: 0.32 } },
+      uniforms: { time: { value: 0 }, wind: { value: new THREE.Vector3(3, 0, 1.5) }, box: { value: box }, speed: { value: 19 }, alpha: { value: 0.42 } },
     });
     this.mesh = new THREE.Mesh(g, mat);
     this.mesh.frustumCulled = false;

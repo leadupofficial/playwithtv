@@ -37,7 +37,7 @@ export function roadTexture(rough = false): THREE.CanvasTexture {
   const px = (u: number) => u * R;
   const col = (rgb: string, r: number) => (rough ? `rgb(${r},${r},${r})` : rgb);
   // asphalt with aggregate
-  g.fillStyle = col("#222527", 118);
+  g.fillStyle = col("#1b1d1f", 105);
   g.fillRect(0, 0, R, H);
   for (let i = 0; i < 14000; i++) {
     const x = sh + rnd() * (R - 2 * sh), y = rnd() * H, l = rnd();
@@ -62,8 +62,8 @@ export function roadTexture(rough = false): THREE.CanvasTexture {
       for (const dy of [0, H, -H]) {
         const pg = g.createRadialGradient(x, y + dy, 0, x, y + dy, ry);
         if (rough) {
-          pg.addColorStop(0, "rgba(0,0,0,0.75)");
-          pg.addColorStop(0.6, "rgba(0,0,0,0.45)");
+          pg.addColorStop(0, "rgba(0,0,0,0.45)");
+          pg.addColorStop(0.6, "rgba(0,0,0,0.22)");
           pg.addColorStop(1, "rgba(0,0,0,0)");
         } else {
           pg.addColorStop(0, "rgba(10,12,14,0.5)");
