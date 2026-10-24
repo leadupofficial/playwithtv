@@ -1,0 +1,24 @@
+{
+ "format": "pwtv-backdrop",
+ "version": 1,
+ "name": "ghat-loop",
+ "kind": "video",
+ "files": [
+  "ghat-loop.mp4",
+  "ghat-loop-poster.webp"
+ ],
+ "fps": 24,
+ "seconds": 4.0,
+ "loop": true,
+ "layers": [],
+ "source": {
+  "scene": null,
+  "model": "hatchback-sports.glb",
+  "hdri": "kloofendal_overcast_puresky_2k.hdr",
+  "preset": "monsoon",
+  "stage": "road",
+  "engine": "cycles",
+  "samples": 24,
+  "licence": "Kenney Car Kit 3.1 CC0 1.0, HDRI kloofendal_overcast_puresky by Greg Zaal, Poly Haven CC0 1.0"
+ }
+}

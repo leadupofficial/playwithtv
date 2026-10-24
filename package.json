@@ -14,7 +14,10 @@
     "hooks:install": "git config core.hooksPath scripts/git-hooks",
     "e2e:prod": "playwright test -c playwright.prod.config.ts",
     "ship": "sh scripts/deploy.sh",
-    "content:check": "pnpm --filter @playwithtv/server exec tsx ../../scripts/content-check.ts"
+    "content:check": "pnpm --filter @playwithtv/server exec tsx ../../scripts/content-check.ts",
+    "assets:sprites": "blender -b --factory-startup -P tools/blender/render_sprites.py --",
+    "assets:backdrop": "blender -b --factory-startup -P tools/blender/render_backdrop.py --",
+    "assets:glb": "blender -b --factory-startup -P tools/blender/export_glb.py --"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",

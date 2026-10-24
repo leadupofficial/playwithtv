@@ -34,3 +34,6 @@ playwright-report/
 
 # local tool state (agent worktrees, editor settings): never commit
 .claude/
+
+# Python bytecode (Blender pipeline scripts)
+__pycache__/

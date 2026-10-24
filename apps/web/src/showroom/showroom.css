@@ -1,0 +1,14 @@
+/* /tv/showroom: the scene fills the 1920×1080 stage, the HUD floats above it. */
+.tv.showroom { padding: 0; background: #0d1114; }
+.showroom-stage { position: absolute; inset: 0; }
+.showroom-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+/* lite tier: a darkened "garage" bay on the right for the sprite turntable, over the video */
+.showroom-garage { position: absolute; top: 0; right: 0; bottom: 0; width: 44%; background: linear-gradient(90deg, rgba(8, 11, 14, 0) 0%, rgba(8, 11, 14, 0.88) 18%, rgba(8, 11, 14, 0.94) 100%); }
+.showroom-hud { position: absolute; inset: 0; padding: 40px 58px; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6); background: linear-gradient(180deg, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0) 16%); display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; }
+.showroom-hud button, .showroom-hud a { pointer-events: auto; }
+.showroom-tab { cursor: pointer; font-family: inherit; color: inherit; font-size: 0.95em; }
+.showroom-tab:focus { outline: 0.15em solid #fff; }
+.showroom-tab.on { background: #fff; color: #111; font-weight: 800; }
+.showroom-bottom { display: flex; align-items: flex-end; justify-content: space-between; gap: 1.2em; }
+.showroom-info { max-width: 900px; background: rgba(10, 12, 18, 0.72); backdrop-filter: none; }
+.showroom-why { font-size: 0.7em; margin-top: 0.3em; }

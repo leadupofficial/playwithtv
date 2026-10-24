@@ -13,6 +13,7 @@ import { countImpression, pickSponsor, setImpressionSink, useSponsors } from "./
 import { TvInputs } from "../rtc";
 import { TvInstallChip } from "../InstallBanner";
 import { MODE_ICON } from "../games/controlKit";
+import { GraphicsChip } from "../quality/GraphicsChip";
 
 const ROOM_KEY = "pwtv.tv.room";
 
@@ -203,6 +204,7 @@ export function TvApp() {
           <span className="chip"><span className={`dot ${status === "open" ? "on" : ""}`} />{status === "open" ? "Online" : "Connecting…"}</span>
           <span className="chip">{connected.length} / 8 players</span>
           <TvInstallChip />
+          <GraphicsChip />
         </div>
       </div>
 

@@ -1,0 +1,9 @@
+/* Graphics tier UI: the lobby chip, the power-host tip and the /tv/hosting help page. */
+.quality-chip, .quality-tip { cursor: pointer; font-family: inherit; color: inherit; text-decoration: none; }
+.quality-chip:focus, .quality-tip:focus { outline: 0.15em solid #fff; }
+.quality-tip { background: linear-gradient(135deg, rgba(255, 196, 80, 0.18), rgba(255, 120, 60, 0.12)); }
+
+.hosting { max-width: 1500px; display: flex; flex-direction: column; gap: 1em; align-items: center; }
+.hosting-ways { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2em; text-align: left; width: 100%; }
+.hosting-ways ol { margin: 0; padding-left: 1.3em; line-height: 1.55; font-size: 1.05em; }
+.hosting-ways li + li { margin-top: 0.35em; }

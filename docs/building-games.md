@@ -215,3 +215,115 @@ files you use, credited in `ASSETS.md` and `licenceInventory`.
 Load models with the kit's `loadGltf()`, not a bare `GLTFLoader`: three's default path decodes GLB textures by
 `fetch()`ing a `blob:` URL, which our CSP's `connect-src` blocks in production (textures silently go missing);
 the kit decodes them through an `<img>` instead.
+
+## Cinematic games: tiers and the Blender pipeline
+
+For "PlayStation-looking" games (GHAT RUSH, KALARI CLASH, GULLY SUPER OVER, TIFFIN TORNADO …). The same game runs
+on three **render tiers**; the look on the weakest one comes from assets pre-rendered in Blender, not from the TV's
+GPU. Open `/tv/showroom` (TV route, remote-friendly) to see one car in every tier; `?quality=lite|high|ultra`
+forces a tier on any page.
+
+| Tier | Where | How it looks premium | Budget |
+|---|---|---|---|
+| `lite` | the owner's TV: 1 GB, Mali-G31, WebView | Blender-lit **sprite sheets** (16 directions, contact shadows, rim light, AgX) + **H.264 video loops** (hardware-decoded) + cheap 3D for the playfield | 1280×720, no shadow maps, no post, Lambert/Toon, 1–10 draw calls for sprites |
+| `high` | a better TV box, a laptop with integrated graphics | real-time PBR, HDRI image-based light, soft shadow map, AgX, bloom + FXAA | 1920×1080, 1024 px shadows, textures ≤ 1024 |
+| `ultra` | a laptop/PC with a strong GPU casting or on HDMI ("power-host mode") | as high + GTAO ambient occlusion, SMAA, bigger shadows | 2560×1440, 2048 px shadows, textures ≤ 2048 |
+
+### Reading the tier (`apps/web/src/quality/`)
+
+```ts
+import { useQuality, getQuality } from "../../quality/store";
+const { tier, profile, ready } = useQuality();   // React; re-renders when the player changes the setting
+const q = getQuality().profile;                   // plain code (engine, scene builders)
+if (!ready) return <Loading />;                   // detection runs once per device (≤ 1.5 s, cached)
+```
+
+`QualityProfile` (`quality/tier.ts`) is what you branch on, never the tier name alone:
+`resolution {w,h}` (drawing buffer of a full-stage canvas), `pixelRatioCap`, `msaa`, `materials`
+(`lambert` | `standard` | `physical`), `envMap`, `shadows {enabled, mapSize, soft}`,
+`post {level 0|1|2, bloom, ao, aa: none|fxaa|smaa}`, `toneMapping`, `maxTexture`, `particleBudget`
+(150 / 800 / 3000), `assetSuffix` (`-lite` | `-high` | `-ultra`) and `prerendered` (true on lite: draw sprites and
+video, not real-time models).
+
+**How detection works** (`quality/detect.ts`, rules in `quality/tier.ts`, unit-tested in `tier.test.ts`):
+1. Signals: WebGL renderer string (`WEBGL_debug_renderer_info`), `navigator.deviceMemory`, `hardwareConcurrency`,
+   `MAX_TEXTURE_SIZE`, and the TV app's user-agent marker `PlayWithTV/1`.
+2. Hardware cap (the lowest applies): weak/software GPU (Mali-4xx/T6–8xx/G31/G51/G52/G57, PowerVR SGX/GE/GX,
+   Adreno ≤ 619, VideoCore, SwiftShader, llvmpipe) → lite; memory ≤ 1 GB → lite, ≤ 2 GB → high; ≤ 2 cores → lite,
+   ≤ 4 → high; max texture < 4096 → lite, < 8192 → high; the TV app → high at most.
+3. GPU micro-benchmark (≤ 1.2 s, raw WebGL, 1280×720 offscreen): full-screen layers of a lit, textured shader,
+   doubled until a batch takes ≥ 30 ms. Score = 720p screens per 60 fps frame: < 8 → lite, < 60 → high, ≥ 60 →
+   ultra (Apple M4 ≈ 370; SwiftShader ≈ a few). Ultra also needs a known strong GPU (Apple M, NVIDIA, Radeon RX/Pro,
+   Intel Arc, Adreno 73x+, Mali-G6x/G7xx+).
+4. The result is cached in `localStorage["pwtv.quality.detect"]` with a version and the GPU string; a new GPU (or a
+   bumped `CACHE_VERSION`) re-runs it.
+5. Precedence: `?quality=` (this page load) → the lobby chip "🎨 Graphics: Auto/Lite/High/Ultra" (saved per device,
+   OK on the remote cycles it) → detection. On lite the lobby also offers "Console-quality graphics: cast from a
+   laptop", which opens `/tv/hosting` (Chrome Cast tab, or HDMI).
+
+### Lite tier: sprites and video (`apps/web/src/games/kit25d/`)
+
+```ts
+import { SpriteBatch, loadSpriteSheet } from "../kit25d/spriteBatch";
+const sheet = await loadSpriteSheet("/assets/ghat-rush/auto.json", { normals: true });
+const autos = new SpriteBatch(sheet, 8);         // ONE draw call for all 8 autos
+scene.add(autos.mesh);
+// per frame:
+autos.set(i, { x, y: 0, z, heading, tint: player.color, scale: 1, time: t });
+autos.update(camera, t);                         // picks direction cell + frame, sorts far → near
+autos.setLight([-0.5, 0.8, 0.4], "#cfe0ff", flash); // optional relight through the normal sheet (lightning)
+```
+
+- `heading` is the object's world yaw, three.js style: forward = `(sin h, 0, cos h)`. `update()` converts it to the
+  screen-relative heading the sheet is indexed by, so the camera may yaw freely. Keep the camera's **pitch** close
+  to the sheet's `camera.elevationDeg` (default 30°), or render the sheet at your pitch.
+- Sprites are screen-aligned quads whose `pivot` (the model's ground point) sits on `(x, y, z)`; world size comes
+  from `pixelsPerMetre` × `scale`. They don't write depth: draw opaque 3D first, sprites after (the default order).
+- `tint` recolours only saturated (paint) texels, keeping tyres, glass and the baked lighting: one sheet serves
+  every player colour. Render the paint in a saturated mid colour.
+- `manifest.ts` holds the pure maths (`directionIndex`, `frameAt`, `cellIndex`, `cellUv`, `worldSize`,
+  `screenHeading`, `parseManifest`), unit-tested in `manifest.test.ts`.
+- Backdrops: `<VideoBackdrop src=… poster=… paused={paused} />` under a canvas made with
+  `new THREE.WebGLRenderer({ alpha: true })` and `setClearColor(0, 0)`. Muted + playsInline loops autoplay on TVs;
+  the poster covers loading and browsers without H.264 (Playwright's Chromium does have it on macOS). The service
+  worker leaves Range (video) requests alone.
+
+### High and ultra: `kit3d/cinematic.ts`
+
+```ts
+import { createCinematic, prepareModel } from "../kit3d/cinematic";
+const cine = createCinematic(canvas, profile, { scene, camera });   // renderer + post chain from the profile
+await cine.environment(scene, "/assets/ghat-rush/sky_1k.hdr", { background: true, intensity: 0.6 });
+cine.sun(scene, { position: [-4, 10, 5], extent: 8 });               // shadow camera covers ±8 m
+const car = cloneModel((await loadGltf(`/assets/ghat-rush/auto${profile.assetSuffix}.glb`)).scene);
+prepareModel(car, profile);                                         // shadows, env strength, anisotropy
+loop: cine.render(scene, camera);                                   // RenderPass → GTAO → bloom → Output → FXAA/SMAA
+cine.setBloom(0.6);                                                  // punch on a hit, then ease back to 0.22
+```
+
+`.hdr` (HDRLoader) and `.exr` (EXRLoader) fetch the same-origin file and decode in JavaScript: they work under the
+CSP (tested in `e2e/showroom.spec.ts`). Use 1k HDRIs (~1.2 MB) for lighting; blur the background
+(`blur: 0.04`) or replace it with your own scenery. Load GLBs only through `kit3d/assets.ts` `loadGltf()`.
+
+### Making assets: the Blender pipeline (`tools/blender/`, see its README)
+
+```sh
+pnpm assets:sprites  --model auto.glb --hdri studio_small_08_2k.hdr --preset monsoon --directions 16 --size 256 \
+                     --normals --no-png --out apps/web/public/assets/ghat-rush --name auto
+pnpm assets:backdrop --scene ghat.blend --video --seconds 4 --path scene --out apps/web/public/assets/ghat-rush --name intro
+pnpm assets:glb      --model auto.glb --tier high --bake-ao --out apps/web/public/assets/ghat-rush/auto-high.glb
+```
+
+Measured on an M4 (Blender 5.2.3): 16-direction 256 px sheet + normals ≈ 45 s; a 4 s 720p video loop ≈ 9 min
+(24 samples, Cycles Metal + OIDN); GLB with baked AO ≈ 10–80 s. The first Cycles run compiles Metal kernels
+(~4 min, once). Always look at the `--preview` PNG and a frame of the video before committing, and iterate on the
+light preset.
+
+**Recipe per game:** lite = sprites for every moving thing (vehicles, fighters, players: 8–16 directions,
+idle/run/hit clips at 8–12 fps) + a video loop or layered stills for the world + simple Lambert geometry for
+whatever the camera must move through; high/ultra = the same models as GLBs with PBR, the HDRI and the post chain.
+Gameplay code is identical: only the view layer branches on `profile.prerendered`.
+
+**Rules:** CC0 first (Kenney, Quaternius, KayKit, Poly Haven); CC-BY only with credit in `ASSETS.md` and
+`licenceInventory`; no logos, brand names, number plates or raw Mixamo files; licence file next to the outputs;
+keep a game's cinematic assets under ~8 MB (sprites as WebP; video 720p CRF ~23; ultra GLBs only when they differ).
