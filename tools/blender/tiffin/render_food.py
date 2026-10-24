@@ -98,6 +98,8 @@ def main():
                 bpy.data.objects.remove(o, do_unlink=True)
         for i, ob in enumerate(items.values()):
             ob.hide_render = False
+            dec = ob.modifiers.new("lighter", "DECIMATE")  # the real-time copies only: half the triangles
+            dec.ratio = 0.5
             ob.location = (i * 0.8, 0, 0)  # spread out (the game reads each node by name and re-centres it)
         bpy.ops.export_scene.gltf(filepath=os.path.join(a.out, "food.glb"), export_format="GLB", export_apply=True,
                                   export_draco_mesh_compression_enable=False, export_yup=True, export_lights=False, export_cameras=False)

@@ -1,0 +1,13 @@
+Poly Haven HDRIs used to light the Tiffin Tornado renders (CC0 1.0, public domain: https://polyhaven.com/license)
+
+kloofendal_48d_partly_cloudy_puresky (2k)
+  "Kloofendal 48d Partly Cloudy (Pure Sky)" by Greg Zaal, https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky
+  Lighting of kitchen-*-*.webp and scenery-*.webp (not shipped).
+
+studio_small_09 (2k)
+  "Studio Small 09" by Sergej Majboroda, https://polyhaven.com/a/studio_small_09
+  Lighting of chef-*.webp and food.webp (not shipped).
+
+kloofendal_overcast_puresky_1k.hdr
+  "Kloofendal Overcast (Pure Sky)" by Greg Zaal; shipped in ../cinematic/showroom/ and reused here as the
+  real-time environment light of the high/ultra tiers.

@@ -103,13 +103,13 @@ function Kitchen({ chefs, kit, controls, bridge, paused, onFinish }: {
         raf = requestAnimationFrame(frame);
         frames++;
         if (now - fpsT >= 1000) { fps = Math.round((frames * 1000) / (now - fpsT)); frames = 0; fpsT = now; }
-        const real = Math.min(0.1, (now - last) / 1000);
+        const real = Math.min(0.25, (now - last) / 1000); // slow GPUs: catch up (up to 15 fixed steps)
         last = now;
         events.length = 0;
         if (!pausedRef.current && !loading) {
           acc += real;
           let steps = 0;
-          while (acc >= DT && steps++ < 6) {
+          while (acc >= DT && steps++ < 15) {
             acc -= DT;
             const inputs = new Map(m.chefs.map((c) => [c.id, controls.read(c.id, verbFor(m, c.id))]));
             const lvl = m.levelIndex;
@@ -117,11 +117,11 @@ function Kitchen({ chefs, kit, controls, bridge, paused, onFinish }: {
             if (m.levelIndex !== lvl) {
               loading = true;
               controls.flush();
-              void v.level(m).then(() => { loading = false; });
+              void v.level(m).then(() => { loading = false; }, (err) => { setFailed(String(err)); });
               break;
             }
           }
-          if (acc > DT * 6) acc = 0;
+          if (acc > DT * 15) acc = 0;
         }
         for (const e of events) {
           feedback(e, m, audio, bridge, kit, banners, now);
@@ -158,7 +158,7 @@ function Kitchen({ chefs, kit, controls, bridge, paused, onFinish }: {
             resultsAt = now;
             const cards = awardsFor(m.chefs).map((a) => ({ emoji: a.emoji, title: a.title, name: looks.get(a.playerId)?.name ?? "", color: looks.get(a.playerId)?.color ?? "#fff", detail: a.detail }));
             const totalStars = m.results.reduce((s, r) => s + r.stars, 0);
-            showAwards(awardsEl.current!, `${"⭐".repeat(totalStars)}  ${m.teamPoints} TEAM POINTS`, cards);
+            showAwards(awardsEl.current!, `⭐ ${totalStars}/${m.results.length * 3}  ·  ${m.teamPoints} TEAM POINTS`, cards);
             audio.play("congrats");
             audio.horn(1.6);
             const ranked = placings(new Map(m.chefs.map((c) => [c.id, c.stats.points])));

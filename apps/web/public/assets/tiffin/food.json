@@ -1,0 +1,190 @@
+{
+ "format": "pwtv-sprites",
+ "version": 1,
+ "name": "food",
+ "image": "food.webp",
+ "fallback": null,
+ "normals": null,
+ "size": {
+  "w": 736,
+  "h": 720
+ },
+ "cell": {
+  "w": 184,
+  "h": 120
+ },
+ "grid": {
+  "cols": 4,
+  "rows": 6
+ },
+ "directions": 1,
+ "framesPerDirection": 21,
+ "fps": 1,
+ "angle0": 0,
+ "pivot": {
+  "x": 0.4565,
+  "y": 0.5157
+ },
+ "pixelsPerMetre": 256.41,
+ "camera": {
+  "type": "ortho",
+  "elevationDeg": 45.0,
+  "fovDeg": null
+ },
+ "shadow": true,
+ "frames": [
+  {
+   "x": 0,
+   "y": 0,
+   "w": 184,
+   "h": 120
+  },
+  {
+   "x": 184,
+   "y": 0,
+   "w": 184,
+   "h": 120
+  },
+  {
+   "x": 368,
+   "y": 0,
+   "w": 184,
+   "h": 120
+  },
+  {
+   "x": 552,
+   "y": 0,
+   "w": 184,
+   "h": 120
+  },
+  {
+   "x": 0,
+   "y": 120,
+   "w": 184,
+   "h": 120
+  },
+  {
+   "x": 184,
+   "y": 120,
+   "w": 184,
+   "h": 120
+  },
+  {
+   "x": 368,
+   "y": 120,
+   "w": 184,
+   "h": 120
+  },
+  {
+   "x": 552,
+   "y": 120,
+   "w": 184,
+   "h": 120
+  },
+  {
+   "x": 0,
+   "y": 240,
+   "w": 184,
+   "h": 120
+  },
+  {
+   "x": 184,
+   "y": 240,
+   "w": 184,
+   "h": 120
+  },
+  {
+   "x": 368,
+   "y": 240,
+   "w": 184,
+   "h": 120
+  },
+  {
+   "x": 552,
+   "y": 240,
+   "w": 184,
+   "h": 120
+  },
+  {
+   "x": 0,
+   "y": 360,
+   "w": 184,
+   "h": 120
+  },
+  {
+   "x": 184,
+   "y": 360,
+   "w": 184,
+   "h": 120
+  },
+  {
+   "x": 368,
+   "y": 360,
+   "w": 184,
+   "h": 120
+  },
+  {
+   "x": 552,
+   "y": 360,
+   "w": 184,
+   "h": 120
+  },
+  {
+   "x": 0,
+   "y": 480,
+   "w": 184,
+   "h": 120
+  },
+  {
+   "x": 184,
+   "y": 480,
+   "w": 184,
+   "h": 120
+  },
+  {
+   "x": 368,
+   "y": 480,
+   "w": 184,
+   "h": 120
+  },
+  {
+   "x": 552,
+   "y": 480,
+   "w": 184,
+   "h": 120
+  },
+  {
+   "x": 0,
+   "y": 600,
+   "w": 184,
+   "h": 120
+  }
+ ],
+ "names": [
+  "dosa",
+  "idli",
+  "vada",
+  "chutney",
+  "sambar",
+  "batter",
+  "dough",
+  "coconut",
+  "veg",
+  "cutveg",
+  "cup",
+  "coffee",
+  "water",
+  "burnt",
+  "plate",
+  "dirty",
+  "tava_raw",
+  "tava_dosa",
+  "vada_raw",
+  "pot_veg",
+  "pot_sambar"
+ ],
+ "source": {
+  "generator": "tools/blender/tiffin/render_food.py",
+  "licence": "original (modelled in code), CC0"
+ }
+}

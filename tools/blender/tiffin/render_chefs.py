@@ -34,16 +34,16 @@ import tt_light as L  # noqa: E402
 
 # name, KayKit action, frames, fps, carry pose
 CLIPS = [
-    ("idle", "Idle", 4, 5, False),
-    ("run", "Running_A", 8, 14, False),
+    ("idle", "Idle", 2, 3, False),
+    ("run", "Running_A", 6, 11, False),
     ("carry", "Idle", 2, 3, True),
-    ("carryrun", "Running_A", 8, 14, True),
-    ("work", "1H_Melee_Attack_Chop", 6, 14, False),
-    ("cheer", "Cheer", 6, 9, False),
+    ("carryrun", "Running_A", 6, 11, True),
+    ("work", "1H_Melee_Attack_Chop", 4, 12, False),
+    ("cheer", "Cheer", 4, 7, False),
 ]
 DIRECTIONS = 8
-FRAME_M = 1.9
-FRAME_PX = 216
+FRAME_M = 1.6
+FRAME_PX = 160
 
 
 def args():

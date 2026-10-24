@@ -127,6 +127,7 @@ test("Tiffin Tornado with buttons: two phones cook and serve filter coffee throu
   }
   const end = await st();
   expect(end.phase).toBe("results");
+  await expect(a.getByText(/team points/)).toBeVisible({ timeout: 5000 }); // the phone's end screen
   expect(end.results.map((r) => r.level)).toEqual([1, 2, 3]);
   const served = end.results.reduce((n, r) => n + r.served, 0);
   expect(served).toBeGreaterThanOrEqual(1);
@@ -140,7 +141,6 @@ test("Tiffin Tornado with buttons: two phones cook and serve filter coffee throu
   await tv.screenshot({ path: "test-results/tiffin-results.png" });
   console.log(`tiffin lite: served ${served}, team ${end.team}, fps min ${Math.min(...fps)} median ${fps.sort((x, y) => x - y)[Math.floor(fps.length / 2)]}, draw calls ${end.calls}, triangles ${end.tris}`);
   expect(end.calls).toBeLessThan(40);
-  await expect(a.getByText(/team points/)).toBeVisible({ timeout: 15_000 });
   await expect(tv.getByRole("button", { name: /Rematch/ })).toBeVisible({ timeout: 30_000 });
   expect(await tv.evaluate(() => (window as unknown as { __csp: string[] }).__csp)).toEqual([]);
 });
@@ -184,29 +184,27 @@ test("Tiffin Tornado with the touchpad: drag to walk to the tumblers, tap to pic
   expect(await tv.evaluate(() => (window as unknown as { __csp: string[] }).__csp)).toEqual([]);
 });
 
+// Real-time tiers: correctness and screenshots (headless Chromium renders them in software, so no fps checks).
 for (const quality of ["high", "ultra"]) {
   test(`Tiffin Tornado renders the real-time diorama on the ${quality} tier`, async ({ browser }) => {
-    test.setTimeout(150_000);
+    test.setTimeout(240_000);
     const { tv, code } = await tiffinTv(browser, quality);
     const p = await joinPhone(browser, code, "Kavin");
     await start(tv);
     await practiseUntilReady(tv, p, "Kavin", ["btn:ACTION", "btn:DASH"]);
     const st = stateOf(tv);
-    await expect.poll(async () => (await st()).phase, { timeout: 60_000 }).toBe("service");
-    const move = await thumb(p);
-    const bot = coffeeBot("Kavin", 0);
-    const fps: number[] = [];
-    for (let i = 0; i < 60; i++) {
-      const s = await st();
-      if (s.phase !== "service") break;
-      fps.push(s.fps);
-      await bot(s, p, move);
-      await tv.waitForTimeout(90);
-    }
-    const s = await st();
+    // the kitchen GLB, chefs, food and the HDRI are loaded and a frame has been drawn through the post chain
+    await expect.poll(async () => (await st()).calls ?? 0, { timeout: 120_000, intervals: [2000] }).toBeGreaterThan(5);
+    let s = await st();
     expect(s.tier).toBe(quality);
-    await tv.screenshot({ path: `test-results/tiffin-${quality}.png` });
-    console.log(`tiffin ${quality}: fps median ${fps.sort((x, y) => x - y)[Math.floor(fps.length / 2)]}, draw calls ${s.calls}, triangles ${s.tris}`);
+    expect(s.tris).toBeGreaterThan(10_000);
+    await tv.screenshot({ path: `test-results/tiffin-${quality}-intro.png`, timeout: 90_000 });
+    // give the (slow, software-rendered) game time to reach the service, then catch a frame of it
+    await expect.poll(async () => (s = await st()).phase, { timeout: 150_000, intervals: [3000] }).toBe("service");
+    await tv.waitForTimeout(3000);
+    s = await st();
+    await tv.screenshot({ path: `test-results/tiffin-${quality}.png`, timeout: 90_000 });
+    console.log(`tiffin ${quality}: phase ${s.phase}, fps ${s.fps} (software GL), draw calls ${s.calls}, triangles ${s.tris}`);
     expect(await tv.evaluate(() => (window as unknown as { __csp: string[] }).__csp)).toEqual([]);
   });
 }

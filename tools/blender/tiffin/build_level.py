@@ -238,6 +238,9 @@ def main():
             os.remove(png)
             info["backdrops"][v] = f"{name}-{v}.webp"
             C.log(f"{name}-{v}: {time.time() - t0:.0f}s")
+    old = os.path.join(a.out, f"{name}.json")
+    if os.path.exists(old):  # keep backdrops rendered by an earlier run (e.g. a GLB-only export)
+        info["backdrops"] = {**json.load(open(old)).get("backdrops", {}), **info["backdrops"]}
     with open(os.path.join(a.out, f"{name}.json"), "w") as fh:
         json.dump(info, fh, indent=1)
     if a.glb:
@@ -253,7 +256,19 @@ def export_glb(static, doors, path):
         if o.name in bpy.data.objects and o.data and o.data.users > 1:
             o.data = o.data.copy()
     keep = [o for o in static if o.name in bpy.data.objects]
+    # the real-time model stays light: no bevels on small parts, one segment on big ones, no smoothing modifier
+    for o in keep + [d for d in doors if d.name in bpy.data.objects]:
+        for mod in list(o.modifiers):
+            if mod.type == "BEVEL":
+                if max(o.dimensions) < 0.6:
+                    o.modifiers.remove(mod)
+                else:
+                    mod.segments = 1
+            elif mod.type == "NODES":
+                o.modifiers.remove(mod)
     kitchen = T.join(keep, "kitchen")
+    dec = kitchen.modifiers.new("lighter", "DECIMATE")  # ~100k → ~40k vertices: round props lose the most
+    dec.ratio = 0.4
     objs = [kitchen]
     if doors:
         objs.append(T.join([o for o in doors if o.name in bpy.data.objects], "doors"))

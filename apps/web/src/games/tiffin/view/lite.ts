@@ -26,10 +26,10 @@ void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(
 /** Up to three textures mixed (fields / platform / tunnel, or day / shut / dark), scrolled, dimmed. */
 const MIX_FRAG = /* glsl */ `
 uniform sampler2D a; uniform sampler2D b; uniform sampler2D c;
-uniform float wb; uniform float wc; uniform float offset; uniform float light; uniform vec3 tint;
+uniform float wb; uniform float wc; uniform float offset; uniform float repeat; uniform float light; uniform vec3 tint;
 varying vec2 vUv;
 void main() {
-  vec2 uv = vec2(vUv.x + offset, vUv.y);
+  vec2 uv = vec2(vUv.x * repeat + offset, vUv.y);
   vec4 col = texture2D(a, uv);
   col = mix(col, texture2D(b, uv), wb);
   col = mix(col, texture2D(c, uv), wc);
@@ -41,7 +41,7 @@ void main() {
 function mixMaterial(a: THREE.Texture, b: THREE.Texture, c: THREE.Texture) {
   return new THREE.ShaderMaterial({
     vertexShader: SCROLL_VERT, fragmentShader: MIX_FRAG, transparent: true, depthWrite: false, depthTest: false,
-    uniforms: { a: { value: a }, b: { value: b }, c: { value: c }, wb: { value: 0 }, wc: { value: 0 }, offset: { value: 0 }, light: { value: 1 }, tint: { value: new THREE.Color(1, 1, 1) } },
+    uniforms: { a: { value: a }, b: { value: b }, c: { value: c }, wb: { value: 0 }, wc: { value: 0 }, offset: { value: 0 }, repeat: { value: 1 }, light: { value: 1 }, tint: { value: new THREE.Color(1, 1, 1) } },
   });
 }
 
@@ -69,6 +69,7 @@ export class LiteView implements KitchenView {
   private shake = 0;
   private time = 0;
   private loadedLevel = -1;
+  private panoK = 0.45;
 
   constructor(canvas: HTMLCanvasElement, overlayEl: HTMLElement, private profile: QualityProfile, private looks: Map<string, ViewLook>) {
     const { w, h } = profile.resolution;
@@ -88,7 +89,11 @@ export class LiteView implements KitchenView {
     let done = 0;
     const step = <T,>(p: Promise<T>) => p.then((v) => { onProgress?.(++done / 8); return v; });
     const [chefs, food, far, fields, platform, tunnel, track] = await Promise.all([
-      step(Promise.all(Array.from({ length: CHEF_SHEETS }, (_, i) => chefSheet(i + 1)))),
+      step(Promise.allSettled(Array.from({ length: CHEF_SHEETS }, (_, i) => chefSheet(i + 1))).then((r) => {
+        const ok = r.flatMap((x) => (x.status === "fulfilled" ? [x.value] : []));
+        if (!ok.length) throw new Error("no chef sprites");
+        return ok;
+      })),
       step(foodSheet()),
       step(texture(SCENERY.far, true)), step(texture(SCENERY.fields, true)), step(texture(SCENERY.platform, true)),
       step(texture(SCENERY.tunnel, true)), step(texture(SCENERY.track, true)),
@@ -140,10 +145,15 @@ export class LiteView implements KitchenView {
     quad(this.backdrop, W, H, 0, sT, 30);
     this.levelGroup.add(this.backdrop);
     // window scenery: the panorama's ground line sits a little above the back wall's foot
-    const ph = PANO.height * 0.62;
-    quad(this.far, PANO.length * 0.62, ph, 0, 2.6 + ph / 2, 60);
-    quad(this.near, PANO.length * 0.62, ph, 0, 2.55 + ph / 2, 50);
-    quad(this.track, PANO.length, (PANO.length * 844) / 1500, 0, sT, 40);
+    // panoramas tile across the whole width (a tile is PANO.length × k metres)
+    const pk = 0.45, ph = PANO.height * pk;
+    quad(this.far, W, ph, 0, 2.95 + ph / 2, 60);
+    quad(this.near, W, ph, 0, 2.85 + ph / 2, 50);
+    quad(this.track, W, (PANO.length * 844) / 1500, 0, sT, 40);
+    this.far.material.uniforms.repeat!.value = W / (PANO.length * pk);
+    this.near.material.uniforms.repeat!.value = W / (PANO.length * pk);
+    this.track.material.uniforms.repeat!.value = W / PANO.length;
+    this.panoK = pk;
     // depth-only blocks for the counters, so sprites behind an island are hidden by it
     const layout = LEVELS[m.levelIndex]!.layout;
     const boxes: THREE.BufferGeometry[] = [];
@@ -197,8 +207,8 @@ export class LiteView implements KitchenView {
       const u = mesh.material.uniforms;
       u.offset!.value = offset; u.wb!.value = wb; u.wc!.value = wc; u.light!.value = l;
     };
-    setMix(this.far, (st.run * 0.12) / PANO.length, 0, 0, 1 - 0.85 * st.tunnel);
-    setMix(this.near, st.run / PANO.length, st.platform, st.tunnel, 1);
+    setMix(this.far, (st.run * 0.12) / (PANO.length * this.panoK), 0, 0, 1 - 0.85 * st.tunnel);
+    setMix(this.near, (st.run * 0.6) / (PANO.length * this.panoK), st.platform, st.tunnel, 1);
     setMix(this.track, (st.run * 1.0) / PANO.length, 0, 0, light);
     if (this.backdrop) {
       setMix(this.backdrop, 0, st.doors, st.dark, 1);
@@ -216,7 +226,7 @@ export class LiteView implements KitchenView {
     for (const f of this.foods) {
       const idx = this.foodIndex.get(f.name);
       if (idx === undefined || n >= this.food.capacity) continue;
-      this.food.set(n++, { x: f.x, y: f.y + 0.004, z: f.z, frame: idx, scale: f.scale, alpha: f.alpha, light: light * 1.02 });
+      this.food.set(n++, { x: f.x, y: f.y + 0.004, z: f.z, frame: idx, scale: f.scale * 1.25, alpha: f.alpha, light: light * 1.02 });
     }
     this.food.update(cam);
     // chefs

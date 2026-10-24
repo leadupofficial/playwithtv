@@ -30,7 +30,7 @@ const CSS = `
 .tt-ticket.urgent{animation:tt-in .55s cubic-bezier(.2,1.6,.4,1) both, tt-wobble .5s ease-in-out infinite}
 .tt-ticket b{display:block;font-size:22px;line-height:1.05;text-align:center;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tt-icons{display:flex;justify-content:center;gap:2px;height:62px;align-items:center;margin:2px 0 4px}
-.tt-icon{width:72px;height:52px;background-repeat:no-repeat;filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
+.tt-icon{width:72px;height:52px;background-repeat:no-repeat;overflow:hidden;filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
 .tt-bar{height:12px;border-radius:6px;background:#d9cbb0;overflow:hidden}
 .tt-bar>i{display:block;height:100%;border-radius:6px;transition:width .2s linear}
 .tt-score{position:absolute;right:30px;top:18px;width:330px;background:rgba(20,12,34,.82);border:4px solid #f0b632;border-radius:22px;padding:10px 18px 14px;box-shadow:0 8px 18px rgba(0,0,0,.45)}
@@ -69,7 +69,7 @@ export function foodIcon(food: SpriteManifest & { names?: string[] }, name: stri
   const i = food.names?.indexOf(name) ?? -1;
   const r = food.frames[i];
   if (!r) return {};
-  const k = Math.min(boxW / r.w, boxH / r.h);
+  const k = Math.min(boxW / r.w, boxH / r.h) * 1.7; // the cells have room for shadows: zoom onto the food
   return {
     backgroundImage: `url(${BASE}/${food.image})`,
     backgroundSize: `${food.size.w * k}px ${food.size.h * k}px`,
