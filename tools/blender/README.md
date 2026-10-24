@@ -94,3 +94,12 @@ Outputs are in `apps/web/public/assets/cinematic/showroom/` and shown at `/tv/sh
 CC0 (Kenney, Quaternius, KayKit, Poly Haven) is preferred. CC-BY is allowed with attribution in `ASSETS.md` and the
 game manifest's `licenceInventory`. Never ship logos, brand names or number plates (strip branded textures before
 rendering), and no raw Mixamo files. Keep each pack's licence file next to its outputs.
+
+## Game-specific scripts
+
+`tools/blender/kalari/` (KALARI CLASH) builds on the scripts above: `fighters.py` restyles KayKit characters (palette
+repaint, modelled accessories) and exports mesh-only GLBs plus one shared clip library; `fighter_sprites.py` renders
+several clips into one sheet per set (manifest field `clips: {name: {start, frames, fps, loop}}`; EEVEE by default,
+~0.4 s a cell, with the game drawing the contact shadow); `arenas.py` + `arena_kit.py` model three arenas
+procedurally and export each as a GLB plus a lite backdrop rendered through the game's orthographic camera;
+`shrink_hdri.py` makes 512 px runtime HDRIs.

@@ -55,7 +55,9 @@ export class RealView implements StageView {
   constructor(canvas: HTMLCanvasElement, private profile: QualityProfile, private arena: ArenaDef, assets: RealAssets, looks: Look[]) {
     this.cine = createCinematic(canvas, profile, { scene: this.scene, camera: this.camera });
     this.renderer = this.cine.renderer;
-    this.renderer.toneMappingExposure = arena.id === "courtyard" ? 1.05 : 0.95;
+    // ACES for this game: punchier, more saturated colours than AgX on stylised palette textures
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = arena.id === "courtyard" ? 0.95 : 0.85;
     this.ready = this.cine.environment(this.scene, HDRI_URL[arena.hdri]!, { background: true, blur: 0.02, intensity: arena.id === "courtyard" ? 0.4 : 0.7 }).then(() => undefined);
     this.scene.fog = new THREE.Fog(arena.fog, 30, 95);
     const sun = SUN[arena.id]!;
@@ -99,7 +101,10 @@ export class RealView implements StageView {
         if (!mesh.isMesh) return;
         mesh.castShadow = true;
         // the palette texture carries an alpha channel: render the fighters fully opaque
-        for (const mat of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) Object.assign(mat, { transparent: false, opacity: 1, alphaTest: 0, depthWrite: true });
+        for (const mat of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+          Object.assign(mat, { transparent: false, opacity: 1, alphaTest: 0, depthWrite: true });
+          if ((mat as THREE.MeshPhysicalMaterial).isMeshPhysicalMaterial) (mat as THREE.MeshPhysicalMaterial).sheen = 0; // sheen milks out dark hair under the HDRI
+        }
       });
       if (look.foe) { // a clay golem: the same body fired in terracotta
         c.tint(CLAY, 0.85, () => true);
@@ -171,7 +176,7 @@ export class RealView implements StageView {
     const pitch = THREE.MathUtils.degToRad(29) + shot.lift;
     const hfov = 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)) * this.camera.aspect);
     const dist = shot.width / 2 / Math.tan(hfov / 2);
-    this.target.set(shot.cx, this.podiumGroup ? 1.6 : 0.7, shot.cz + (this.podiumGroup ? 0 : 0.9));
+    this.target.set(shot.cx, this.podiumGroup ? 1.6 : 0.7, shot.cz + (this.podiumGroup ? 0 : 0.2));
     this.camera.position.set(
       this.target.x + Math.sin(shot.yaw) * Math.cos(pitch) * dist,
       this.target.y + Math.sin(pitch) * dist,
