@@ -49,7 +49,7 @@ export class ControlReader {
     this.x = a.x ?? this.roll;
     this.y = a.y ?? this.pitch;
     this.ok = (a.ok ?? 0) > 0.5;
-    this.mode = Math.round(a.m ?? 0);
+    this.mode = Math.round((a.m ?? 0) * 3);
     this.heldNow = { ...s.buttons };
     const taps = s.taps ?? {};
     const out: string[] = [];
