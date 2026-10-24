@@ -6,7 +6,7 @@ Statuses: **concept** = idea only, hidden from TVs · **prototype** = partly pla
 (objective, motion input, rules, scoring, end state, rematch) with automated tests · **released** = also passed the
 real-device controller test ([real-device-test.md](real-device-test.md)).
 
-Built: 4 · concepts: 47.
+Built: 6 · concepts: 45.
 
 ## Prioritisation matrix
 
@@ -18,8 +18,8 @@ Within a phase, order by validated demand, controller reliability, cost and repl
 | 1 | 🌀 Gravity Maze 3D | A · Solo & arcade | 1–4 | 1 | **playable** | solo, couch-party, practice | unit+e2e |
 | 2 | 🚀 Sky Gyro Racer | A · Solo & arcade | 1–4 | 1 | **playable** | solo, couch-party | unit+e2e |
 | 3 | 🎮 Neon Drift Time Attack | A · Solo & arcade | 1–1 | 2 | concept | solo, async-challenge | none |
-| 4 | 🎮 Tilt Jumper Worlds | A · Solo & arcade | 1–1 | 2 | concept | solo | none |
-| 5 | 🎮 Motion Blade Trial | A · Solo & arcade | 1–4 | 2 | concept | solo, solo-challenge | none |
+| 4 | 🌈 Tilt Jumper Worlds | A · Solo & arcade | 1–4 | 2 | **playable** | solo, couch-party | unit+e2e |
+| 5 | ⚔️ Motion Blade Trial | A · Solo & arcade | 1–4 | 2 | **playable** | solo, solo-challenge, couch-party | unit+e2e |
 | 6 | 🎮 Bowling Master | A · Solo & arcade | 1–4 | 2 | concept | solo, couch-party, tournament | none |
 | 7 | 🎮 Bullseye Motion | A · Solo & arcade | 1–4 | 4 | concept | solo, couch-party, tournament | none |
 | 8 | 🎮 Rhythm Reactor | A · Solo & arcade | 1–8 | 4 | concept | solo, couch-party | none |
@@ -87,6 +87,28 @@ Hold: **upright** · gyroscope: optional · assets: all visuals and sounds (draw
 - **roll**: steer left/right
 - **pitch**: climb / dive
 - **push**: boost (uses energy)
+
+### 🌈 Tilt Jumper Worlds
+
+Bounce up an endless sky tower through four worlds. Turn your phone like a wheel (or use ◀ ▶) to steer, stomp critters, grab gems and fire a rocket or shield. Up to 4 climb side by side: highest climb wins.
+
+Hold: **upright** · gyroscope: unused · assets: all visuals and sounds (drawn and synthesised in code) (original)
+
+- **roll**: steer the bouncing hero left/right
+- **flick-up**: fire the stored power-up (rocket or shield)
+
+### ⚔️ Motion Blade Trial
+
+Glowing plums, lemons, gourds and lanterns fly up: slice them with your blade, chain combos, catch the golden lotus and dodge spiky mines. Drag on the touchpad, flick with motion or slash with buttons. Up to 4 blades on one screen.
+
+Hold: **upright** · gyroscope: unused · assets: all visuals and sounds (drawn and synthesised in code) (original)
+
+- **roll**: aim the blade left/right
+- **pitch**: aim the blade up/down
+- **flick-left**: slash left
+- **flick-right**: slash right
+- **flick-up**: slash up
+- **flick-down**: slash down
 
 ### 🧠 Tamil Trivia Royale
 
