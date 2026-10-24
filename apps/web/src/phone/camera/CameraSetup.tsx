@@ -55,7 +55,7 @@ export function CameraSetup({ settings, onChange, clear, onClear, onStart, onFal
         </div>
         <p className="cam-tip">Prop this phone up sideways at hip height, 2–3 m away, screen facing you.</p>
         <button type="button" className={`cam-clear ${clear ? "on" : ""}`} aria-pressed={clear} onClick={onClear}>
-          {clear ? "✓ Space is clear" : "⬜ I've cleared the space around me (no furniture, pets or people within reach)"}
+          {clear ? "✓ My space is clear" : "⬜ I've cleared the space around me (nothing within reach)"}
         </button>
         <button type="button" className="btn cam-start" disabled={!clear} onClick={onStart}>📷 Turn on camera</button>
       </div>

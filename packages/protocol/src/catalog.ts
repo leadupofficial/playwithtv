@@ -232,6 +232,32 @@ const IMPLEMENTED: GameManifest[] = [
     calibrationProfile: "upright", difficultyLevels: ["grows each round"],
     licenceInventory: [CODE_ART], controlModes: ["buttons", "motion", "touchpad"], automatedTestStatus: "unit+e2e",
   },
+  {
+    id: "squat-rocket",
+    title: "Squat Rocket",
+    description: "A camera fitness game: prop your phone up and squat to pump fuel into your rocket, jump to dodge meteors, lean to steer into stars, then everyone does jumping jacks to power the team shield through an asteroid storm. The phone tracks your body itself: the video never leaves it. Seated mode, three intensities, and buttons for anyone without a camera.",
+    categories: ["fitness", "family", "party", "co-op"],
+    tags: ["camera", "fitness", "squats", "co-op", "3d", "seated-mode"],
+    minPlayers: 1, maxPlayers: 4, version: "1.0.0", executionMode: "browser", controller: "game", orientation: "landscape",
+    estimatedAssetKb: 17900, difficulty: "easy", sessionMinutes: 4,
+    accessibility: ["seated-mode", "gentle-normal-sweaty-intensity", "buttons-fallback", "pause-gesture-and-button", "no-penalty-when-tracking-lost", "large-text"],
+    colors: ["#ff7a00", "#7c3aed"], emoji: "🚀", playable: true,
+    category: "coop-adventure", modes: ["solo", "couch-party", "team-coop"], completionStatus: "playable", phase: 5,
+    sensorRequirements: { accelerometer: false, gyroscope: "unused" },
+    motionMappings: [
+      { motion: "camera: squat (seated: arm raise)", action: "pump fuel / boost" }, { motion: "camera: jump (seated: punch)", action: "dodge a meteor" },
+      { motion: "camera: lean", action: "steer into stars" }, { motion: "camera: jumping jack (seated: arms wide and up)", action: "power the team shield" },
+      { motion: "camera: both hands on head", action: "pause" }, { motion: "push / flick-up / shake (motion mode)", action: "pump / dodge / jack" },
+    ],
+    calibrationProfile: "any", difficultyLevels: ["gentle", "normal", "sweaty"],
+    licenceInventory: [
+      CODE_ART, THREE,
+      { asset: "rocket, meteor and base models (Kenney Space Kit)", licence: "CC0 1.0", source: "https://kenney.nl/assets/space-kit" },
+      { asset: "sound effects (Kenney Sci-Fi Sounds, Interface Sounds)", licence: "CC0 1.0", source: "https://kenney.nl/assets/sci-fi-sounds · https://kenney.nl/assets/interface-sounds" },
+      { asset: "body tracking runtime (MediaPipe Tasks Vision 0.10.35) and Pose Landmarker lite model, self-hosted", licence: "Apache-2.0", source: "https://ai.google.dev/edge/mediapipe" },
+    ],
+    controlModes: ["camera", "buttons", "motion"], automatedTestStatus: "unit+e2e",
+  },
 ];
 
 /** Implemented games first, then the remaining catalogue concepts (hidden from TVs until built). */

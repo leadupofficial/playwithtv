@@ -33,6 +33,8 @@ export class CameraRunner {
   private lastRun = 0;
   private lastFrameAt = 0;
   private frames: number[] = [];
+  private times: number[] = [];
+  private count = 0;
   private startedAt = 0;
   private watchdog: ReturnType<typeof setInterval> | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
@@ -95,6 +97,8 @@ export class CameraRunner {
     this.running = true;
     this.startedAt = performance.now();
     this.frames = [];
+    this.times = [];
+    this.count = 0;
     this.schedule();
     // a hidden or paused video may stop presenting frames: fall back to a timer
     this.watchdog = setInterval(() => {
@@ -129,7 +133,12 @@ export class CameraRunner {
     this.frames.push(now);
     while (this.frames.length && now - this.frames[0]! > 1000) this.frames.shift();
     const fps = this.frames.length;
-    const inferMs = this.status.inferMs ? this.status.inferMs * 0.9 + ms * 0.1 : ms;
+    // mean of the last 30 frames, skipping the first few (GPU warm-up and shader compiles)
+    if (++this.count > 5) {
+      this.times.push(ms);
+      if (this.times.length > 30) this.times.shift();
+    }
+    const inferMs = this.times.length ? this.times.reduce((a, b) => a + b, 0) / this.times.length : ms;
     const slow = this.source.kind === "mediapipe" && now - this.startedAt > 5000 && fps < 8;
     if (Math.abs(fps - this.status.fps) >= 1 || slow !== this.status.slow || Math.abs(inferMs - this.status.inferMs) > 2) this.set({ fps, inferMs, slow });
     else this.status.inferMs = inferMs;
