@@ -31,7 +31,7 @@ export interface ArenaHooks {
 }
 
 const pts: THREE.Vector3[] = [];
-const pool = Array.from({ length: 12 }, () => new THREE.Vector3());
+const pool = Array.from({ length: 16 }, () => new THREE.Vector3());
 
 export class Arena {
   readonly renderer: THREE.WebGLRenderer;
@@ -116,7 +116,8 @@ export class Arena {
         const p = this.views.get(f.id)!.focus(pool[i]!, f, bedTop);
         if (p) { pts.push(p); i++; }
       }
-      if (pts.length < 2) pts.push(pool[i++]!.set(0, bedTop, 0));
+      // two soft anchors keep most of the bed in view, so the edges (the danger) always read
+      pts.push(pool[i++]!.set(-HX * 0.55, bedTop, -HZ * 0.45), pool[i++]!.set(HX * 0.55, bedTop, HZ * 0.55));
       if (m.phase === "intro") {
         const p = Math.min(1, m.t / m.introSeconds);
         const e = 1 - (1 - p) * (1 - p) * (1 - p);

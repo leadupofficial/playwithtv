@@ -131,7 +131,7 @@ function Brawl({ humans, kit, controls, bridge, paused, onFinish, assets, progre
         if (now - lastDebug > 120) {
           lastDebug = now;
           setDebug(JSON.stringify({
-            phase: m.phase, round: m.round, left: Math.ceil(m.roundLeft), fps, chaos: m.chaos?.kind ?? null, roundWinner: m.roundWinner, winner: m.matchWinner,
+            phase: m.phase, round: m.round, left: Math.ceil(m.roundLeft), fps, calls: arena!.renderer.info.render.calls, tris: arena!.renderer.info.render.triangles, chaos: m.chaos?.kind ?? null, roundWinner: m.roundWinner, winner: m.matchWinner,
             players: m.fighters.map((f) => ({
               id: f.id, name: looks.get(f.id)!.name, cpu: f.cpu, x: +f.x.toFixed(2), z: +f.z.toFixed(2), alive: f.alive, state: f.state,
               damage: Math.round(f.damage), wins: f.stats.roundWins, kos: f.stats.kos, hits: f.stats.hits, score: score(f),

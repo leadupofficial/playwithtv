@@ -94,7 +94,7 @@ export class FighterView {
   /** Where the camera should frame this fighter (null while it should not count). */
   focus(out: THREE.Vector3, f: Fighter, bedTop: number): THREE.Vector3 | null {
     if (!f.alive && f.state !== "fall") return null;
-    return out.set(f.x, bedTop + Math.max(0, f.y), f.z);
+    return out.set(f.x, bedTop + Math.max(0, f.y) + 1, f.z);
   }
 
   /** Called when the engine reports a hit on this fighter. */
