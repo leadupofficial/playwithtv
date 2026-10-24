@@ -127,3 +127,30 @@ export async function practiseUntilReady(tv: Page, phone: Page, name: string, mo
   }
   await expect(card).toHaveClass(/ready/, { timeout: 10_000 });
 }
+
+/**
+ * Touchpad mode: a quick drag across the pad, in pad coordinates (x right, y up, -1…1), like a real swipe.
+ * The pointer events are fired inside the page on a timer, so the swipe takes `ms` even on a busy machine.
+ */
+export async function swipe(page: Page, from: { x: number; y: number }, to: { x: number; y: number }, ms = 150) {
+  await page.locator(".game-pad .touchpad").first().evaluate((el, [f, t, dur]) => new Promise<void>((done) => {
+    const r = el.getBoundingClientRect();
+    const at = (p: { x: number; y: number }) => ({ clientX: r.left + ((p.x + 1) / 2) * r.width, clientY: r.top + ((1 - p.y) / 2) * r.height });
+    const fire = (type: string, p: { x: number; y: number }) =>
+      el.dispatchEvent(new PointerEvent(type, { ...at(p), pointerId: 9, pointerType: "touch", isPrimary: true, bubbles: true }));
+    const steps = 5;
+    fire("pointerdown", f);
+    let i = 0;
+    const id = setInterval(() => {
+      i++;
+      const p = { x: f.x + ((t.x - f.x) * i) / steps, y: f.y + ((t.y - f.y) * i) / steps };
+      fire("pointermove", p);
+      if (i >= steps) {
+        clearInterval(id);
+        fire("pointerup", t);
+        done();
+      }
+    }, dur / steps);
+  }), [from, to, ms] as const);
+  await page.waitForTimeout(150);
+}

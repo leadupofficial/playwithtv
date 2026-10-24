@@ -6,7 +6,7 @@ Statuses: **concept** = idea only, hidden from TVs · **prototype** = partly pla
 (objective, motion input, rules, scoring, end state, rematch) with automated tests · **released** = also passed the
 real-device controller test ([real-device-test.md](real-device-test.md)).
 
-Built: 4 · concepts: 47.
+Built: 6 · concepts: 45.
 
 ## Prioritisation matrix
 
@@ -42,7 +42,7 @@ Within a phase, order by validated demand, controller reliability, cost and repl
 | 25 | 🎮 Blade Clash | C · Competitive | 2–4 | 4 | concept | duo-versus, couch-party | none |
 | 26 | 🎮 Bowling League | C · Competitive | 2–8 | 4 | concept | couch-party, tournament, team-versus | none |
 | 27 | 🎮 Golf Showdown | C · Competitive | 2–4 | 4 | concept | couch-party, tournament | none |
-| 28 | 🎮 Global Penalty Cup | C · Competitive | 2–8 | 4 | concept | couch-party, team-versus, tournament | none |
+| 28 | ⚽ Global Penalty Cup | C · Competitive | 1–8 | 4 | **playable** | solo-challenge, couch-party, tournament | unit+e2e |
 | 29 | 🎮 Cricket Super Over | C · Competitive | 1–4 | 4 | concept | solo-challenge, duo-versus | none |
 | 30 | 🎮 Basketball Trick Shot | C · Competitive | 1–4 | 4 | concept | solo, couch-party | none |
 | 31 | 🎮 Motion Volleyball | C · Competitive | 2–4 | 4 | concept | team-versus | none |
@@ -61,7 +61,7 @@ Within a phase, order by validated demand, controller reliability, cost and repl
 | 44 | 🎮 Power Plant Overload | D · Co-op & adventure | 2–6 | 4 | concept | team-coop | none |
 | 45 | 🎮 Alien Zoo Rescue | D · Co-op & adventure | 2–4 | 4 | concept | team-coop | none |
 | 46 | 🎮 Rhythm Orchestra | D · Co-op & adventure | 2–8 | 3 | concept | team-coop, practice | none |
-| 47 | 🎮 Memory Wave | E · Family & social | 1–8 | 4 | concept | solo, couch-party | none |
+| 47 | 🌊 Memory Wave | E · Family & social | 1–8 | 4 | **playable** | solo, couch-party | unit+e2e |
 | 48 | 🎮 Motion Charades | E · Family & social | 2–8 | 4 | concept | team-versus | none |
 | 49 | 🎮 World Quest Challenge | E · Family & social | 1–8 | 4 | concept | solo, couch-party | none |
 | 50 | 🎮 Motion Mini-Games Festival | E · Family & social | 1–8 | 4 | concept | couch-party, team-versus, tournament | none |
@@ -88,6 +88,19 @@ Hold: **upright** · gyroscope: optional · assets: all visuals and sounds (draw
 - **pitch**: climb / dive
 - **push**: boost (uses energy)
 
+### ⚽ Global Penalty Cup
+
+A penalty shoot-out in fictional stadiums. Kick: aim, then power and curl the ball past the keeper. Keep: guess early or react and dive. Everyone kicks and keeps in turn; 5 kicks each, then sudden death.
+
+Hold: **upright** · gyroscope: unused · assets: all visuals and sounds (drawn and synthesised in code) (original); team and stadium names (original (fictional))
+
+- **roll**: kicker: aim left/right
+- **pitch**: kicker: aim low/high
+- **push**: kicker: shoot (a strong push is a power shot); twisting while pushing curls it
+- **flick-left**: keeper: dive left
+- **flick-right**: keeper: dive right
+- **flick-up**: keeper: jump
+
 ### 🧠 Tamil Trivia Royale
 
 Quiz rounds in Tamil and English. Tap your answer's colour on your phone, or turn the phone to aim and push to lock in.
@@ -96,6 +109,17 @@ Hold: **upright** · gyroscope: unused · assets: all visuals and sounds (drawn 
 
 - **roll**: move your marker across the four answers
 - **push**: lock in the answer
+
+### 🌊 Memory Wave
+
+The TV plays a wave of colours, shapes and notes; everyone repeats it on their phone at the same time. It grows and speeds up every round. Three lives: last memory standing wins!
+
+Hold: **upright** · gyroscope: unused · assets: all visuals and sounds (drawn and synthesised in code) (original)
+
+- **flick-up**: up (green ▲)
+- **flick-right**: right (red ●)
+- **flick-down**: down (blue ■)
+- **flick-left**: left (yellow ◆)
 
 ### 🥊 Ring Kings Boxing
 
