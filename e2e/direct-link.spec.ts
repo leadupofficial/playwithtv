@@ -24,6 +24,10 @@ test("a phone on the same network links directly to the TV; with direct links of
   await expect(tv.locator(".player", { hasText: "Far" })).toBeVisible();
   await tv.waitForTimeout(3000);
   await expect(tv.locator('.player[data-link="server"]', { hasText: "Far" })).toBeVisible();
+  // the phone without a direct link is nudged onto the TV's Wi-Fi (after 8 s); the linked phone never is
+  await expect(far.locator('[data-wifi="slow"]')).toBeVisible({ timeout: 15_000 });
+  await expect(near.locator('[data-wifi="slow"]')).toHaveCount(0);
+  await expect(tv.locator('.player[data-link="server"]', { hasText: "Far" })).toContainText("same Wi-Fi");
 
   // both paths deliver motion into a game: the practice gesture ticks for each player
   await tv.locator(".game-card", { hasText: "Sky Gyro Racer" }).click();

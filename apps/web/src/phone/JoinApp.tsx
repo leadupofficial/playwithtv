@@ -76,7 +76,8 @@ export function JoinApp() {
     <form className="phone" onSubmit={join}>
       <h1>🎮 Join the game</h1>
       <InstallBanner />
-      <p className="hint" style={{ margin: 0 }}>{invite ? "You scanned a TV code. Pick a name and avatar." : "Type the 4-letter code shown on the TV."}</p>
+      <p className="hint" style={{ margin: 0 }}>{invite ? "You scanned a TV code. Pick a name and avatar." : "Type the 5-letter code shown on the TV."}</p>
+      <div className="wifi-hint" style={{ fontSize: 13 }}><span>📶 Connect this phone to the <b>same Wi-Fi as the TV</b> for lag-free play.</span></div>
       {!invite && (
         <div className="field">
           <label htmlFor="code">TV code</label>

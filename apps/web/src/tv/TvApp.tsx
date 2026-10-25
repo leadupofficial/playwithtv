@@ -238,6 +238,7 @@ export function TvApp() {
             <div className="hint">or open <strong>{location.origin}/join</strong> and type</div>
             <div className="code" aria-label="Join code">{invite?.joinCode ?? "····"}</div>
             <div className="hint">No app needed · works on Android and iPhone</div>
+            <div className="wifi-tip">📶 Join from the <b>same Wi-Fi</b> as this TV for lag-free play</div>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 24, minHeight: 0 }}>
@@ -248,7 +249,7 @@ export function TvApp() {
                   <div key={p.id} className={`player ${p.connected ? "" : "off"}`} style={{ borderColor: p.color }} data-link={direct.has(p.id) ? "direct" : "server"}>
                     <div className="avatar" style={{ boxShadow: `0 0 0 0.18em ${p.color}` }}>{AVATARS[p.avatar].emoji}</div>
                     <div className="name">{p.name}</div>
-                    <div className="hint">{!p.connected ? "reconnecting…" : `${p.ready ? "✅ ready" : "joined"}${direct.has(p.id) ? " · ⚡ direct" : ""}`}</div>
+                    <div className="hint">{!p.connected ? "reconnecting…" : `${p.ready ? "✅ ready" : "joined"}${direct.has(p.id) ? " · ⚡ direct" : " · ☁ slow: same Wi-Fi?"}`}</div>
                     <button className="player-remove" data-nav aria-label={`Remove ${p.name}`} onClick={() => setRemoving({ id: p.id, name: p.name })}>✕</button>
                   </div>
                 ))}

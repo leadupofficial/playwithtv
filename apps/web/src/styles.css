@@ -68,6 +68,8 @@ button { font-family: inherit; color: inherit; }
 .avatar { width: 2.3em; height: 2.3em; display: grid; place-items: center; font-size: 1.45em; grid-row: span 2; border-radius: 50%; background: rgba(255,255,255,0.1); }
 .player .avatar { font-size: 1.1em; }
 .player .hint { font-size: 0.75em; }
+.player[data-link="server"] .hint { color: var(--warn); }
+.wifi-tip { margin-top: 0.4em; padding: 0.35em 0.7em; border-radius: 0.6em; background: rgba(255,140,40,0.14); border: 1px solid rgba(255,140,40,0.45); font-size: 0.8em; }
 .player .name { font-weight: 700; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .empty-slot { border: 2px dashed var(--line); border-radius: 1em; display: grid; place-items: center; color: var(--muted); min-height: 3em; font-size: 0.85em; }
 @keyframes pop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -251,6 +253,8 @@ button { font-family: inherit; color: inherit; }
 .lab-table td { padding: 4px 6px; font-variant-numeric: tabular-nums; }
 .lab-log { margin: 0; padding-left: 20px; font-size: 15px; min-height: 60px; }
 .wake-hint { font-size: 13px; padding: 6px 10px; border-radius: 10px; background: rgba(255,210,63,0.15); border: 1px solid rgba(255,210,63,0.4); color: var(--warn); }
+.wifi-hint { display: flex; align-items: center; gap: 10px; font-size: 14px; padding: 8px 10px; border-radius: 12px; background: rgba(255,140,40,0.16); border: 1px solid rgba(255,140,40,0.5); }
+.wifi-hint span { flex: 1; }
 /* moving background that also keeps the phone awake (see phone/wakeLock.ts): must stay large and on screen */
 .keep-awake { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; opacity: 0.55; pointer-events: none; }
 /* install as an app (InstallBanner.tsx) */

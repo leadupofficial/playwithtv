@@ -64,6 +64,15 @@ export function Controller({ session, onLeave }: { session: PhoneSession; onLeav
   const motion = useRef(new PhoneMotion());
   const wake = useRef(new ScreenWake());
   const [wakeState, setWakeState] = useState<WakeState>("off");
+  // same Wi-Fi as the TV means a direct link (~8 ms); through the server it is ~100–300 ms. Nudge after 8 s without one.
+  const [slowLink, setSlowLink] = useState(false);
+  const [wifiDismissed, setWifiDismissed] = useState(false);
+  const onServer = status === "open" && !latency.direct;
+  useEffect(() => {
+    if (!onServer) return setSlowLink(false);
+    const id = setTimeout(() => setSlowLink(true), 8000);
+    return () => clearTimeout(id);
+  }, [onServer]);
 
   useEffect(() => {
     const s = new HubSocket({ type: "hello", v: 1, role: "controller", roomId: session.roomId, playerToken: session.playerToken });
@@ -174,6 +183,12 @@ export function Controller({ session, onLeave }: { session: PhoneSession; onLeav
           </div>
 
           {wakeState !== "on" && <div className="wake-hint" data-wake={wakeState}>{t("ctl.wake")}</div>}
+          {slowLink && !wifiDismissed && (
+            <div className="wifi-hint" role="status" data-wifi="slow">
+              <span>{t("ctl.wifi", { ms: latency.ms || "–" })}</span>
+              <button className="chip" onClick={() => setWifiDismissed(true)}>{t("ctl.wifiOk")}</button>
+            </div>
+          )}
           <video className="keep-awake" ref={(el) => wake.current.attach(el)} src="/keepawake.mp4" muted playsInline loop preload="auto" aria-hidden />
           {confirmEnd && (
             <div className="end-confirm" role="dialog" aria-label="End the game?">
