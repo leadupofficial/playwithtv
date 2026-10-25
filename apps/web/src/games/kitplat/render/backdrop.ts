@@ -7,11 +7,12 @@ import type { Cam } from "../camera";
 
 const VERT = /* glsl */ `
 uniform vec4 win;     // u0, v0, du, dv
+uniform float cut;    // fraction of the screen height (from the bottom) the layer's content can reach
 varying vec2 vUv;
 void main() {
-  vec2 c = position.xy + 0.5;
+  vec2 c = vec2(position.x + 0.5, (position.y + 0.5) * cut);
   vUv = win.xy + c * win.zw;
-  gl_Position = vec4(position.xy * 2.0, 0.999, 1.0);
+  gl_Position = vec4(c * 2.0 - 1.0, 0.999, 1.0);
 }`;
 
 const FRAG = /* glsl */ `
@@ -44,14 +45,18 @@ export class Backdrop {
   readonly mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
   private aspect: number;
 
-  constructor(texture: THREE.Texture, readonly spec: LayerSpec, order: number, opaque = false) {
+  /**
+   * `contentTop`: how high (fraction of the image, from the bottom) the layer has any pixels; the quad stops there,
+   * so a TV never shades the empty sky part of the far and mid layers.
+   */
+  constructor(texture: THREE.Texture, readonly spec: LayerSpec, order: number, opaque = false, private contentTop = 1) {
     texture.wrapS = THREE.RepeatWrapping;
     texture.needsUpdate = true;
     const img = texture.image as HTMLImageElement;
     this.aspect = (img.naturalWidth || img.width || 16) / (img.naturalHeight || img.height || 9);
     const mat = new THREE.ShaderMaterial({
       vertexShader: VERT, fragmentShader: FRAG, transparent: !opaque, depthTest: false, depthWrite: false,
-      uniforms: { map: { value: texture }, win: { value: new THREE.Vector4(0, 0, 1, 1) }, grade: { value: new THREE.Color(1, 1, 1) }, alpha: { value: 1 } },
+      uniforms: { map: { value: texture }, win: { value: new THREE.Vector4(0, 0, 1, 1) }, grade: { value: new THREE.Color(1, 1, 1) }, alpha: { value: 1 }, cut: { value: 1 } },
     });
     this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
     this.mesh.frustumCulled = false;
@@ -71,6 +76,7 @@ export class Backdrop {
     const u0 = (cam.x * s.fx) / lw - du / 2;
     const v0 = Math.max(0, Math.min(1 - dv, ((cam.y - floorY) * s.fy) / s.height));
     (this.mesh.material.uniforms.win!.value as THREE.Vector4).set(u0, v0, du, dv);
+    this.mesh.material.uniforms.cut!.value = Math.max(0, Math.min(1, (this.contentTop + 0.01 - v0) / dv));
   }
 
   dispose() {

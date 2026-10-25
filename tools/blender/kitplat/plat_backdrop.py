@@ -7,6 +7,7 @@ one period. Sky is opaque; far and mid have alpha. Full 1920×1080 WebP plus a 9
 """
 from __future__ import annotations
 
+import json
 import math
 import os
 import random
@@ -193,9 +194,25 @@ def main():
         if layer != "sky":
             bpy.context.scene.world.node_tree.nodes["Background"].inputs["Strength"].default_value = 1.2
         img = P.render_rgba()
-        save_layer(img, out, f"bg-{world}-{layer}", lite=layer != "fg")  # the foreground is for high/ultra only
+        # lite gets the mid layer alone (sky + far are pre-composited below); the foreground is high/ultra only
+        save_layer(img, out, f"bg-{world}-{layer}", lite=layer == "mid")
         if layer != "fg":
             imgs.append(img)
+    # lite tier: the sky and far layers pre-composited into one opaque layer (one full-screen pass less on the
+    # TV), and where each alpha layer's content begins (the game trims the quad above it: fewer fragments)
+    sky, far, mid = imgs
+    back = sky.copy()
+    al = far[:, :, 3:4]
+    back[:, :, :3] = far[:, :, :3] * al + sky[:, :, :3] * (1 - al)
+    back[:, :, 3] = 1
+    P.save_still(resize(back, 1280, 720), os.path.join(out, f"bg-{world}-back-lite.webp"), 80)
+    bounds = {}
+    for name, im in (("far", far), ("mid", mid)):
+        rows = np.nonzero(im[:, :, 3].max(axis=1) > 0.02)[0]
+        bounds[name] = {"top": round(1 - (rows.min() / im.shape[0] if len(rows) else 1), 4)}
+    with open(os.path.join(out, f"bg-{world}.json"), "w") as fh:
+        json.dump(bounds, fh)
+    P.log(f"bg-{world}: back-lite composite, content bounds {bounds}")
     if preview:
         comp = imgs[0].copy()
         for im in imgs[1:]:

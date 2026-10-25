@@ -21,7 +21,10 @@ import { QuadBatch } from "./quads";
 
 export interface ViewAssets {
   hero: Atlas; tiles: Atlas; items: Atlas; foes: Atlas;
-  sky: THREE.Texture; far: THREE.Texture; mid: THREE.Texture;
+  /** Sky and far layers; on the lite tier `far` is null and `sky` is the pre-composited sky + far image. */
+  sky: THREE.Texture; far: THREE.Texture | null; mid: THREE.Texture;
+  /** Where the far and mid layers' content ends (fraction of the image height from the bottom). */
+  bounds: { far: number; mid: number };
   /** Foreground silhouettes (high and ultra only), or null. */
   fg: THREE.Texture | null;
   /** Decoded size of the backdrop images (w × h × 4 each). */
@@ -76,7 +79,9 @@ export class PlatView {
     this.renderer.setSize(opt.width, opt.height, false);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.autoClear = true;
-    this.layers = [new Backdrop(assets.sky, LAYERS.sky, -30, true), new Backdrop(assets.far, LAYERS.far, -29), new Backdrop(assets.mid, LAYERS.mid, -28)];
+    this.layers = assets.far
+      ? [new Backdrop(assets.sky, LAYERS.sky, -30, true), new Backdrop(assets.far, LAYERS.far, -29, false, assets.bounds.far), new Backdrop(assets.mid, LAYERS.mid, -28, false, assets.bounds.mid)]
+      : [new Backdrop(assets.sky, LAYERS.far, -30, true), new Backdrop(assets.mid, LAYERS.mid, -28, false, assets.bounds.mid)];
     for (const l of this.layers) this.scene.add(l.mesh);
     this.back = new QuadBatch(assets.items, 512, { order: -10 });
     this.foes = new QuadBatch(assets.foes, 96, { order: -5, outline: 1.6 });

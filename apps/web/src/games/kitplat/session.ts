@@ -72,17 +72,22 @@ export class PlatSession {
     let done = 0;
     const tick = <T,>(p: Promise<T>) => p.then((v) => { this.o.onProgress(++done / 8); return v; });
     let bgBytes = 0;
-    const bg = (layer: string) => tick(loadImage(`${base}bg-${def.theme}-${layer}${lite ? "-lite" : ""}.webp`, { repeat: true }).then((r) => { bgBytes += r.bytes; return r.texture; }));
+    const bg = (file: string) => tick(loadImage(`${base}${file}`, { repeat: true }).then((r) => { bgBytes += r.bytes; return r.texture; }));
+    const bounds = fetch(`${base}bg-${def.theme}.json`).then((r) => r.json() as Promise<{ far: { top: number }; mid: { top: number } }>)
+      .then((b) => ({ far: b.far.top, mid: b.mid.top })).catch(() => ({ far: 1, mid: 1 }));
     const fgP = lite ? Promise.resolve(null) : loadImage(`${base}bg-${def.theme}-fg.webp`, { repeat: true }).then((r) => { bgBytes += r.bytes; return r.texture; }).catch(() => null);
     const [hero, tiles, items, foes, sky, far, mid, fg] = await Promise.all([
       tick(loadAtlas(`/assets/plat/${def.hero}/${def.hero}.json`, lite)), tick(loadAtlas(`${base}tiles-${def.theme}.json`, lite)),
-      tick(loadAtlas(`${base}items-${def.theme}.json`, lite)), tick(loadAtlas(`${base}foes-${def.theme}.json`, lite)), bg("sky"), bg("far"), bg("mid"), fgP,
+      tick(loadAtlas(`${base}items-${def.theme}.json`, lite)), tick(loadAtlas(`${base}foes-${def.theme}.json`, lite)),
+      // lite: sky and far pre-composited into one layer (one full-screen pass less), 1280×720 images
+      bg(lite ? `bg-${def.theme}-back-lite.webp` : `bg-${def.theme}-sky.webp`), lite ? tick(Promise.resolve(null)) : bg(`bg-${def.theme}-far.webp`),
+      bg(`bg-${def.theme}-mid${lite ? "-lite" : ""}.webp`), fgP,
     ]);
     await tick(this.audio.load().catch(() => undefined));
     if (!this.alive) return;
     this.loadMs = Math.round(performance.now() - t0);
     const { w, h } = profile.resolution;
-    this.view = new PlatView(this.o.canvas, { hero, tiles, items, foes, sky, far, mid, fg, bgBytes }, this.o.players.map((p) => ({ color: p.color, name: p.name })), {
+    this.view = new PlatView(this.o.canvas, { hero, tiles, items, foes, sky, far, mid, fg, bgBytes, bounds: await bounds }, this.o.players.map((p) => ({ color: p.color, name: p.name })), {
       width: w, height: h, particles: Math.min(profile.particleBudget, lite ? 140 : 400), rain: def.rain ? (lite ? 36 : 110) : 0, keyHue: def.keyHue, overlays: def.overlays,
       extras: !lite, glow: GLOW[def.theme],
     });
