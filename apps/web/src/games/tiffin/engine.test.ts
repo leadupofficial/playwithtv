@@ -122,9 +122,9 @@ describe("a whole trip on the Tiffin Tornado Express", () => {
   });
 
   it("an unattended kitchen loses points to expired tickets but never goes below zero", () => {
-    const m = newMatch(["a", "b"], { seed: 2, quick: true });
+    const m = newMatch(["a", "b"], { seed: 2 });
     const expired: number[] = [];
-    play(m, new Map(), 2 + 1 + 20 + 0.1, (e) => { if (e.kind === "expire") expired.push(e.order.id); });
+    play(m, new Map(), 6 + 3 + 240 + 0.1, (e) => { if (e.kind === "expire") expired.push(e.order.id); });
     expect(expired.length).toBeGreaterThan(0);
     expect(m.results[0]!.points).toBe(0);
     expect(m.results[0]!.stars).toBe(0);

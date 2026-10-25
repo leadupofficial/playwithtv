@@ -188,14 +188,14 @@ test("Tiffin Tornado with the touchpad: drag to walk to the tumblers, tap to pic
 // Real-time tiers: correctness and screenshots (headless Chromium renders them in software, so no fps checks).
 for (const quality of ["high", "ultra"]) {
   test(`Tiffin Tornado renders the real-time diorama on the ${quality} tier`, async ({ browser }) => {
-    test.setTimeout(400_000); // ultra in software GL draws about one frame every few seconds
+    test.setTimeout(560_000); // ultra in software GL draws about one frame every few seconds
     const { tv, code } = await tiffinTv(browser, quality);
     const p = await joinPhone(browser, code, "Kavin");
     await start(tv);
     await practiseUntilReady(tv, p, "Kavin", ["btn:ACTION", "btn:DASH"]);
     const st = stateOf(tv);
     // the kitchen GLB, chefs, food and the HDRI are loaded and a frame has been drawn through the post chain
-    await expect.poll(async () => (await st()).calls ?? 0, { timeout: 120_000, intervals: [2000] }).toBeGreaterThan(5);
+    await expect.poll(async () => (await st()).calls ?? 0, { timeout: 240_000, intervals: [2000] }).toBeGreaterThan(5);
     let s = await st();
     expect(s.tier).toBe(quality);
     expect(s.tris).toBeGreaterThan(10_000);

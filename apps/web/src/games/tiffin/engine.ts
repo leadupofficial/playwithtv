@@ -221,7 +221,7 @@ function service(m: Match, dt: number, inputs: Map<string, TiffinInput>, ev: Ev[
     } else ev.push({ kind: "bump", x: s.x, z: s.z });
   }
 
-  for (const o of tickOrders(m.book, { menu: def.menu, opening: def.opening, every: scaleEvery(m), timeScale: m.quick ? 0.35 : 1, maxOpen: 3 + Math.min(2, m.ids.length - 1) }, dt, () => rand(m))) {
+  for (const o of tickOrders(m.book, { menu: def.menu, opening: def.opening, every: scaleEvery(m), timeScale: m.quick ? 0.5 : 1, maxOpen: 3 + Math.min(2, m.ids.length - 1) }, dt, () => rand(m))) {
     if (o.kind === "order") ev.push({ kind: "order", order: o.order });
     else {
       m.expired++;
