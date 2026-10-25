@@ -21,6 +21,9 @@ const GhatRushGame = lazy(() => import("./ghat/GhatRushGame").then((m) => ({ def
 const GullyGame = lazy(() => import("./gully/GullyGame").then((m) => ({ default: m.GullyGame })));
 const KalariGame = lazy(() => import("./kalari/KalariGame").then((m) => ({ default: m.KalariGame })));
 const TiffinGame = lazy(() => import("./tiffin/TiffinGame").then((m) => ({ default: m.TiffinGame })));
+const MonsoonCourierGame = lazy(() => import("./monsoon").then((m) => ({ default: m.MonsoonCourierGame })));
+const LanternLaneGame = lazy(() => import("./lantern").then((m) => ({ default: m.LanternLaneGame })));
+const StepwellSecretsGame = lazy(() => import("./stepwell").then((m) => ({ default: m.StepwellSecretsGame })));
 
 /** TV-side implementations, keyed by catalogue id. Only games listed here can be started. */
 export const GAMES: Record<string, GameComponent> = {
@@ -43,4 +46,7 @@ export const GAMES: Record<string, GameComponent> = {
   "gully-super-over": GullyGame,
   "kalari-clash": KalariGame,
   "tiffin-tornado": TiffinGame,
+  "monsoon-courier": MonsoonCourierGame,
+  "lantern-lane": LanternLaneGame,
+  "stepwell-secrets": StepwellSecretsGame,
 };

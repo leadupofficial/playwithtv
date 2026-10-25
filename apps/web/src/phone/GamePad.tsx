@@ -169,7 +169,12 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
       <div className="pad-body">
         {mode === "buttons" && (
           <>
-            {spec.stick !== "none" && <div className="pad-left"><Stick kind={spec.stick} onChange={(x, y) => { pad.current = { x, y }; }} /></div>}
+            {spec.stick !== "none" && <div className="pad-left"><Stick kind={spec.stick} onChange={(x, y) => {
+              // a new direction (an arrow pressed or let go) goes out at once instead of on the next 50 ms tick
+              const turned = Math.sign(x) !== Math.sign(pad.current.x) || Math.sign(y) !== Math.sign(pad.current.y);
+              pad.current = { x, y };
+              if (turned) input.axesNow({ x, y, roll: 0, pitch: 0, yaw: 0, ok: 1, m: MODE_CODE[mode] / MODE_DIVISOR });
+            }} /></div>}
             <div className="pad-right">{actionsEl}</div>
           </>
         )}

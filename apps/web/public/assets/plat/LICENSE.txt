@@ -1,0 +1,9 @@
+kitplat artwork (Monsoon Courier, Lantern Lane, Stepwell Secrets)
+
+Every image and sprite sheet in this folder is original artwork made for Play With TV. The models, materials,
+lighting and scenery were built from primitives in Blender (Python scripts in tools/blender/kitplat/) and rendered
+by those scripts; no third-party models, textures, HDRIs, fonts or images were used, and nothing was copied or
+adapted from any other game. Rebuild everything with:  sh tools/blender/kitplat/render_all.sh
+
+The sounds these games play are the CC0 1.0 Kenney packs already shipped in ../kenney-audio/ and ../kenney-jingles/
+(their licence files are next to them), plus tones synthesised in code.

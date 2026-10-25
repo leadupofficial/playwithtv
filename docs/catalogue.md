@@ -6,7 +6,7 @@ Statuses: **concept** = idea only, hidden from TVs · **prototype** = partly pla
 (objective, motion input, rules, scoring, end state, rematch) with automated tests · **released** = also passed the
 real-device controller test ([real-device-test.md](real-device-test.md)).
 
-Built: 19 · concepts: 38.
+Built: 22 · concepts: 38.
 
 ## Prioritisation matrix
 
@@ -72,6 +72,9 @@ Within a phase, order by validated demand, controller reliability, cost and repl
 | – | 🛺 GHAT RUSH | C · Competitive | 1–8 | 4 | **playable** | couch-party, solo-challenge, tournament | unit+e2e |
 | – | 🥋 Kalari Clash | C · Competitive | 1–4 | 5 | **playable** | solo-challenge, couch-party | unit+e2e |
 | – | 🫓 Tiffin Tornado | D · Co-op & adventure | 1–4 | 5 | **playable** | solo, couch-party, team-coop | unit+e2e |
+| – | ☔ Monsoon Courier | C · Competitive | 1–4 | 5 | **playable** | solo, couch-party, team-coop | unit+e2e |
+| – | 🏮 Lantern Lane | D · Co-op & adventure | 1–4 | 5 | **playable** | solo, couch-party, team-coop | unit+e2e |
+| – | 🗝️ Stepwell Secrets | D · Co-op & adventure | 1–4 | 5 | **playable** | solo, couch-party, team-coop | unit+e2e |
 
 ## Built games: motion mappings
 
@@ -290,3 +293,33 @@ Hold: **flat** · gyroscope: unused · assets: kitchen carriage, South Indian di
 - **shake**: chop, grind or wash faster
 - **flick-left**: dash
 - **flick-right**: dash
+
+### ☔ Monsoon Courier
+
+A speed platformer on rain-soaked rooftops: race your friends as mongoose couriers across boost pads, tin-roof slopes, loops and springs, then stomp the Mango Bandit who stole the last parcel. Courier Race or Deliver Together (co-op with rescue bubbles).
+
+Hold: **upright** · gyroscope: unused · assets: heroes, foes, boss, tiles, items and parallax backdrops (modelled and rendered in code: tools/blender/kitplat) (original); stomp, hit, wood, cloth and interface sounds, voice and jingles: Kenney Impact Sounds, Interface Sounds, RPG Audio, Voiceover Pack, Music Jingles; blips and fanfares synthesised in code (CC0 1.0); three.js renderer (MIT)
+
+- **roll**: run left/right (tilt further to sprint)
+- **flick-up**: jump
+- **push**: ACTION
+
+### 🏮 Lantern Lane
+
+A classic co-op platformer on a festival night: run through lantern-lit lanes, over marigold bamboo bridges and up Kite Hill, bump gift boxes for golden sweets, fly with kites, throw sparklers, hide behind lantern shields and topple the Grumble Puppet. Festival Friends (co-op with rescue bubbles) or Lantern Race.
+
+Hold: **upright** · gyroscope: unused · assets: heroes, foes, boss, tiles, items and parallax backdrops (modelled and rendered in code: tools/blender/kitplat) (original); stomp, hit, wood, cloth and interface sounds, voice and jingles: Kenney Impact Sounds, Interface Sounds, RPG Audio, Voiceover Pack, Music Jingles; blips and fanfares synthesised in code (CC0 1.0); three.js renderer (MIT)
+
+- **roll**: run left/right (tilt further to sprint)
+- **flick-up**: jump
+- **push**: throw a sparkler
+
+### 🗝️ Stepwell Secrets
+
+A puzzle-traversal platformer down an ancient step-well: grab ledges, climb ropes, pull levers to open iron gates for a few seconds, cross crumbling floors, time the breathing spike traps, then trick the Stone Makara under its own bells. Explorers Together (co-op) or Treasure Race.
+
+Hold: **upright** · gyroscope: unused · assets: heroes, foes, boss, tiles, items and parallax backdrops (modelled and rendered in code: tools/blender/kitplat) (original); stomp, hit, wood, cloth and interface sounds, voice and jingles: Kenney Impact Sounds, Interface Sounds, RPG Audio, Voiceover Pack, Music Jingles; blips and fanfares synthesised in code (CC0 1.0); three.js renderer (MIT)
+
+- **roll**: run left/right
+- **flick-up**: jump
+- **push**: pull a lever

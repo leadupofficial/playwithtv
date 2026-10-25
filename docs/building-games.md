@@ -361,3 +361,57 @@ Gameplay code is identical: only the view layer branches on `profile.prerendered
 **Rules:** CC0 first (Kenney, Quaternius, KayKit, Poly Haven); CC-BY only with credit in `ASSETS.md` and
 `licenceInventory`; no logos, brand names, number plates or raw Mixamo files; licence file next to the outputs;
 keep a game's cinematic assets under ~8 MB (sprites as WebP; video 720p CRF ~23; ultra GLBs only when they differ).
+
+## Genre engine #1: kitplat (side-scrolling platformers)
+
+`apps/web/src/games/kitplat/` is a complete platformer engine: a game is a data file (`PlatGameDef`) plus levels.
+Monsoon Courier (`games/monsoon/`), Lantern Lane (`games/lantern/`) and Stepwell Secrets (`games/stepwell/`) are
+the three games on it; a fix in the kit fixes all of them.
+
+```ts
+export const DEF: PlatGameDef = {
+  spec: { id, title, feel: { ...FEEL_CLASSIC, jumpHeight: 3.4, ledgeGrab: true }, levels: LEVELS, quick: QUICK,
+          powers: POWERS, bosses: [BOSS], modes: ["coop", "race"], hearts: 3, loopSpeed: 99, leverSeconds: 7 },
+  controls: platControls("Stepwell Secrets", { stick: "arrows", act: "✋ LEVER" }),
+  theme: "stepwell", hero: "asha", keyHue: 330, overlays: { feather: "feather-open" }, rain: 0, awards: {…}, …
+};
+export const StepwellSecretsGame = makePlatformer(DEF);   // get ready → co-op/race pick → levels → podium
+```
+
+| Module | What it does (pure modules are unit-tested) |
+|---|---|
+| `level.ts` | ASCII level format (`#` ground, `=` one-way, `/ \` 45° slopes, `^` spikes, `~` water, `H` ladder, `Y` crumbling, `T` timed spikes, `D/E` gates opened by levers `L/K`, `X` crates, `B` blocks; entities `P C G o O U S > Q Z M N e h f k`) |
+| `builder.ts` | `LevelBuilder`: author a level as a left-to-right walk (`ground(len, h).pit(3).slope(2).spring(4).goal(9)`) |
+| `collide.ts` | box vs tiles: walls, slopes under the centre, one-ways and platforms from above, step-up, corner correction, slope sticking |
+| `feel.ts`, `player.ts` | the feel numbers and one hero's step: acceleration curves, coyote time, jump buffering, variable jump (release cuts the rise), apex hang, slope momentum, drop-through, ladders, ledge grabs |
+| `foes.ts`, `boss.ts` | walker, hopper, flyer, curler (stomp → ball → kick); bosses as move patterns (walk, charge, hop, shoot, summon, swoop, rest) with `vulnerable` windows and `damage` kinds (stomp, projectile, hazard = levers) |
+| `powerups.ts` | data-driven power-ups: speed/jump multipliers, air jumps, glide, magnet, shield hits, projectiles, invincibility, an overlay sprite |
+| `world.ts`, `heroes.ts` | the rules: pick-ups, springs, boost pads, loops, checkpoints, gates, crumbling floors, hazards, hearts, co-op bubbles (float back, touch or JUMP to pop), team wipes respawn at the checkpoint, race respawns, stragglers bubbled (co-op) or leashed into view (race), hero bumping and head bounces, finishing, clock |
+| `camera.ts` | one shared screen for 1–4 heroes: frames everyone (zooms out to 1.3×), looks ahead, frames the ground not every jump, locks to boss arenas |
+| `validate.ts` | the level checker: simulates the real movement code from every standable spot (walk, hops, full and running jumps, springs, ladders, platforms) to prove the goal, checkpoints and boss are reachable, and checks size / foe / gem / triangle budgets. `testkit.ts` adds `validateAll(spec)` and `runBot()` (the e2e phone bot) for each game's `levels.test.ts` |
+| `input.ts` | `platControls()` (buttons: ◀ ▶ (▲ ▼) + JUMP (hold) + RUN (hold) + ACTION; motion: tilt to run, flick up to jump, push = ACTION; touchpad: drag, tap/swipe up, swipe down) and `PlatControls`, which reads JUMP/RUN edges from the raw state the moment it arrives |
+| `render/` | `QuadBatch` (instanced sprites from one atlas, keyed player-colour tint, outline, squash/rotate/flash), `Backdrop` (seamless parallax layer as one screen quad), `Particles`, `GlowBatch` + `Vignette` (high/ultra only), `PlatView` |
+| `session.ts`, `PlatformerGame.tsx`, `Hud.tsx` | the TV side: assets, fixed 60 Hz loop with hit-stop, juice, HUD, phone status, podium + awards, `data-plat` debug JSON |
+
+**Rendering budget.** Every frame is 8 draw calls on lite (sky, far, mid, tiles, pick-ups, foes, heroes, effects) and
+10–11 on high (+ glows, vignette, foreground), a few thousand triangles, 1280×720 on lite with no post-processing.
+`data-plat` exposes `calls`, `tris`, `decodedMB` (atlases + backdrops, w × h × 4), `loadMs`, `fps`, `tier`, `res`;
+the e2e tests hold lite to ≤ 50 calls, ≤ 30k triangles, ≤ 60 MB decoded, < 10 s load. Measured: 8 calls, 0.5–3k
+triangles, 24–28 MB on lite; 44–49 MB on high.
+
+**Art: pre-rendered 3D sprites (`tools/blender/kitplat/`).** Heroes, foes, bosses, tiles, items and backdrops are
+modelled from primitives in Blender Python and rendered side-on with one light rig per world (warm key, cool fill,
+two rims): `sh tools/blender/kitplat/render_all.sh [heroes|foes|items|tiles|backdrops|<hero>] [preview-dir]` (EEVEE,
+about two minutes for everything). Heroes are a jointed "vinyl toy" rig with procedural clips (idle, run, jump,
+fall, hurt, victory, climb, hang, flip, skid, push); garments the game recolours per player are painted magenta
+(`keyHue: 330`). Tiles repeat seamlessly: materials are periodic (4 tiles across, 1 up) and lit by suns only;
+terrain is auto-tiled (`autotile.ts`: top/fill, l/m/r/s, phase c % 4) with deeper rows shaded darker and wall
+details and decorations scattered from a seed. Atlases are written as `pwtv-plat` manifests (named sprites, frames,
+pivots, tile boxes); a half-size `-lite` copy is written only for atlases over 1536 px. Backdrops are 1920×1080
+seamless layers with 1280×720 `-lite` copies; the foreground layer is high/ultra only.
+
+**A new platformer** = a `PlatGameDef`, levels with `LevelBuilder`, a `levels.test.ts` (`validateAll` + `runBot`),
+an e2e spec using `e2e/platformer.ts` (`playToPodium`, `expectLiteBudgets`), and either a new world in
+`tools/blender/kitplat/` (tiles in `plat_world.py`, wall details in `plat_walls.py`, foes in `plat_creatures.py`,
+boss in `plat_bosses.py`, items in `plat_items.py`, scenery in `plat_scenery.py`) or an existing one with a new hero.
+`?quick=1` plays the game's quick level, `?mode=coop|race` skips the mode pick, `?level=N` starts at level N.

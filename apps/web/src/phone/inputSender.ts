@@ -44,6 +44,11 @@ export class InputSender {
     this.state = { ...this.state, axes: { ...this.state.axes, ...clamped } };
     this.dirty = true;
   }
+  /** Like axes(), but sends at once: a direction pressed or released on the pad (platformers feel every 50 ms). */
+  axesNow(values: Record<string, number>) {
+    this.axes(values);
+    this.flush();
+  }
   /** Release every held button and centre the axes (screen hidden, motion turned off, game changed). */
   release() {
     this.update((s) => ({ ...s, buttons: {}, axes: {} }));

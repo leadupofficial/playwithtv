@@ -161,3 +161,22 @@ code. Third-party sources, all CC0 1.0 (licence files next to the outputs: `LICE
 | HDRI "Studio Small 09" | Sergej Majboroda, Poly Haven | CC0 1.0 | https://polyhaven.com/a/studio_small_09 | lighting of the chef and food sprites (2k, not shipped) |
 | HDRI "Kloofendal Overcast (Pure Sky)" | Greg Zaal, Poly Haven | CC0 1.0 | already shipped in `cinematic/showroom/` | real-time image-based light (high/ultra) |
 | Kenney Interface Sounds, Impact Sounds, RPG Audio, Voiceover Pack | Kenney | CC0 1.0 | https://kenney.nl/assets | the existing `kenney-audio/` files; sizzle, rails, horn and bell are synthesised in code |
+
+## kitplat platformers: Monsoon Courier, Lantern Lane, Stepwell Secrets (`apps/web/public/assets/plat/`)
+
+Every picture is original to this repository: modelled from primitives in Blender Python and rendered by
+`tools/blender/kitplat/` (`render_all.sh`), released like the code. Nothing was traced, imported or adapted from
+another game: the heroes (Keeri the mongoose courier, Diya the festival kid, Asha the step-well explorer), foes (rain
+crab, frog, crow, pangolin, clay-pot walker, paper-lantern ghost, jewel beetle, bat), bosses (the Mango Bandit, the
+Grumble Puppet, the Stone Makara), tiles, pick-ups, power-ups (umbrella, chai, tiffin magnet, kite, sparkler, lantern
+shield, Garuda feather, temple bell, oil lamp) and the parallax backdrops (monsoon rooftops, festival night,
+step-well galleries). No HDRIs or third-party textures: materials are procedural, lights are Blender suns.
+
+| Folder | Files | Size |
+|---|---|---|
+| `plat/keeri/`, `plat/diya/`, `plat/asha/` | hero sheets (`<hero>.webp` + `.json`, 11 clips, ~60 frames) | ~210 KB each |
+| `plat/monsoon/`, `plat/festival/`, `plat/stepwell/` | `tiles-*`, `items-*`, `foes-*` atlases (+ `.json`), `bg-*-{sky,far,mid}.webp` + `-lite.webp` (1280×720), `bg-*-fg.webp` (high/ultra only) | 0.5–0.8 MB each |
+
+Sounds reuse the existing CC0 Kenney files in `assets/kenney-audio/` (Impact Sounds, Interface Sounds, RPG Audio,
+Voiceover Pack) and `assets/kenney-jingles/` (Music Jingles); jump, gem, spring, power-up and fanfare blips are
+synthesised in code (`games/kitplat/audio.ts`). No new third-party files were added.
