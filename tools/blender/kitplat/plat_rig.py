@@ -122,9 +122,9 @@ def clip_pose(clip: str, t: float, k: int, n: int) -> dict:
 
 # clip name -> (frames, fps, loop)
 CLIPS = {
-    "idle": (8, 8, True), "run": (8, 14, True), "jump": (4, 10, False), "fall": (4, 10, True), "hurt": (4, 12, False),
-    "victory": (8, 10, True), "climb": (6, 10, True), "hang": (4, 6, True), "flip": (8, 18, True), "skid": (2, 8, True),
-    "push": (4, 8, True),
+    "idle": (8, 8, True), "run": (8, 14, True), "jump": (8, 16, False), "fall": (8, 12, True), "hurt": (8, 16, False),
+    "victory": (8, 10, True), "climb": (8, 12, True), "hang": (8, 8, True), "flip": (8, 18, True), "skid": (2, 8, True),
+    "push": (8, 10, True),
 }
 
 

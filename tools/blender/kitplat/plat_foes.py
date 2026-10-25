@@ -18,6 +18,7 @@ import plat_common as P  # noqa: E402
 import plat_creatures as K  # noqa: E402
 
 PPM = 96
+BOSS_PPM = 72  # bosses are big: a little less detail keeps every world's foes in one ≤ 1536 px atlas
 
 
 def main():
@@ -29,8 +30,8 @@ def main():
     cam = P.side_camera((0, 0, 0), 1.0, elevation=8)
     sheet = P.Sheet(f"foes-{world}", PPM)
 
-    def frame(w, h, cz):
-        P.setup(round(w * PPM), round(h * PPM), samples=16)
+    def frame(w, h, cz, ppm=PPM):
+        P.setup(round(w * ppm), round(h * ppm), samples=16)
         cam.data.ortho_scale = max(w, h)
         el = math.radians(8)
         cam.location = (0, -40 * math.cos(el), cz + 40 * math.sin(el))
@@ -51,12 +52,12 @@ def main():
     P.clear_scene_objects()
     boss = spec["boss"]()
     for clip, n, fps, loop in boss.clips:
-        pv = frame(boss.w, boss.h, boss.h / 2 - 0.2)
+        pv = frame(boss.w, boss.h, boss.h / 2 - 0.2, BOSS_PPM)
         frames = []
         for k in range(n):
             boss.pose(clip, k / n if loop else k / max(1, n - 1))
             frames.append(P.render_rgba())
-        sheet.add(f"boss-{clip}", frames, pv, fps, loop)
+        sheet.add(f"boss-{clip}", frames, pv, fps, loop, ppm=BOSS_PPM)
     sheet.save(out, max_w=1500, preview=preview)
 
 

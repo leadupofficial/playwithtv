@@ -12,7 +12,7 @@ import math
 import plat_common as P
 import plat_rig as R
 
-CLIPS = [("idle", 6, 8, True), ("move", 8, 12, True), ("attack", 4, 10, False), ("hurt", 2, 8, True), ("dizzy", 6, 10, True)]
+CLIPS = [("idle", 8, 8, True), ("move", 8, 12, True), ("attack", 8, 14, False), ("hurt", 8, 14, True), ("dizzy", 8, 10, True)]
 
 
 def stars(parent, z):
@@ -56,7 +56,7 @@ class BipedBoss:
         elif clip == "move":
             rig.apply(R.clip_pose("run", t, k, 8))
         elif clip == "hurt":
-            rig.apply(R.clip_pose("hurt", 0.6 + 0.4 * t, 2, 4))
+            rig.apply(R.clip_pose("hurt", 0.5 + 0.5 * math.sin(math.pi * t), 2, 4))
         elif clip == "attack":
             wind = t < 0.5
             rig.apply(dict(arm=(20, 160 if wind else 60), elbow=(20, 70 if wind else 10), spread=(10, 30), thigh=(-20, 25), knee=(25, 20),

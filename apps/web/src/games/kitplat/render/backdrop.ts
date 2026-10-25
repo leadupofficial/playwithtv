@@ -35,10 +35,11 @@ export interface LayerSpec {
   fy: number;
 }
 
+/** Heights close to the view (10 tiles) so a 1080p backdrop shows near 1:1 on screen: sharp, not stretched. */
 export const LAYERS: Record<"sky" | "far" | "mid", LayerSpec> = {
-  sky: { height: 20, fx: 0.04, fy: 0.02 },
-  far: { height: 19, fx: 0.16, fy: 0.1 },
-  mid: { height: 16.5, fx: 0.38, fy: 0.3 },
+  sky: { height: 11.5, fx: 0.04, fy: 0.02 },
+  far: { height: 11.5, fx: 0.16, fy: 0.08 },
+  mid: { height: 11, fx: 0.38, fy: 0.22 },
 };
 
 export class Backdrop {

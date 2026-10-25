@@ -195,7 +195,7 @@ def main():
             rig.apply(R.clip_pose(clip, t, k, n))
             frames.append(P.render_rgba())
         sheet.add(clip, frames, pivot, fps, loop)
-    sheet.save(out, max_w=1536, preview=preview)
+    sheet.save(out, max_w=1500, preview=preview)
 
 
 if __name__ == "__main__":

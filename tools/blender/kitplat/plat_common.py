@@ -370,7 +370,7 @@ class Sheet:
         self.sprites: list[dict] = []
 
     def add(self, sid: str, frames: list[np.ndarray], pivot_px: tuple[float, float], fps: float = 10, loop: bool = True,
-            pad: int = 3, crop: bool = True, box: list[float] | None = None):
+            pad: int = 3, crop: bool = True, box: list[float] | None = None, ppm: float | None = None):
         frames = [atlas.clean_alpha(f, 4 / 255) for f in frames]
         if crop:
             x0, y0, x1, y1 = atlas.union_bbox(frames, pad=pad)
@@ -378,7 +378,7 @@ class Sheet:
             x0, y0, x1, y1 = 0, 0, frames[0].shape[1], frames[0].shape[0]
         cells = [np.ascontiguousarray(f[y0:y1, x0:x1]) for f in frames]
         w, h = x1 - x0, y1 - y0
-        self.sprites.append(dict(id=sid, cells=cells, w=w, h=h, fps=fps, loop=loop, box=box,
+        self.sprites.append(dict(id=sid, cells=cells, w=w, h=h, fps=fps, loop=loop, box=box, ppm=ppm,
                                  pivot=(round((pivot_px[0] - x0) / w, 4), round((pivot_px[1] - y0) / h, 4))))
         log(f"  {sid}: {len(frames)} x {w}x{h}")
 
@@ -426,7 +426,8 @@ class Sheet:
             "format": "pwtv-plat", "version": 1, "name": self.name, "image": f"{self.name}.webp", "lite": f"{self.name}-lite.webp" if big else None,
             "size": {"w": int(sheet.shape[1]), "h": int(sheet.shape[0])}, "ppm": self.ppm,
             "sprites": {s["id"]: {"frames": [s["rects"][i] for i in range(len(s["cells"]))], "pivot": {"x": s["pivot"][0], "y": s["pivot"][1]},
-                                  "fps": s["fps"], "loop": s["loop"], **({"box": s["box"]} if s["box"] else {})} for s in self.sprites},
+                                  "fps": s["fps"], "loop": s["loop"], **({"box": s["box"]} if s["box"] else {}),
+                                  **({"ppm": s["ppm"]} if s["ppm"] else {})} for s in self.sprites},
         }
         with open(os.path.join(out_dir, f"{self.name}.json"), "w") as fh:
             json.dump(man, fh, separators=(",", ":"))

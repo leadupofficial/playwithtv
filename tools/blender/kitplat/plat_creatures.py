@@ -38,7 +38,7 @@ class Creature:
 class Crab(Creature):
     """Monsoon walker: a rain crab in a little yellow sou'wester."""
     w, h = 1.3, 1.0
-    clips = [("walk", 6, 10, True), ("squash", 1, 1, True)]
+    clips = [("walk", 8, 12, True), ("squash", 1, 1, True)]
 
     def __init__(self, shell="#d9502f", hat="#ffcc1a"):
         self.root = J("crab")
@@ -77,7 +77,7 @@ class Crab(Creature):
 
 class Frog(Creature):
     w, h = 1.1, 1.4
-    clips = [("idle", 2, 3, True), ("jump", 3, 8, False)]
+    clips = [("idle", 8, 6, True), ("jump", 8, 12, False)]
 
     def __init__(self, skin="#3f9a3a", belly="#cfe39a", spots=None):
         self.root = J("frog")
@@ -103,21 +103,33 @@ class Frog(Creature):
 
     def pose(self, clip, t):
         if clip == "idle":
-            P.pose(self.body, (0, 0, 0), scale=(1, 1, 1))
-            self.throat.scale = (0.12 * (1 + 0.5 * t), 0.13 * (1 + 0.5 * t), 0.08 * (1 + 0.6 * t))
+            puff = 0.5 + 0.5 * math.sin(2 * math.pi * t)
+            P.pose(self.body, (0, 0, 0), loc=(0, 0, 0), scale=(1, 1, 1 - 0.03 * puff))
+            self.throat.scale = (0.12 * (1 + 0.5 * puff), 0.13 * (1 + 0.5 * puff), 0.08 * (1 + 0.6 * puff))
             for j in self.legs:
                 P.pose(j, (0, 0, 0))
             return
-        crouch, stretch = t < 0.3, t > 0.3
-        P.pose(self.body, (0, -10 if stretch else 5, 0), loc=(0, 0, 0.0 if crouch else 0.15), scale=(1.1, 1, 0.8) if crouch else (0.92, 1, 1.15))
+        # crouch (t < 0.25), spring up and stretch (0.25..0.6), tuck for the landing (0.6..1)
+        if t < 0.25:
+            k = t / 0.25
+            P.pose(self.body, (0, 5 * k, 0), loc=(0, 0, 0), scale=(1 + 0.12 * k, 1, 1 - 0.2 * k))
+            leg = 0
+        elif t < 0.6:
+            k = (t - 0.25) / 0.35
+            P.pose(self.body, (0, -10 * k, 0), loc=(0, 0, 0.15 * k), scale=(1 - 0.08 * k, 1, 1 + 0.15 * k))
+            leg = 70 * k
+        else:
+            k = (t - 0.6) / 0.4
+            P.pose(self.body, (0, -10 + 10 * k, 0), loc=(0, 0, 0.15 - 0.1 * k), scale=(0.92 + 0.08 * k, 1, 1.15 - 0.15 * k))
+            leg = 70 - 60 * k
         for j in self.legs:
-            P.pose(j, (0, 0 if crouch else 70, 0))
+            P.pose(j, (0, leg, 0))
 
 
 class Bird(Creature):
     """Flyers: a crow (monsoon), a grumpy paper lantern (festival), a bat (step-well)."""
     w, h = 1.4, 1.2
-    clips = [("fly", 6, 12, True)]
+    clips = [("fly", 8, 14, True)]
 
     def __init__(self, kind="crow"):
         self.kind = kind
@@ -168,7 +180,7 @@ class Bird(Creature):
 class Pangolin(Creature):
     """Curler: an armoured pangolin that rolls into a ball when stomped."""
     w, h = 1.4, 1.0
-    clips = [("walk", 6, 8, True), ("ball", 4, 14, True)]
+    clips = [("walk", 8, 10, True), ("ball", 8, 18, True)]
 
     def __init__(self, scale_col="#8a6a4a", skin="#d8b08a"):
         self.root = J("pangolin")
@@ -211,7 +223,7 @@ class Pangolin(Creature):
 class Pot(Creature):
     """Festival walker: a waddling clay pot with a painted band."""
     w, h = 1.1, 1.1
-    clips = [("walk", 6, 10, True), ("squash", 1, 1, True)]
+    clips = [("walk", 8, 12, True), ("squash", 1, 1, True)]
 
     def __init__(self):
         self.root = J("pot")

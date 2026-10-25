@@ -94,7 +94,7 @@ export class PlatView {
       this.vignette = new Vignette(30);
       this.scene.add(this.glow.mesh, this.vignette.mesh);
       if (assets.fg) {
-        this.fg = new Backdrop(assets.fg, { height: 15, fx: 1.35, fy: 1.1 }, 20);
+        this.fg = new Backdrop(assets.fg, { height: 10.5, fx: 1.35, fy: 1.1 }, 20);
         this.fg.mesh.material.uniforms.alpha!.value = 0.92;
         this.scene.add(this.fg.mesh);
       }

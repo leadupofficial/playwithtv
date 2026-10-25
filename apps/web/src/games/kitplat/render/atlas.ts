@@ -7,7 +7,11 @@
 import * as THREE from "three";
 
 export interface Rect { x: number; y: number; w: number; h: number }
-export interface SpriteDef { frames: Rect[]; pivot: { x: number; y: number }; fps: number; loop: boolean; box?: [number, number, number, number] }
+export interface SpriteDef {
+  frames: Rect[]; pivot: { x: number; y: number }; fps: number; loop: boolean; box?: [number, number, number, number];
+  /** Pixels per tile of this sprite when it differs from the atlas's (big bosses are rendered a little coarser). */
+  ppm?: number;
+}
 export interface AtlasManifest {
   format: "pwtv-plat";
   version: 1;

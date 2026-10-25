@@ -160,7 +160,8 @@ export class QuadBatch {
   put(s: SpriteDef, f: number, x: number, y: number): boolean {
     const r = s.frames[frameIndex(f, s.frames.length)]!;
     const st = this.style;
-    const w = (r.w / this.ppm) * st.sx * (st.flipX ? -1 : 1), h = (r.h / this.ppm) * st.sy;
+    const ppm = s.ppm ?? this.ppm;
+    const w = (r.w / ppm) * st.sx * (st.flipX ? -1 : 1), h = (r.h / ppm) * st.sy;
     return this.write(r, x, y, w, h, s.pivot.x, s.pivot.y);
   }
 
