@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { joinPhone } from "./helpers";
+import { joinPhone, padMove, practiseUntilReady, swipe } from "./helpers";
 import { closeAll, csp, expectLiteBudgets, joinTwo, platState, platTv, playToPodium, ready, startGame } from "./platformer";
 
 const TIER = process.env.PLAT_TIER ?? "lite";
@@ -58,3 +58,27 @@ for (const tier of ["lite", "high"] as const) {
     expect(st.tier).toBe(tier);
   });
 }
+
+test("Stepwell Secrets with the touchpad: drag to run, tap to jump, swipe down to pull a lever", async ({ browser }) => {
+  test.setTimeout(120_000);
+  const { tv, code } = await platTv(browser, "quality=lite&mode=coop");
+  const p = await joinPhone(browser, code, "Meena", { "Stepwell Secrets": "touchpad" });
+  await startGame(tv, "Stepwell Secrets");
+  await expect(p.locator('.game-pad[data-mode="touchpad"] .touchpad')).toBeVisible({ timeout: 30_000 });
+  await practiseUntilReady(tv, p, "Meena", ["pad:tap"]);
+  const s = platState(tv);
+  await expect.poll(async () => (await s()).phase, { timeout: 30_000 }).toBe("play");
+  const x0 = (await s()).heroes[0]!.x;
+  await swipe(p, { x: 0, y: 0 }, { x: 0.95, y: 0 }, 1400); // a slow drag to the right: run
+  await expect.poll(async () => (await s()).heroes[0]!.x, { timeout: 5000 }).toBeGreaterThan(x0 + 1.5);
+  const j0 = (await s()).heroes[0]!.jumps;
+  await padMove(p, "tap");
+  await padMove(p, "swipe-up");
+  await expect.poll(async () => (await s()).heroes[0]!.jumps, { timeout: 5000 }).toBeGreaterThan(j0);
+  await padMove(p, "swipe-down");
+  const me = (await s()).heroes[0]!;
+  expect(me.got!.hop).toBeGreaterThanOrEqual(2);
+  expect(me.got!.act).toBeGreaterThanOrEqual(1);
+  await p.screenshot({ path: "test-results/stepwell-pad-touchpad.png" });
+  expect(await csp(tv)).toEqual([]);
+});
