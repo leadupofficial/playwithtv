@@ -1,4 +1,5 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { ShelfBar, onShelf, type Shelf } from "./Shelves";
 import QRCode from "qrcode";
 import {
   type AdServed, CreateRoomResponse, type GameManifest, type GameResult, type InputState, type RoomView, type ServerMessage,
@@ -78,6 +79,7 @@ function useRoom() {
 export function TvApp() {
   const { room, invite, status, error, socket } = useRoom();
   const [games, setGames] = useState<GameManifest[]>([]);
+  const [shelf, setShelf] = useState<Shelf>("all");
   const [qr, setQr] = useState<string>("");
   const [notice, setNotice] = useState<string | null>(null);
   const [removing, setRemoving] = useState<{ id: string; name: string } | null>(null);
@@ -261,8 +263,9 @@ export function TvApp() {
 
             <div className="panel" style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
               <div className="section-title">Choose a game</div>
+              <ShelfBar games={games} shelf={shelf} onPick={setShelf} />
               <div className="games">
-                {games.map((g, i) => (
+                {onShelf(games, shelf).map((g, i) => (
                   <button
                     key={g.id}
                     data-nav

@@ -205,11 +205,30 @@ export const GameMode = z.enum([
 ]);
 export type GameMode = z.infer<typeof GameMode>;
 
+/**
+ * The shelves players browse by on the TV (the lobby's filter). A game sits on every shelf it fits, first one
+ * = its main shelf. Keep this list short and player-facing: it is shown as-is in the lobby.
+ */
+export const GENRES = [
+  "single-player", "two-player", "couples", "party", "local-multiplayer", "online", "racing", "survival",
+  "strategy", "rhythm", "sports", "sandbox", "motion", "brain",
+] as const;
+export const Genre = z.enum(GENRES);
+export type Genre = z.infer<typeof Genre>;
+export const GENRE_LABEL: Record<Genre, string> = {
+  "single-player": "Single-player", "two-player": "Two-player", couples: "Couples", party: "Party",
+  "local-multiplayer": "Local multiplayer", online: "Online", racing: "Racing", survival: "Survival",
+  strategy: "Strategy", rhythm: "Rhythm", sports: "Sports", sandbox: "Sandbox", motion: "Motion & camera",
+  brain: "Brain training",
+};
+
 export const GameManifest = z.object({
   id: z.string().regex(/^[a-z0-9-]+$/),
   title: z.string(),
   description: z.string(),
   categories: z.array(z.string()),
+  /** Lobby shelves (GENRES), main shelf first. */
+  genres: z.array(Genre).min(1),
   tags: z.array(z.string()),
   minPlayers: z.number().int().min(1),
   maxPlayers: z.number().int().max(MAX_PLAYERS_PER_ROOM),

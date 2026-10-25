@@ -1,0 +1,9 @@
+kitgrid artwork (Glowworm Grove, Skyline Stacker, Comet Kitty, Buzz Field)
+
+Every sprite in grid.webp is original artwork made for Play With TV: the models, materials and lighting were
+built from primitives in Blender by tools/blender/kitgrid/grid_sprites.py and rendered by it. No third-party
+models, textures, HDRIs, fonts or images were used, and nothing was copied or adapted from any other game.
+Rebuild with:
+  blender -b --factory-startup -P tools/blender/kitgrid/grid_sprites.py -- apps/web/public/assets/grid
+
+Released under CC0 1.0 like the rest of the repo's original art. Sounds are synthesised in code.

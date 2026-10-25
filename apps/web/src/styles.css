@@ -75,6 +75,15 @@ button { font-family: inherit; color: inherit; }
 @keyframes pop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
 .section-title { font-size: 1.15em; font-weight: 800; margin: 0 0 0.6em; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; }
+.shelves { display: flex; flex-wrap: wrap; gap: 0.45em; margin: 0 0 0.8em; }
+.shelf {
+  border: 0; cursor: pointer; border-radius: 999px; padding: 0.35em 0.95em; font-weight: 700; font-size: 0.85em;
+  background: rgba(255, 255, 255, 0.1); color: inherit; outline: 0.2em solid transparent; outline-offset: 0.1em;
+  transition: background 0.12s, outline-color 0.12s;
+}
+.shelf .count { opacity: 0.6; font-weight: 600; margin-left: 0.25em; }
+.shelf.on { background: var(--accent); color: #fff; }
+.shelf:focus { outline-color: #fff; }
 .games { display: grid; grid-template-columns: repeat(auto-fill, minmax(11em, 1fr)); gap: 0.8em; }
 .game-card {
   font-size: 1em; text-align: left; border: 0; cursor: pointer; border-radius: 1.2em; padding: 0.6em 1em; min-height: 3.7em;

@@ -1,0 +1,54 @@
+/* kitgrid: the shared look of the grid titles (board in the middle, a slim HUD on top, cards over the board). */
+.grid-bg { position: relative; display: flex; flex-direction: column; overflow: hidden; color: #fff; }
+.grid-top {
+  display: flex; align-items: center; gap: 1.2em; padding: 0.5em 1.2em; font-weight: 800; font-size: 1.05em;
+  background: rgba(0, 0, 0, 0.28); backdrop-filter: none; white-space: nowrap; min-height: 2.6em;
+}
+.grid-title { font-size: 1.15em; }
+.grid-level { opacity: 0.85; overflow: hidden; text-overflow: ellipsis; }
+.grid-pilot { background: rgba(255, 255, 255, 0.14); padding: 0.15em 0.7em; border-radius: 1em; }
+.grid-goal { display: flex; align-items: center; gap: 0.5em; margin-left: auto; }
+.grid-bar { display: inline-block; width: 7em; height: 0.6em; border-radius: 0.3em; background: rgba(255, 255, 255, 0.2); overflow: hidden; }
+.grid-bar > span { display: block; height: 100%; background: linear-gradient(90deg, #ffd23f, #3ee08f); transition: width 0.2s; }
+.grid-lives { color: #ff6b81; letter-spacing: 0.1em; }
+.grid-score { font-variant-numeric: tabular-nums; min-width: 4em; text-align: right; color: #ffe27a; }
+.grid-time { font-variant-numeric: tabular-nums; opacity: 0.8; }
+.grid-board { flex: 1; width: 100%; min-height: 0; display: block; }
+
+.grid-overlay {
+  position: absolute; inset: 3.2em 0 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0.7em; padding: 1em 2em; text-align: center; background: rgba(8, 10, 30, 0.72);
+}
+.grid-overlay h2 { margin: 0; font-size: 2.2em; text-shadow: 0 3px 0 rgba(0, 0, 0, 0.35); }
+.grid-hint { opacity: 0.85; font-size: 1em; margin: 0.2em 0; }
+.grid-brief { font-size: 1.25em; margin: 0.2em 0; max-width: 40em; }
+
+.grid-levels { display: flex; flex-wrap: wrap; gap: 0.6em; justify-content: center; max-width: 64em; }
+.grid-level-card {
+  display: flex; flex-direction: column; align-items: center; gap: 0.15em; width: 8.6em; padding: 0.5em 0.4em;
+  border-radius: 0.8em; background: rgba(255, 255, 255, 0.1); border: 3px solid transparent; transition: transform 0.12s;
+}
+.grid-level-card .no { font-size: 1.4em; font-weight: 900; }
+.grid-level-card .nm { font-size: 0.8em; font-weight: 700; line-height: 1.1; min-height: 2.2em; }
+.grid-level-card.cur { border-color: #ffe27a; background: rgba(255, 226, 122, 0.18); transform: scale(1.08); }
+.grid-level-card.locked { opacity: 0.4; }
+
+.grid-stars .on { color: #ffd23f; }
+.grid-stars .off { color: rgba(255, 255, 255, 0.25); }
+.grid-big-stars { font-size: 3.4em; letter-spacing: 0.15em; }
+.grid-checks { list-style: none; padding: 0; margin: 0; font-size: 1.15em; opacity: 0.75; }
+.grid-checks li.ok { opacity: 1; color: #ffe27a; }
+.grid-score-line { font-size: 1.3em; margin: 0.2em 0; }
+
+.grid-rewards, .grid-unlocked { display: flex; gap: 0.6em; flex-wrap: wrap; justify-content: center; align-items: center; }
+.grid-reward {
+  display: flex; flex-direction: column; align-items: center; width: 7.2em; padding: 0.35em; border-radius: 0.7em;
+  background: rgba(255, 255, 255, 0.1); font-size: 0.85em;
+}
+.grid-reward .emoji { font-size: 2.4em; line-height: 64px; }
+.grid-reward .name { font-weight: 800; line-height: 1.1; }
+.grid-reward .need { opacity: 0.8; font-size: 0.85em; }
+.grid-reward.locked { filter: grayscale(1); opacity: 0.5; }
+.grid-reward.worn { outline: 3px solid #3ee08f; }
+.grid-sprite { image-rendering: auto; }
+.grid-story p { font-size: 1.35em; max-width: 34em; line-height: 1.4; margin: 0; }

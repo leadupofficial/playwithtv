@@ -23,6 +23,10 @@ const KalariGame = lazy(() => import("./kalari/KalariGame").then((m) => ({ defau
 const TiffinGame = lazy(() => import("./tiffin/TiffinGame").then((m) => ({ default: m.TiffinGame })));
 const MonsoonCourierGame = lazy(() => import("./monsoon").then((m) => ({ default: m.MonsoonCourierGame })));
 const LanternLaneGame = lazy(() => import("./lantern").then((m) => ({ default: m.LanternLaneGame })));
+const GlowwormGame = lazy(() => import("./glowworm").then((m) => ({ default: m.GlowwormGame })));
+const SkylineGame = lazy(() => import("./skyline").then((m) => ({ default: m.SkylineGame })));
+const CometKittyGame = lazy(() => import("./comet-kitty").then((m) => ({ default: m.CometKittyGame })));
+const BuzzFieldGame = lazy(() => import("./buzz-field").then((m) => ({ default: m.BuzzFieldGame })));
 const StepwellSecretsGame = lazy(() => import("./stepwell").then((m) => ({ default: m.StepwellSecretsGame })));
 
 /** TV-side implementations, keyed by catalogue id. Only games listed here can be started. */
@@ -49,4 +53,8 @@ export const GAMES: Record<string, GameComponent> = {
   "monsoon-courier": MonsoonCourierGame,
   "lantern-lane": LanternLaneGame,
   "stepwell-secrets": StepwellSecretsGame,
+  "glowworm-grove": GlowwormGame,
+  "skyline-stacker": SkylineGame,
+  "comet-kitty": CometKittyGame,
+  "buzz-field": BuzzFieldGame,
 };

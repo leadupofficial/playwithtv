@@ -1,4 +1,4 @@
-import type { GameCategory, GameManifest, GameMode } from "./index.js";
+import type { GameCategory, GameManifest, GameMode, Genre } from "./index.js";
 
 /**
  * The 50-game catalogue as data. Everything here is a concept until it is built: status "concept" means
@@ -68,8 +68,13 @@ const COLORS: Record<GameCategory, [string, string]> = {
   "family-social": ["#ffd23f", "#ff7a59"],
 };
 
+/** Concepts sit on one shelf by their roadmap category until they are built and tagged properly. */
+const SHELF: Record<GameCategory, Genre> = {
+  "solo-arcade": "single-player", duo: "two-player", competitive: "party", "coop-adventure": "local-multiplayer", "family-social": "party",
+};
+
 export const CONCEPTS: GameManifest[] = ROWS.map(([no, id, title, category, min, max, phase, modes, pitch]) => ({
-  id, title, description: pitch, categories: [category], tags: [], minPlayers: min, maxPlayers: max,
+  id, title, description: pitch, categories: [category], genres: [SHELF[category]], tags: [], minPlayers: min, maxPlayers: max,
   version: "0.0.0", executionMode: "browser", controller: "game", orientation: "landscape", estimatedAssetKb: 0,
   difficulty: "medium", sessionMinutes: 5, accessibility: [], colors: COLORS[category], emoji: "🎮", playable: false,
   catalogueNo: no, category, modes, completionStatus: "concept", phase, automatedTestStatus: "none",
