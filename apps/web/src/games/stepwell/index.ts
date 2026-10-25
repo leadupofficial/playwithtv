@@ -35,7 +35,7 @@ export const BOSS: BossDef = {
 export const DEF: PlatGameDef = {
   spec: { id: "stepwell-secrets", title: "Stepwell Secrets", feel: FEEL, levels: LEVELS, quick: QUICK, powers: POWERS, bosses: [BOSS], modes: ["coop", "race"],
     hearts: 3, loopSpeed: 99, leverSeconds: 7 },
-  controls: platControls("Stepwell Secrets", { stick: "arrows", act: "✋ LEVER", actColor: "#2ec4b6", hints: {
+  controls: platControls("Stepwell Secrets", { stick: "arrows", act: "✋ LEVER", actColor: "#e8336d", hints: {
     buttons: "◀ ▶ to move, ▲ ▼ to climb · JUMP (hold toward a wall to grab its ledge) · LEVER to pull levers",
     motion: "Turn the phone like a wheel to run · flick up to jump · push towards the TV to pull a lever",
     touchpad: "Drag to move (up/down to climb) · tap or swipe up to jump · swipe down to pull a lever",
