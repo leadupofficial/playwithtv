@@ -76,9 +76,8 @@ test("Stepwell Secrets with the touchpad: drag to run, tap to jump, swipe down t
   await padMove(p, "swipe-up");
   await expect.poll(async () => (await s()).heroes[0]!.jumps, { timeout: 5000 }).toBeGreaterThan(j0);
   await padMove(p, "swipe-down");
-  const me = (await s()).heroes[0]!;
-  expect(me.got!.hop).toBeGreaterThanOrEqual(2);
-  expect(me.got!.act).toBeGreaterThanOrEqual(1);
+  await expect.poll(async () => (await s()).heroes[0]!.got!.act, { timeout: 5000 }).toBeGreaterThanOrEqual(1);
+  expect((await s()).heroes[0]!.got!.hop).toBeGreaterThanOrEqual(2);
   await p.screenshot({ path: "test-results/stepwell-pad-touchpad.png" });
   expect(await csp(tv)).toEqual([]);
 });
