@@ -249,10 +249,11 @@ def fg_monsoon():
     rep(plant, [13.0, 28.5])
     def wires(x):
         for k in range(3):
-            pts = 24
-            for i in range(pts):
-                t = i / (pts - 1)
-                P.sphere(dark, (x + t * 9, -2, H - 0.8 - k * 0.5 - 1.6 * math.sin(math.pi * t)), (0.2, 0.03, 0.03), r=1, seg=6)
+            pts = [(x + t / 16 * 9, H - 0.8 - k * 0.5 - 1.6 * math.sin(math.pi * t / 16)) for t in range(17)]
+            for (x0, z0), (x1, z1) in zip(pts, pts[1:]):
+                seg = math.hypot(x1 - x0, z1 - z0)
+                ang = math.degrees(math.atan2(z1 - z0, x1 - x0))
+                P.cyl(dark, ((x0 + x1) / 2, -2, (z0 + z1) / 2), 0.025, seg + 0.02, rot=(0, 90 - ang, 0), verts=6)
     rep(wires, [6.0, 22.0])
 
 

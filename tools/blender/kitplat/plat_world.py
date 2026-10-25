@@ -104,6 +104,7 @@ class Monsoon(World):
         self.m_fill = T.bricks("brick", "#a4553a", "#7e3d2a", "#cdbfa8", grime="#3c3530", grime_k=0.55)
         self.m_cap = T.mottled("concrete", "#8f9799", "#b9bfbd", 6, rough=0.35, bump_k=0.35)
         self.m_moss = T.mottled("moss", "#3f6b2a", "#7fa63a", 10, rough=0.8, bump_k=0.6)
+        self.m_plaster = T.mottled("plaster", "#d9c9a8", "#b9a27c", 5, rough=0.8, bump_k=0.3)
         self.m_tin = T.stripes("tin", "#8b9aa3", "#5f6d76", width=0.08, rough=0.3)
         self.m_awn = T.stripes("awning", "#d8433a", "#f1e7d4", width=0.25)
         self.m_metal = P.mat("#5e6b73", 0.35, metal=0.8)
@@ -113,7 +114,8 @@ class Monsoon(World):
         e0 = x0 - (0.1 if L else 0)
         e1 = x1 + (0.1 if R else 0)
         bx(self.m_cap, e0, e1, 0.86, 1.14, y0=-0.62, bevel=0.05)
-        bx(P.mat("#2b2724", 0.9), x0, x1, 0.8, 0.86, y0=-0.52, bevel=0)  # drip shadow line
+        bx(self.m_plaster, x0, x1, 0.5, 0.86, y0=-0.53, bevel=0.01)          # plaster band under the parapet
+        bx(P.mat("#2b2724", 0.9), x0, x1, 0.8, 0.86, y0=-0.545, bevel=0)  # drip shadow line
         for x in wrapped(periodic_points(9, 3), e0 + 0.08, e1 - 0.08):
             r = 0.05 + (x * 7.3 % 1) * 0.06
             ob = P.sphere(self.m_moss, (x, -0.55 + (x * 3.1 % 1) * 0.2, 1.13), (r * 1.6, r, r * 0.8), r=1, seg=12)
@@ -228,7 +230,7 @@ class Festival(World):
     cap_h = 0.45
 
     def materials(self):
-        self.m_fill = T.stone("earth", "#5d3f2a", "#7d573b", "#9b7150", cells=2.0, mortar="#3a281c")
+        self.m_fill = T.stone("laterite", "#8a5236", "#a8694a", "#c4865e", cells=1.5, mortar="#4a2a1a")
         self.m_cap = T.mottled("grass", "#3f7f2e", "#86b84a", 7, rough=0.85, bump_k=0.7)
         self.m_kerb = T.stripes("kerb", "#e8336d", "#ffd23f", width=0.25)
         self.m_bamboo = T.mottled("bamboo", "#b7a04a", "#d9c56a", 12, rough=0.45)
