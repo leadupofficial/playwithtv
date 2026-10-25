@@ -62,7 +62,8 @@ export class ControlPlayers {
     return r.ok && (!tilt || r.calibrations > 0) && practice.every((a) => this.seen.get(id)?.has(a));
   }
 
-  status(to: string, data: { text?: string; bars?: Array<{ label: string; value: number; color?: string }> }) {
+  /** `labels` relabels the phone's action buttons live (action id → label), e.g. a context icon. */
+  status(to: string, data: { text?: string; bars?: Array<{ label: string; value: number; color?: string }>; labels?: Record<string, string> }) {
     this.bridge.event(to, "status", data);
   }
 

@@ -6,7 +6,7 @@ Statuses: **concept** = idea only, hidden from TVs · **prototype** = partly pla
 (objective, motion input, rules, scoring, end state, rematch) with automated tests · **released** = also passed the
 real-device controller test ([real-device-test.md](real-device-test.md)).
 
-Built: 18 · concepts: 38.
+Built: 19 · concepts: 38.
 
 ## Prioritisation matrix
 
@@ -71,6 +71,7 @@ Within a phase, order by validated demand, controller reliability, cost and repl
 | – | 🪶 Pillow Fort Brawl | C · Competitive | 1–4 | 4 | **playable** | solo-challenge, couch-party | unit+e2e |
 | – | 🛺 GHAT RUSH | C · Competitive | 1–8 | 4 | **playable** | couch-party, solo-challenge, tournament | unit+e2e |
 | – | 🥋 Kalari Clash | C · Competitive | 1–4 | 5 | **playable** | solo-challenge, couch-party | unit+e2e |
+| – | 🫓 Tiffin Tornado | D · Co-op & adventure | 1–4 | 5 | **playable** | solo, couch-party, team-coop | unit+e2e |
 
 ## Built games: motion mappings
 
@@ -275,3 +276,17 @@ Hold: **flat** · gyroscope: unused · assets: fighter bodies and animations: Ka
 - **pull**: guard for half a second
 - **flick**: dodge-roll
 - **shake**: SPECIAL
+
+### 🫓 Tiffin Tornado
+
+Co-op chaos in the kitchen carriage of a moving train! Make dosa, idli, vada, sambar, chutney and filter coffee for the passengers' tickets: flip dosas at the golden moment, grind chutney, wash plates, put out fires. Three services: a calm departure, swaying ghat curves that slide your plates, and a tunnel plus a platform stop where the kitchen splits across two coaches.
+
+Hold: **flat** · gyroscope: unused · assets: kitchen carriage, South Indian dishes and equipment, scenery, chef outfits (modelled and rendered in code: tools/blender/tiffin) (original); counters, stoves, sink, crates, cutting board, dish rack: KayKit Restaurant Bits 1.0 by Kay Lousberg (repainted) (CC0 1.0); chefs: KayKit Character Pack Adventurers 1.0 by Kay Lousberg (re-dressed) and its animations (CC0 1.0); HDRIs: Kloofendal 48d Partly Cloudy, Studio Small 09 (Blender lighting), Kloofendal Overcast (real-time) (CC0 1.0); sound effects: Kenney Interface Sounds, Impact Sounds, RPG Audio, Voiceover Pack; sizzle, rails, horn and bell synthesised in code (CC0 1.0); three.js renderer (MIT)
+
+- **roll**: move left/right
+- **pitch**: move up/down the kitchen
+- **push**: ACTION (pick, place, plate, serve…)
+- **flick-up**: ACTION, e.g. flip a dosa
+- **shake**: chop, grind or wash faster
+- **flick-left**: dash
+- **flick-right**: dash

@@ -20,6 +20,7 @@ const BrawlGame = lazy(() => import("./brawl/BrawlGame").then((m) => ({ default:
 const GhatRushGame = lazy(() => import("./ghat/GhatRushGame").then((m) => ({ default: m.GhatRushGame })));
 const GullyGame = lazy(() => import("./gully/GullyGame").then((m) => ({ default: m.GullyGame })));
 const KalariGame = lazy(() => import("./kalari/KalariGame").then((m) => ({ default: m.KalariGame })));
+const TiffinGame = lazy(() => import("./tiffin/TiffinGame").then((m) => ({ default: m.TiffinGame })));
 
 /** TV-side implementations, keyed by catalogue id. Only games listed here can be started. */
 export const GAMES: Record<string, GameComponent> = {
@@ -41,4 +42,5 @@ export const GAMES: Record<string, GameComponent> = {
   "ghat-rush": GhatRushGame,
   "gully-super-over": GullyGame,
   "kalari-clash": KalariGame,
+  "tiffin-tornado": TiffinGame,
 };

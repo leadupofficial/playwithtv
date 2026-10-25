@@ -145,3 +145,19 @@ Made with `tools/blender/kalari/` (commands in each script's docstring). Licence
 The arenas themselves (temple courtyard, harbour docks, coconut-grove rooftop: geometry, palms, lamps, boats) are
 modelled procedurally by `arenas.py` / `arena_kit.py` and are original to this repository. Fighter names and
 designs (Simha, Mayil, Puli, Ashwa) are original.
+
+## Tiffin Tornado (`apps/web/public/assets/tiffin/`)
+
+Made with `tools/blender/tiffin/` (see its README for the exact commands). The kitchen carriage, every South Indian
+dish and utensil (dosa, idli, vada, chutney, sambar, filter coffee, tava, idli steamer, kadai, wet grinder, coffee
+filter, matka, tiffin carriers), the window scenery and the chefs' toques and aprons are original, modelled in
+code. Third-party sources, all CC0 1.0 (licence files next to the outputs: `LICENSE-kaykit-restaurant-bits.txt`, `LICENSE-kaykit-adventurers.txt`, `LICENSE-polyhaven.txt`):
+
+| Source | Author | Licence | Source URL | Used for |
+|---|---|---|---|---|
+| KayKit Restaurant Bits 1.0 (counters, stoves, sink, cutting board, knife, dish rack; palette repainted) | Kay Lousberg | CC0 1.0 | https://kaylousberg.itch.io/restaurant-bits (github.com/KayKit-Game-Assets/KayKit-Restaurant-Bits-1.0) | `kitchen-*.webp` backdrops, `kitchen-*.glb` |
+| KayKit Character Pack: Adventurers 1.0 (Knight, Barbarian, Mage, Rogue bodies, re-dressed as chefs) | Kay Lousberg | CC0 1.0 | https://kaylousberg.itch.io/kaykit-adventurers | `chef-1..4.webp/.json` sprite sheets, `chef-1..4.glb`; the real-time chefs animate with the existing `kaykit-adventurers/animations.glb` |
+| HDRI "Kloofendal 48d Partly Cloudy (Pure Sky)" | Greg Zaal, Poly Haven | CC0 1.0 | https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky | lighting of the backdrops and scenery (2k, not shipped) |
+| HDRI "Studio Small 09" | Sergej Majboroda, Poly Haven | CC0 1.0 | https://polyhaven.com/a/studio_small_09 | lighting of the chef and food sprites (2k, not shipped) |
+| HDRI "Kloofendal Overcast (Pure Sky)" | Greg Zaal, Poly Haven | CC0 1.0 | already shipped in `cinematic/showroom/` | real-time image-based light (high/ultra) |
+| Kenney Interface Sounds, Impact Sounds, RPG Audio, Voiceover Pack | Kenney | CC0 1.0 | https://kenney.nl/assets | the existing `kenney-audio/` files; sizzle, rails, horn and bell are synthesised in code |
