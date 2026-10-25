@@ -160,18 +160,24 @@ def tiffin():
 
 
 def kite(scale=1.0):
-    m = P.mat("#e8336d", 0.5, sheen=0.4)
-    k = P.cone(m, (0, 0, 0), 0.4 * scale, 0.0, 0.01, rot=(90, 45, 0), verts=4, scale=(1, 1.3, 1))
-    s = P.box(P.mat("#ffd23f", 0.5), (0, -0.02, 0), (0.04 * scale, 0.02, 0.95 * scale), bevel=0)
-    s2 = P.box(P.mat("#ffd23f", 0.5), (0, -0.02, 0.1 * scale), (0.6 * scale, 0.02, 0.04 * scale), bevel=0)
-    tail = [P.sphere(P.mat("#2ec4b6", 0.5), (0.05 * i * scale, -0.02, (-0.45 - 0.1 * i) * scale), (0.05 * scale, 0.01, 0.03 * scale), r=1, seg=8) for i in range(4)]
-    return [k, s, s2, *tail]
+    from plat_world import prism
+    k = scale
+    sail = prism(P.mat("#e8336d", 0.5, sheen=0.4), [(0, 0.5 * k), (0.36 * k, 0.05 * k), (0, -0.55 * k), (-0.36 * k, 0.05 * k)], -0.02, 0.02, "kite")
+    band = prism(P.mat("#ffd23f", 0.5, sheen=0.4), [(0, 0.5 * k), (0.12 * k, 0.05 * k), (0, -0.55 * k), (-0.12 * k, 0.05 * k)], -0.035, -0.02, "band")
+    s1 = P.box(P.mat("#7a5232", 0.6), (0, -0.05, -0.02 * k), (0.03 * k, 0.02, 1.05 * k), bevel=0)
+    s2 = P.box(P.mat("#7a5232", 0.6), (0, -0.05, 0.05 * k), (0.72 * k, 0.02, 0.03 * k), bevel=0)
+    tail = [P.sphere(P.mat(["#2ec4b6", "#ffd23f", "#2ec4b6"][i % 3], 0.5), (0.06 * k * math.sin(i * 1.2), -0.02, (-0.62 - 0.13 * i) * k), (0.06 * k, 0.015, 0.035 * k), r=1, seg=8) for i in range(5)]
+    return [sail, band, s1, s2, *tail]
 
 
 def sparkler():
-    return [P.cyl(P.mat("#555b60", 0.4, metal=0.7), (0, 0, -0.1), 0.02, 0.6, rot=(0, 20, 0)),
-            P.sphere(P.mat("#ffd27a", 0.2, emit=8.0), (0.1, 0, 0.22), (0.1, 0.1, 0.1), r=1, seg=12),
-            *[P.cyl(P.mat("#fff2b0", 0.2, emit=8.0), (0.1 + math.cos(i) * 0.12, 0, 0.22 + math.sin(i) * 0.12), 0.01, 0.16, rot=(0, -math.degrees(i) + 90, 0)) for i in range(0, 12, 2)]]
+    out = [P.cyl(P.mat("#555b60", 0.4, metal=0.7), (0, 0, -0.12), 0.018, 0.62, rot=(0, 20, 0)),
+           P.sphere(P.mat("#ffb84a", 0.2, emit=3.0), (0.1, 0, 0.2), (0.08, 0.08, 0.08), r=1, seg=12)]
+    for i in range(10):
+        a = i * 2 * math.pi / 10
+        c = "#ffd23f" if i % 2 else "#ff7a1a"
+        out.append(P.cyl(P.mat(c, 0.2, emit=3.0), (0.1 + math.cos(a) * 0.14, 0, 0.2 + math.sin(a) * 0.14), 0.012, 0.18 + 0.06 * (i % 3), rot=(0, -math.degrees(a) + 90, 0)))
+    return out
 
 
 def lantern(scale=1.0):
@@ -205,7 +211,7 @@ POWERS = {
 }
 OVERLAYS = {
     "monsoon": [("umbrella-open", lambda: umbrella(True), 1.6, 1.2)],
-    "festival": [("kite-open", lambda: kite(1.4), 1.2, 1.6)],
+    "festival": [("kite-open", lambda: [setattr(o.location, "z", o.location.z + 0.95) for o in kite(1.3)], 1.2, 1.9)],
     "stepwell": [("feather-open", lambda: [P.sphere(P.mat("#2ec4b6", 0.5, sheen=0.6), (x, 0, 0.3), (0.35, 0.03, 0.1), rot=(0, a, 0), r=1, seg=14) for x, a in ((-0.4, 20), (0.4, -20))], 1.4, 0.8)],
 }
 

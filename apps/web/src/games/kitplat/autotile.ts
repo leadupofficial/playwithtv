@@ -14,6 +14,10 @@ export interface TileLayout {
   /** Drawn once, in this order (decorations first, behind the ground). */
   decos: Array<{ x: number; y: number; sprite: string }>;
   tiles: TileDraw[];
+  /** Details on the face of fill tiles (windows, carvings), drawn over them. */
+  walls: TileDraw[];
+  /** How deep each tile sits under the surface (0 = top row): the view shades deeper rows darker. */
+  depth: Map<number, number>;
   /** Cells whose look changes during play: crates, crumbling floors, gates, timed spikes. */
   dynamic: TileDraw[];
 }
@@ -21,8 +25,9 @@ export interface TileLayout {
 const terrain = (t: Tile) => t === Tile.Solid || t === Tile.SlopeUp || t === Tile.SlopeDown;
 const side = (l: boolean, r: boolean) => (l && r ? "m" : l ? "r" : r ? "l" : "s");
 
-export function layoutTiles(level: Level, decoIds: string[], seed = 1): TileLayout {
-  const out: TileLayout = { decos: [], tiles: [], dynamic: [] };
+export function layoutTiles(level: Level, decoIds: string[], seed = 1, wallIds: string[] = []): TileLayout {
+  const out: TileLayout = { decos: [], tiles: [], walls: [], dynamic: [], depth: new Map() };
+  const lastWall = new Map<number, number>();
   let s = seed >>> 0 || 1;
   const rnd = () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296);
   const occupied = new Set(level.entities.map((e) => `${Math.floor(e.x)},${e.y}`));
@@ -38,6 +43,13 @@ export function layoutTiles(level: Level, decoIds: string[], seed = 1): TileLayo
           const top = !terrain(at(0, 1)) && at(0, 1) !== Tile.Block;
           const sd = side(terrain(at(-1, 0)), terrain(at(1, 0)));
           out.tiles.push({ c, r, sprite: `${top ? "top" : "fill"}-${sd}-${sd === "s" ? 0 : phase}` });
+          let d = 0;
+          while (terrain(tileAt(level, c, r + d + 1)) && d < 8) d++;
+          if (d > 0) out.depth.set(r * level.w + c, d);
+          if (!top && sd === "m" && wallIds.length && d >= 1 && r >= 1 && terrain(at(0, -1)) && c - (lastWall.get(r) ?? -9) > 4 && rnd() < 0.12) {
+            out.walls.push({ c, r, sprite: wallIds[Math.floor(rnd() * wallIds.length)]! });
+            lastWall.set(r, c);
+          }
           if (top && decoIds.length && at(0, 1) === Tile.Empty && at(0, 2) === Tile.Empty && !occupied.has(`${c},${r + 1}`) && c - lastDeco > 2 && rnd() < 0.2) {
             out.decos.push({ x: c + 0.5, y: r + 1, sprite: decoIds[Math.floor(rnd() * decoIds.length)]! });
             lastDeco = c;

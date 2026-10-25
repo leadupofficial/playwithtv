@@ -22,7 +22,7 @@ export function newHero(slot: number, id: string, x: number, y: number, hearts: 
   return {
     ...newMover(x, y), slot, id, hearts, inv: 0, power: null, powerT: 0, shield: 0, down: "", downT: 0, checkpoint: { x, y },
     finished: false, finishT: 0, place: 0, score: 0, levelScore: 0, combo: 0, boostT: 0, flipT: 0, hurtT: 0, landT: -9, landV: 0,
-    loop: null, shotCd: 0, stragT: 0, stats: emptyStats(),
+    loop: null, shotCd: 0, stragT: 0, groundY: y, stats: emptyStats(),
   };
 }
 
@@ -294,7 +294,11 @@ function updateCamera(w: World, dt: number) {
   for (const h of w.heroes) {
     const active = !h.down && !(h.finished && w.mode === "race");
     const weight = !active ? 0 : w.mode === "race" && h === lead ? 2.5 : 1;
-    targets.push({ x: h.body.x, y: h.body.y, vx: h.body.vx, grounded: h.body.grounded, weight });
+    // frame the ground they stand on, not every jump; follow falls below it and big launches above it
+    let y = h.groundY;
+    if (h.body.y < y - 0.5) y = h.body.y + 0.5;
+    else if (h.body.y > y + 3.5) y = h.body.y - 3.5;
+    targets.push({ x: h.body.x, y, vx: h.body.vx, grounded: h.body.grounded, weight });
   }
   if (targets.every((t) => t.weight === 0)) for (const [i, h] of w.heroes.entries()) if (!h.down) targets[i]!.weight = 1;
   updateCam(w.cam, targets, w.level.w, w.level.h, dt);

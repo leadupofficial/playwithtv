@@ -1,9 +1,10 @@
 import { expect, test } from "@playwright/test";
 import { joinPhone } from "./helpers";
-import { csp, expectLiteBudgets, joinTwo, platState, platTv, playToPodium, ready, startGame } from "./platformer";
+import { closeAll, csp, expectLiteBudgets, joinTwo, platState, platTv, playToPodium, ready, startGame } from "./platformer";
 
 const TIER = process.env.PLAT_TIER ?? "lite";
 if (process.env.PLAT_GPU) test.use({ launchOptions: { args: ["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist"] } });
+test.afterEach(async ({ browser }) => closeAll(browser));
 
 test(`Stepwell Secrets with buttons (${TIER}): two phones play the quick quick descent together to the podium`, async ({ browser }) => {
   test.setTimeout(240_000);

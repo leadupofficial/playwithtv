@@ -48,6 +48,7 @@ export interface SessionOpts {
 }
 
 const ORD = ["1st", "2nd", "3rd", "4th"];
+const GLOW = { monsoon: "#7fd4ff", festival: "#ffd36a", stepwell: "#7ff0c8" } as const;
 
 export class PlatSession {
   private view: PlatView | null = null;
@@ -72,16 +73,18 @@ export class PlatSession {
     const tick = <T,>(p: Promise<T>) => p.then((v) => { this.o.onProgress(++done / 8); return v; });
     let bgBytes = 0;
     const bg = (layer: string) => tick(loadImage(`${base}bg-${def.theme}-${layer}${lite ? "-lite" : ""}.webp`, { repeat: true }).then((r) => { bgBytes += r.bytes; return r.texture; }));
-    const [hero, tiles, items, foes, sky, far, mid] = await Promise.all([
+    const fgP = lite ? Promise.resolve(null) : loadImage(`${base}bg-${def.theme}-fg.webp`, { repeat: true }).then((r) => { bgBytes += r.bytes; return r.texture; }).catch(() => null);
+    const [hero, tiles, items, foes, sky, far, mid, fg] = await Promise.all([
       tick(loadAtlas(`/assets/plat/${def.hero}/${def.hero}.json`, lite)), tick(loadAtlas(`${base}tiles-${def.theme}.json`, lite)),
-      tick(loadAtlas(`${base}items-${def.theme}.json`, lite)), tick(loadAtlas(`${base}foes-${def.theme}.json`, lite)), bg("sky"), bg("far"), bg("mid"),
+      tick(loadAtlas(`${base}items-${def.theme}.json`, lite)), tick(loadAtlas(`${base}foes-${def.theme}.json`, lite)), bg("sky"), bg("far"), bg("mid"), fgP,
     ]);
     await tick(this.audio.load().catch(() => undefined));
     if (!this.alive) return;
     this.loadMs = Math.round(performance.now() - t0);
     const { w, h } = profile.resolution;
-    this.view = new PlatView(this.o.canvas, { hero, tiles, items, foes, sky, far, mid, bgBytes }, this.o.players.map((p) => ({ color: p.color, name: p.name })), {
+    this.view = new PlatView(this.o.canvas, { hero, tiles, items, foes, sky, far, mid, fg, bgBytes }, this.o.players.map((p) => ({ color: p.color, name: p.name })), {
       width: w, height: h, particles: Math.min(profile.particleBudget, lite ? 140 : 400), rain: def.rain ? (lite ? 36 : 110) : 0, keyHue: def.keyHue, overlays: def.overlays,
+      extras: !lite, glow: GLOW[def.theme],
     });
     this.makeTags();
     void this.play();
@@ -102,7 +105,9 @@ export class PlatSession {
     const { def, quick } = this.o;
     const levels = quick ? def.spec.quick : def.spec.levels;
     let carry: Hero[] | undefined;
-    for (let i = 0; i < levels.length && this.alive; i++) {
+    // ?level=N starts at level N (for testing and reviewing a level, e.g. the boss)
+    const first = Math.max(0, Math.min(levels.length - 1, Number(new URLSearchParams(location.search).get("level") ?? 1) - 1 || 0));
+    for (let i = first; i < levels.length && this.alive; i++) {
       const w = createWorld(def.spec, levels[i]!, this.o.players.map((p) => p.id), this.o.mode, (Math.random() * 2 ** 31) >>> 0, carry);
       this.view!.setLevel(w, levels[i]!.grade);
       await this.runLevel(w, i, levels.length);
@@ -125,7 +130,7 @@ export class PlatSession {
         this.raf = requestAnimationFrame(frame);
         frames++;
         if (now - fpsT >= 1000) { fps = Math.round((frames * 1000) / (now - fpsT)); frames = 0; fpsT = now; }
-        const real = Math.min(0.1, (now - last) / 1000);
+        const real = Math.max(0, Math.min(0.1, (now - last) / 1000)); // rAF stamps can precede performance.now()
         last = now;
         time += real;
         if (!o.paused() && !juice.stop(real)) {
@@ -237,7 +242,7 @@ export class PlatSession {
     await new Promise<void>((resolve) => {
       const frame = (now: number) => {
         if (!this.alive) return resolve();
-        const dt = Math.min(0.1, (now - last) / 1000);
+        const dt = Math.max(0, Math.min(0.1, (now - last) / 1000)); // rAF stamps can precede performance.now()
         last = now;
         time += dt;
         conf -= dt;

@@ -15,13 +15,16 @@ import type { Hero, World } from "../types";
 import { spikesOut } from "../world";
 import type { Atlas, SpriteDef } from "./atlas";
 import { Backdrop, LAYERS } from "./backdrop";
+import { GlowBatch, Vignette } from "./glow";
 import { DROP, Particles } from "./particles";
 import { QuadBatch } from "./quads";
 
 export interface ViewAssets {
   hero: Atlas; tiles: Atlas; items: Atlas; foes: Atlas;
   sky: THREE.Texture; far: THREE.Texture; mid: THREE.Texture;
-  /** Decoded size of the three backdrop images (w × h × 4 each). */
+  /** Foreground silhouettes (high and ultra only), or null. */
+  fg: THREE.Texture | null;
+  /** Decoded size of the backdrop images (w × h × 4 each). */
   bgBytes: number;
 }
 
@@ -35,6 +38,10 @@ export interface ViewOptions {
   keyHue: number;
   /** Power-up id → overlay sprite drawn over the hero while it is active (an open umbrella, a kite). */
   overlays: Record<string, string>;
+  /** High/ultra extras: additive glows, a vignette and the foreground layer. Off on the lite tier. */
+  extras: boolean;
+  /** Glow colour of gems and lamps for this world. */
+  glow: string;
 }
 
 export interface HeroLook { color: string; name: string }
@@ -58,6 +65,10 @@ export class PlatView {
   private sp: Record<string, SpriteDef> = {};
   private time = 0;
   private rainT = 0;
+  private glow: GlowBatch | null = null;
+  private vignette: Vignette | null = null;
+  private fg: Backdrop | null = null;
+  private lamps: Array<{ x: number; y: number }> = [];
 
   constructor(canvas: HTMLCanvasElement, readonly assets: ViewAssets, readonly looks: HeroLook[], readonly opt: ViewOptions) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false, powerPreference: "high-performance", stencil: false, depth: false });
@@ -73,6 +84,16 @@ export class PlatView {
     this.front = new QuadBatch(assets.items, opt.particles + opt.rain + 64, { order: 5 });
     this.particles = new Particles(opt.particles);
     for (const b of [this.back, this.foes, this.heroes, this.front]) this.scene.add(b.mesh);
+    if (opt.extras) {
+      this.glow = new GlowBatch(160, 3);
+      this.vignette = new Vignette(30);
+      this.scene.add(this.glow.mesh, this.vignette.mesh);
+      if (assets.fg) {
+        this.fg = new Backdrop(assets.fg, { height: 15, fx: 1.35, fy: 1.1 }, 20);
+        this.fg.mesh.material.uniforms.alpha!.value = 0.92;
+        this.scene.add(this.fg.mesh);
+      }
+    }
     this.colors = looks.map((l) => new THREE.Color(l.color));
     for (const id of ["puff", "star", "shot", "bossshot", "bubble", "shield", "gem", "biggem", "spring", "boost", "loop", "goal", "checkpoint-on", "checkpoint-off", "lever-on", "lever-off"]) {
       if (assets.items.manifest.sprites[id]) this.sp[id] = assets.items.manifest.sprites[id]!;
@@ -82,22 +103,31 @@ export class PlatView {
   /** Builds the tile layer for a new level (decorations, tiles, then room for dynamic cells and platforms). */
   setLevel(w: World, grade?: string) {
     if (this.tiles) { this.scene.remove(this.tiles.mesh); this.tiles.dispose(); }
-    const decos = Object.keys(this.assets.tiles.manifest.sprites).filter((k) => k.startsWith("deco-"));
-    this.layout = layoutTiles(w.level, decos, w.level.w * 31 + w.level.h);
+    const ids = Object.keys(this.assets.tiles.manifest.sprites);
+    this.layout = layoutTiles(w.level, ids.filter((k) => k.startsWith("deco-")), w.level.w * 31 + w.level.h, ids.filter((k) => k.startsWith("wall-")));
     const L = this.layout;
-    this.tiles = new QuadBatch(this.assets.tiles, L.decos.length + L.tiles.length + L.dynamic.length + TILE_EXTRA, { order: -20 });
+    this.tiles = new QuadBatch(this.assets.tiles, L.decos.length + L.tiles.length + L.walls.length + L.dynamic.length + TILE_EXTRA, { order: -20 });
     this.scene.add(this.tiles.mesh);
     const S = this.assets.tiles.manifest.sprites;
     this.tiles.begin();
     for (const d of L.decos) { const s = S[d.sprite]; if (s) this.tiles.put(s, 0, d.x, d.y); }
-    for (const t of L.tiles) {
-      const s = S[t.sprite];
-      if (!s) continue;
-      const bx = s.box ?? [0, 0, 1, 1];
-      this.tiles.putBox(s, 0, t.c + bx[0], t.r + bx[1], bx[2], bx[3]);
+    for (const list of [L.tiles, L.walls]) {
+      for (const t of list) {
+        const s = S[t.sprite];
+        if (!s) continue;
+        const bx = s.box ?? [0, 0, 1, 1];
+        // deeper ground is darker (baked ambient occlusion, for free)
+        const d = L.depth.get(t.r * w.level.w + t.c) ?? 0;
+        const k = Math.max(0.42, 1 - d * 0.13);
+        this.tiles.style.r = this.tiles.style.g = this.tiles.style.b = k;
+        this.tiles.putBox(s, 0, t.c + bx[0], t.r + bx[1], bx[2], bx[3]);
+      }
     }
     this.tiles.freeze();
     for (const l of this.layers) l.setGrade(grade ?? "#ffffff");
+    // lamps and lanterns among the decorations glow on the high tiers
+    const LAMP: Record<string, [number, number]> = { "deco-lantern": [0.45, 1.45], "deco-diya": [0, 0.95], "deco-lamp": [0.04, 0.96] };
+    this.lamps = L.decos.filter((d) => LAMP[d.sprite]).map((d) => ({ x: d.x + LAMP[d.sprite]![0], y: d.y + LAMP[d.sprite]![1] }));
     this.anims = w.heroes.map(() => newAnim());
     this.particles.clear();
   }
@@ -112,11 +142,13 @@ export class PlatView {
     c.updateProjectionMatrix();
     c.updateMatrixWorld();
     for (const l of this.layers) l.update(cam, cam.vh / 2 - 0.6);
+    this.fg?.update(cam, cam.vh / 2 - 0.6);
     this.drawTiles(w);
     this.drawItems(w);
     this.drawFoes(w);
     this.drawHeroes(w, dt);
     this.drawFront(w, dt);
+    if (this.glow) this.drawGlow(w);
     this.renderer.render(this.scene, c);
   }
 
@@ -268,6 +300,22 @@ export class PlatView {
     F.end();
   }
 
+  private drawGlow(w: World) {
+    const G = this.glow!, col = this.opt.glow, t = this.time;
+    G.begin();
+    for (const it of w.items) {
+      if ((it.kind === "gem" || it.kind === "biggem") && !it.taken) G.add(it.x, it.y, it.kind === "gem" ? 0.75 : 1.2, col, 0.32 + 0.08 * Math.sin(t * 4 + it.x));
+      else if (it.kind === "powerup" && !it.taken) G.add(it.x, it.y, 1.3, "#ffffff", 0.35);
+      else if (it.kind === "checkpoint" && it.on) G.add(it.x + 0.3, it.y + 1.5, 1.2, "#ffd27a", 0.3);
+      else if (it.kind === "goal") G.add(it.x, it.y + 1.6, 2.6, "#ffe7a0", 0.35 + 0.1 * Math.sin(t * 3));
+    }
+    for (const l of this.lamps) G.add(l.x, l.y, 1.5, "#ffb04a", 0.42 + 0.06 * Math.sin(t * 9 + l.x));
+    for (const s of w.shots) if (s.alive) G.add(s.x, s.y, 1.0, "#fff0b0", 0.5);
+    if (w.boss) for (const s of w.boss.shots) if (s.alive) G.add(s.x, s.y, 0.9, "#ff9a5a", 0.35);
+    for (const h of w.heroes) if (h.power && !h.down) G.add(h.body.x, h.body.y + 0.6, 1.4, h.power.aura ?? "#fff3c4", 0.18);
+    G.end();
+  }
+
   /** Decoded image memory this view holds: its four atlases and three backdrops (w × h × 4 each). */
   decodedBytes(): number {
     const a = this.assets;
@@ -283,6 +331,9 @@ export class PlatView {
   dispose() {
     for (const l of this.layers) l.dispose();
     for (const b of [this.tiles, this.back, this.foes, this.heroes, this.front]) b?.dispose();
+    this.glow?.dispose();
+    this.vignette?.dispose();
+    this.fg?.dispose();
     this.renderer.dispose();
   }
 

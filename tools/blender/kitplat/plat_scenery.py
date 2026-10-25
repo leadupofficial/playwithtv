@@ -161,49 +161,123 @@ def festival_mid():
 
 
 def stepwell_sky():
-    sky_plane("#f6dfae", "#5a412d", "#8a6a4a", cloud_k=0.35, glow=(16.0, 17.5, 3.0, "#fff3d0"))
+    sky_plane("#f3dcae", "#4a3524", "#7a5a3c", cloud_k=0.25, glow=(16.0, 18.2, 1.4, "#fff6dc"))
 
 
-def arcade(z0, rows_y, col, n, h=1.8, w=1.1):
-    for x0 in [i * W / n for i in range(n)]:
-        def b(x):
-            P.box(col, (x, rows_y, z0 + h / 2), (0.35, 0.6, h), bevel=0.03)
-            P.box(col, (x + W / n / 2, rows_y, z0 + h + 0.15), (W / n + 0.36, 0.6, 0.3), bevel=0.03)
-            P.box(P.mat("#2a1d14", 1.0, emit=0.15), (x + W / n / 2, rows_y + 0.32, z0 + h * 0.45), (W / n - 0.4, 0.05, h * 0.9), bevel=0)
-        rep(b, [x0])
+def arch_row(z0, h, n, y, wall, dark, ledge):
+    """A tier of the step-well: a stone wall pierced by n arches, with a ledge on top (seamless across W)."""
+    P.box(wall, (W / 2, y + 0.3, z0 + h / 2), (W * 3, 0.4, h), bevel=0)
+    P.box(ledge, (W / 2, y - 0.1, z0 + h + 0.12), (W * 3, 0.7, 0.24), bevel=0.04)
+    step = W / n
+    for i in range(n):
+        def arch(x):
+            ow = step * 0.56
+            oh = h * 0.55
+            P.box(dark, (x, y, z0 + 0.12 + oh / 2), (ow, 0.2, oh), bevel=0)
+            P.cyl(dark, (x, y, z0 + 0.12 + oh), ow / 2, 0.2, rot=(90, 0, 0), verts=32)
+            P.box(ledge, (x, y - 0.12, z0 + 0.1), (ow + 0.3, 0.3, 0.2), bevel=0.02)
+        rep(arch, [i * step + step / 2])
 
 
 def stepwell_far():
-    for i, (z0, c) in enumerate(((1.0, "#8a6845"), (3.6, "#9c7a52"), (6.2, "#ad8b60"), (8.8, "#bf9d70"))):
-        arcade(z0, 6 - i * 0.1, haze(c, 0.45), 10 - i, h=2.0)
-    for x0 in (6.0, 21.0):  # slanting shafts of sunlight
-        rep(lambda x: P.box(P.mat("#fff0c0", 1, alpha=0.18, emit=1.5), (x, 4, 8), (1.6, 0.05, 20), rot=(0, 18, 0), bevel=0), [x0])
+    dark = P.mat("#2a1d14", 1.0, emit=0.12)
+    for i, (z0, c, n) in enumerate(((0.0, "#7d5f41", 9), (2.9, "#8f6f4c", 8), (5.8, "#a07f58", 7), (8.7, "#b18f66", 6), (11.6, "#c19f75", 6))):
+        arch_row(z0, 2.6, n, 6 - i * 0.3, haze(c, 0.5), dark, haze("#d2b088", 0.5))
+
+    def flight(x):  # a zig-zag flight of steps between tiers
+        for k in range(10):
+            P.box(haze("#c9a77c", 0.5), (x + k * 0.32, 4.5, 2.9 + k * 0.29), (0.34, 0.6, 0.12), bevel=0)
+    rep(flight, [3.0, 19.0])
+    for x0 in (7.0, 23.0):
+        rep(lambda x: P.box(P.mat("#fff0c0", 1, alpha=0.05, emit=1.2), (x, 3, 9), (1.4, 0.05, 22), rot=(0, 16, 0), bevel=0), [x0])
 
 
 def stepwell_mid():
     stone = P.mat("#b48a5c", 0.8, bump=0.4, bump_scale=8, vary=0.15)
-    for x0 in spread(5):
+    carve = P.mat("#94704a", 0.85, bump=0.5, bump_scale=20)
+    for x0 in spread(4):
         def pillar(x):
-            P.box(stone, (x, 2, 3.0), (1.1, 1.1, 6.0), bevel=0.05)
-            for z in (0.5, 2.4, 4.4, 5.8):
-                P.box(stone, (x, 1.9, z), (1.4, 1.3, 0.3), bevel=0.04)
-            P.torus(P.mat("#8a6a45", 0.8), (x, 1.3, 3.3), 0.35, 0.06, rot=(90, 0, 0))
+            P.box(stone, (x, 2, 3.6), (1.0, 1.0, 7.2), bevel=0.05)
+            for z in (0.4, 2.6, 4.9, 7.0):
+                P.box(stone, (x, 1.9, z), (1.4, 1.3, 0.32), bevel=0.04)
+            for z in (1.5, 3.8, 6.0):
+                P.torus(carve, (x, 1.45, z), 0.3, 0.06, rot=(90, 0, 0))
+                P.sphere(carve, (x, 1.45, z), (0.12, 0.05, 0.12), r=1, seg=10)
+            P.cyl(P.mat("#3b3f43", 0.4, metal=0.8), (x + 0.6, 1.2, 6.2), 0.012, 1.6, verts=6)
+            P.cone(P.mat("#d6a23a", 0.3, metal=0.85), (x + 0.6, 1.2, 5.3), 0.22, 0.08, 0.34, verts=20)
         rep(pillar, [x0])
 
     def stairs(x):
         for i in range(8):
             P.box(stone, (x + i * 0.45, 3, 0.25 + i * 0.45), (0.5, 1.4, 0.5 + i * 0.9), bevel=0.02)
-    rep(stairs, [11.0, 26.0])
+    rep(stairs, [10.0, 26.0])
 
     def vines(x):
-        leaf = P.mat("#4a7a34", 0.8, bump=0.5, bump_scale=30)
-        for i in range(10):
-            P.sphere(leaf, (x + math.sin(i) * 0.2, 1.2, H - 0.5 - i * 0.35), (0.18, 0.08, 0.16), r=1, seg=8)
-    rep(vines, [3.0, 15.0, 24.0])
+        leaf = P.mat("#3d6a2c", 0.8, bump=0.5, bump_scale=30)
+        P.cyl(P.mat("#5a4a2a", 0.9), (x, 1.25, H - 2.2), 0.02, 4.4, verts=6)
+        for i in range(16):
+            P.sphere(leaf, (x + math.sin(i * 1.7) * 0.22, 1.2, H - 0.3 - i * 0.26), (0.16, 0.05, 0.07), rot=(0, 35 * math.sin(i * 2.3), 0), r=1, seg=8)
+    rep(vines, [3.5, 15.5, 22.0])
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# foreground layers (high and ultra tiers only): dark shapes that sweep past in front of the action
+
+
+def fg_monsoon():
+    dark = P.mat("#14181f", 0.6)
+    def rail(x):
+        P.box(dark, (x, -2, 0.55), (6.0, 0.2, 0.08), bevel=0)
+        for i in range(7):
+            P.box(dark, (x - 3 + i, -2, 0.3), (0.06, 0.2, 0.6), bevel=0)
+    rep(rail, [4.0, 20.0])
+    def plant(x):
+        P.cyl(P.mat("#2a1a14", 0.7), (x, -2, 0.35), 0.35, 0.7, verts=16)
+        for i in range(9):
+            a = i * 0.7
+            P.sphere(P.mat("#0f2416", 0.8), (x + math.cos(a) * 0.5, -2, 1.0 + math.sin(a * 1.3) * 0.4), (0.5, 0.1, 0.18), rot=(0, math.degrees(a), 0), r=1, seg=10)
+    rep(plant, [13.0, 28.5])
+    def wires(x):
+        for k in range(3):
+            pts = 24
+            for i in range(pts):
+                t = i / (pts - 1)
+                P.sphere(dark, (x + t * 9, -2, H - 0.8 - k * 0.5 - 1.6 * math.sin(math.pi * t)), (0.2, 0.03, 0.03), r=1, seg=6)
+    rep(wires, [6.0, 22.0])
+
+
+def fg_festival():
+    dark = P.mat("#120a1c", 0.7)
+    def leaves(x):
+        P.cyl(dark, (x, -2, 0.9), 0.1, 1.8, verts=8)
+        for i in range(6):
+            a = i * 60
+            P.sphere(dark, (x + math.cos(math.radians(a)) * 0.8, -2, 1.9 + math.sin(math.radians(a)) * 0.3), (1.0, 0.1, 0.18), rot=(0, -a * 0.4, 0), r=1, seg=12)
+    rep(leaves, [3.0, 17.0, 26.0])
+    def lights(x):
+        for i in range(30):
+            t = i / 29
+            z = H - 0.6 - 1.4 * math.sin(math.pi * t)
+            P.sphere(emit(["#ffd23f", "#ff5ab4", "#5ad7ff"][i % 3], 5.0), (x + t * 12, -2, z), (0.09, 0.05, 0.09), r=1, seg=8)
+            P.sphere(dark, (x + t * 12, -1.9, z + 0.12), (0.2, 0.02, 0.012), r=1, seg=6)
+    rep(lights, [9.0])
+
+
+def fg_stepwell():
+    dark = P.mat("#1a120c", 0.8)
+    def pillar(x):
+        P.box(dark, (x, -2, 2.5), (1.3, 0.3, 5.0), bevel=0.05)
+        for z in (0.3, 4.7):
+            P.box(dark, (x, -2, z), (1.7, 0.3, 0.35), bevel=0.04)
+    rep(pillar, [8.0, 25.0])
+    def vine(x):
+        for i in range(14):
+            P.sphere(P.mat("#0f1f10", 0.8), (x + math.sin(i * 1.7) * 0.3, -2, H - 0.3 - i * 0.3), (0.24, 0.06, 0.1), rot=(0, 30 * math.sin(i), 0), r=1, seg=8)
+    rep(vine, [2.0, 15.0, 30.0])
 
 
 SCENERY = {
-    "monsoon": {"sky": monsoon_sky, "far": monsoon_far, "mid": monsoon_mid},
-    "festival": {"sky": festival_sky, "far": festival_far, "mid": festival_mid},
-    "stepwell": {"sky": stepwell_sky, "far": stepwell_far, "mid": stepwell_mid},
+    "monsoon": {"sky": monsoon_sky, "far": monsoon_far, "mid": monsoon_mid, "fg": fg_monsoon},
+    "festival": {"sky": festival_sky, "far": festival_far, "mid": festival_mid, "fg": fg_festival},
+    "stepwell": {"sky": stepwell_sky, "far": stepwell_far, "mid": stepwell_mid, "fg": fg_stepwell},
 }

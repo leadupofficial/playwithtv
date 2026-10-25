@@ -21,6 +21,7 @@ import bpy  # noqa: E402
 
 import plat_common as P  # noqa: E402
 import plat_tex as T  # noqa: E402
+from plat_walls import WALLS  # noqa: E402
 from plat_world import WORLDS  # noqa: E402
 
 PPM = 96
@@ -85,6 +86,9 @@ def main():
     cell("crumble", W.crumble, 0, 0, 1, 1.06, [0, 0, 1, 1.06])
     cell("gate", W.gate, 0, 0, 1, 1, [0, 0, 1, 1])
     cell("platform", W.platform, -1.6, 0.25, 3.2, 0.9, [-1.6, 0.25, 3.2, 0.9])
+    # wall details (scattered over fill tiles by the game)
+    for sid, build in WALLS[world](W):
+        cell(sid, build, 0, 0, 1, 1, [0, 0, 1, 1])
     # decorations (scattered on the ground by the game): cropped, pivot = ground point
     for i, (did, build, wdt, hgt) in enumerate(W.decos()):
         P.clear_scene_objects()

@@ -11,13 +11,14 @@ export type PlatDbg = { game: string; phase: string; time: number; level: number
   decodedMB: number; loadMs: number; tier: string; res: string; heroes: PlatHero[]; boss: { hp: number; awake: boolean; dead: boolean } | null;
   results?: Array<{ playerId: string; score: number; place: number }> };
 
-export async function platTv(browser: Browser, query: string) {
+export async function platTv(browser: Browser, query: string, quick = true) {
   const tv = await (await browser.newContext({ viewport: { width: 1280, height: 720 }, ignoreHTTPSErrors: true })).newPage();
   await tv.addInitScript(() => {
     (window as unknown as { __csp: string[] }).__csp = [];
     document.addEventListener("securitypolicyviolation", (e) => (window as unknown as { __csp: string[] }).__csp.push(`${e.violatedDirective} ${e.blockedURI}`));
   });
-  await tv.goto(`/tv?quick=1&${query}`);
+  tv.on("pageerror", (e) => console.log(`[tv page error] ${e.stack ?? e.message}`));
+  await tv.goto(`/tv?${quick ? "quick=1&" : ""}${query}`);
   return { tv, code: await tvCode(tv) };
 }
 
@@ -79,6 +80,11 @@ export async function joinTwo(browser: Browser, code: string, modes: Record<stri
   const a = await joinPhone(browser, code, "Asha", modes);
   const b = await joinPhone(browser, code, "Ravi", modes);
   return [a, b] as const;
+}
+
+/** Closes every page a test opened (TV and phones keep rendering otherwise and slow the next test down). */
+export async function closeAll(browser: Browser) {
+  for (const c of browser.contexts()) await c.close().catch(() => undefined);
 }
 
 /** Lite-tier TV budgets (the owner's 1 GB Mali-G31 TV). */

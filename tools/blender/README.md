@@ -112,3 +112,20 @@ several clips into one sheet per set (manifest field `clips: {name: {start, fram
 ~0.4 s a cell, with the game drawing the contact shadow); `arenas.py` + `arena_kit.py` model three arenas
 procedurally and export each as a GLB plus a lite backdrop rendered through the game's orthographic camera;
 `shrink_hdri.py` makes 512 px runtime HDRIs.
+
+## kitplat: side-view platformer art (`kitplat/`)
+
+Everything for the kitplat platformers (Monsoon Courier, Lantern Lane, Stepwell Secrets), built from primitives
+(no imported models or textures) and rendered side-on with EEVEE: `sh tools/blender/kitplat/render_all.sh [what]
+[preview-dir]` renders all three worlds in about two minutes into `apps/web/public/assets/plat/`.
+
+| Script | Makes |
+|---|---|
+| `plat_common.py` | primitives, cached materials, a rig of empties (`joint`, `attach`, `pose`), the per-world light rigs (suns only), side cameras, `Sheet` (named-sprite atlas packer: shelf packing, shared crop per sprite, pivots, tile boxes, `pwtv-plat` manifest, half-size `-lite` copy only above 1536 px) |
+| `plat_rig.py`, `plat_heroes.py` | the chibi biped rig with procedural clips; the three heroes (paint in magenta for the player-colour tint) |
+| `plat_creatures.py`, `plat_bosses.py`, `plat_foes.py` | foes (walker, hopper, flyer, curler) and bosses per world, animated by pose functions |
+| `plat_items.py` | gems, power-ups and their overlays, springs, boost pads, checkpoints, goals, levers, the loop, shots and effect sprites |
+| `plat_tex.py`, `plat_world.py`, `plat_walls.py`, `plat_tiles.py` | periodic materials (repeat every 4 tiles across, 1 up), terrain caps, one-ways, slopes, hazards, ladders, gates, platforms, wall details and decorations; 4 horizontal phases per terrain tile so tiles butt together without seams |
+| `plat_backdrop.py`, `plat_scenery.py` | seamless 1920×1080 parallax layers (sky, far, mid, fg) + 1280×720 lite copies |
+
+Always look at the `--preview` sheets (second argument of `render_all.sh`) before committing.

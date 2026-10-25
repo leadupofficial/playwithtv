@@ -81,6 +81,12 @@ void main() {
   #include <colorspace_fragment>
 }`;
 
+/** A safe frame index: wraps negatives, treats NaN as 0. */
+export function frameIndex(f: number, n: number): number {
+  const i = Math.floor(f) || 0;
+  return ((i % n) + n) % n;
+}
+
 const DEFAULT: QuadStyle = { sx: 1, sy: 1, rot: 0, alpha: 1, flash: 0, flipX: false, r: 1, g: 1, b: 1, tint: null, tintK: 0 };
 
 export class QuadBatch {
@@ -152,7 +158,7 @@ export class QuadBatch {
 
   /** Draws frame `f` of a sprite with its pivot (ground point) at (x, y). Returns false when the batch is full. */
   put(s: SpriteDef, f: number, x: number, y: number): boolean {
-    const r = s.frames[f % s.frames.length]!;
+    const r = s.frames[frameIndex(f, s.frames.length)]!;
     const st = this.style;
     const w = (r.w / this.ppm) * st.sx * (st.flipX ? -1 : 1), h = (r.h / this.ppm) * st.sy;
     return this.write(r, x, y, w, h, s.pivot.x, s.pivot.y);
@@ -160,7 +166,7 @@ export class QuadBatch {
 
   /** Draws frame `f` of a sprite stretched over the box [x, x+w] × [y, y+h] (tiles). */
   putBox(s: SpriteDef, f: number, x: number, y: number, w: number, h: number): boolean {
-    const r = s.frames[f % s.frames.length]!;
+    const r = s.frames[frameIndex(f, s.frames.length)]!;
     return this.write(r, x, y, w, h, 0, 1);
   }
 

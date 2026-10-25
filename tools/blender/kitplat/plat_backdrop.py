@@ -166,13 +166,13 @@ def resize(img, w, h):
     return out.astype(np.float32)
 
 
-def save_layer(img, out, name, quality=80):
+def save_layer(img, out, name, quality=80, lite=True):
     os.makedirs(out, exist_ok=True)
     if img.shape[2] == 4 and img[:, :, 3].min() > 0.99:
         pass
     P.save_still(atlas.bleed_edges(img), os.path.join(out, f"{name}.webp"), quality)
-    lite = resize(img, 1280, 720)
-    P.save_still(atlas.bleed_edges(lite), os.path.join(out, f"{name}-lite.webp"), quality)
+    if lite:
+        P.save_still(atlas.bleed_edges(resize(img, 1280, 720)), os.path.join(out, f"{name}-lite.webp"), quality)
     P.log(f"{name}: {img.shape[1]}x{img.shape[0]} + lite")
 
 
@@ -183,18 +183,19 @@ def main():
     import plat_scenery as S
     builders = S.SCENERY[world]
     imgs = []
-    for layer in ("sky", "far", "mid"):
+    for layer in ("sky", "far", "mid", "fg"):
         P.reset()
         P.light_rig(world)
         P.side_camera((W / 2, 0, H / 2), W, elevation=0)
-        random.seed({"sky": 1, "far": 2, "mid": 3}[layer])
+        random.seed({"sky": 1, "far": 2, "mid": 3, "fg": 4}[layer])
         builders[layer]()
         setup_layer(layer != "sky")
         if layer != "sky":
             bpy.context.scene.world.node_tree.nodes["Background"].inputs["Strength"].default_value = 1.2
         img = P.render_rgba()
-        save_layer(img, out, f"bg-{world}-{layer}")
-        imgs.append(img)
+        save_layer(img, out, f"bg-{world}-{layer}", lite=layer != "fg")  # the foreground is for high/ultra only
+        if layer != "fg":
+            imgs.append(img)
     if preview:
         comp = imgs[0].copy()
         for im in imgs[1:]:

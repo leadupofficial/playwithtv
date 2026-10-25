@@ -355,7 +355,7 @@ class Stepwell(World):
     cap_h = 0.32
 
     def materials(self):
-        self.m_fill = T.bricks("sandstone", "#c08a55", "#9a6a3e", "#6e4a2c", bw=0.5, rh=0.25, grime="#4a3a2a", grime_k=0.4)
+        self.m_fill = T.bricks("sandstone", "#d6aa6c", "#bf9258", "#8c6740", bw=1.0, rh=0.5, grime="#6a5238", grime_k=0.35)
         self.m_cap = T.mottled("cornice", "#d7aa70", "#b88b55", 6, rough=0.7, bump_k=0.4)
         self.m_iron = P.mat("#3b3f43", 0.4, metal=0.85)
         self.m_wood = T.mottled("teak", "#6a4428", "#8a5a34", 8, rough=0.6)

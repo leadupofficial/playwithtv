@@ -39,6 +39,7 @@ export function stepHero(w: World, h: Hero, inp: PadInput, dt: number) {
     if (ev.landed > 6) emit(w, "land", b.x, b.y, h.slot, ev.landed);
   }
   if (ev.bumped >= 0) bump(w, h, ev.bumped);
+  if (b.grounded || h.state === "climb" || h.state === "hang") h.groundY = b.y;
   if (!b.grounded) h.stats.airTime += dt;
   h.stats.topSpeed = Math.max(h.stats.topSpeed, Math.abs(b.vx));
   // crumbling floor starts to go once stood on
@@ -330,6 +331,7 @@ export function reviveAt(w: World, h: Hero, x: number, y: number, respawn: boole
   h.downT = 0;
   h.body.x = x;
   h.body.y = y;
+  h.groundY = y;
   h.body.vx = h.body.vy = 0;
   h.body.grounded = false;
   h.hearts = w.spec.hearts;
