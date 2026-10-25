@@ -49,19 +49,29 @@ def monsoon_sky():
 
 def monsoon_far():
     col = haze("#5f6f86", 0.5)
+    tones = ["#6d7d94", "#7a7f96", "#687f8c", "#80788e", "#5f7488"]
     lit = "#ffcf8a"
+    # a far, paler row first, then the main skyline
+    for x0 in spread(18):
+        w, h = random.uniform(1.4, 2.6), random.uniform(5.5, 10.5)
+        rep(lambda x, w=w, h=h: P.box(haze("#8a96a8", 0.6), (x, 7.5, h / 2), (w, 1, h), bevel=0), [x0])
     xs = spread(14)
     for x0 in xs:
         w = random.uniform(1.6, 3.2)
         h = random.uniform(3.0, 8.5)
         seed = random.random()
+        tone = haze(random.choice(tones), 0.5)
 
-        def b(x, w=w, h=h, seed=seed):
+        def b(x, w=w, h=h, seed=seed, tone=tone):
             random.seed(int(seed * 1e6))
-            P.box(col, (x, 6, h / 2), (w, 1, h), bevel=0.02)
-            windows(x - w / 2 + 0.15, w - 0.3, 0.6, h - 1.2, 5.4, lit=lit, dark="#4a5870", chance=0.3, size=(0.22, 0.3))
-            if seed > 0.5:
-                P.cyl(col, (x + w * 0.2, 6, h + 0.45), 0.35, 0.9, verts=16)
+            P.box(tone, (x, 6, h / 2), (w, 1, h), bevel=0.02)
+            P.box(haze("#4f5d70", 0.4), (x, 5.9, h + 0.06), (w + 0.12, 1.1, 0.12), bevel=0)
+            windows(x - w / 2 + 0.15, w - 0.3, 0.6, h - 1.2, 5.4, lit=lit, dark="#4a5870", chance=0.42, size=(0.22, 0.3))
+            if seed > 0.45:
+                P.cyl(haze("#2f3540", 0.3), (x + w * 0.2, 6, h + 0.45), 0.35, 0.9, verts=16)
+            if seed < 0.4:
+                P.cyl(haze("#3a4250", 0.3), (x - w * 0.25, 6, h + 0.7), 0.02, 1.4, verts=6)
+                P.cyl(haze("#3a4250", 0.3), (x - w * 0.25, 6, h + 1.2), 0.012, 0.6, rot=(0, 90, 0), verts=6)
         rep(b, [x0])
     # a temple tower and palms on the skyline
     def gopuram(x):

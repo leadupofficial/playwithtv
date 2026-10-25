@@ -4,7 +4,7 @@
  * arena). Heroes it cannot fit are reported as stragglers; the world bubbles or leashes them. Pure.
  */
 
-export const VIEW_W = 20;            // tiles across at zoom 1 (16:9)
+export const VIEW_W = 18;            // tiles across at zoom 1 (16:9)
 export const VIEW_H = VIEW_W * 9 / 16;
 export const MAX_ZOOM = 1.3;
 

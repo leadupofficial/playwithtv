@@ -133,10 +133,11 @@ class Monsoon(World):
         x0 = -0.1 if side in "ls" else 0
         x1 = 1.1 if side in "rs" else 1
         xa, xb = (x0 if side in "ls" else -2), (x1 if side in "rs" else 3)
-        ob = P.box(self.m_awn, ((xa + xb) / 2, -0.1, 0.95), (xb - xa, 1.0, 0.07), rot=(-12, 0, 0), bevel=0.01)
+        ob = P.box(self.m_awn, ((xa + xb) / 2, -0.1, 0.96), (xb - xa, 1.0, 0.07), rot=(-12, 0, 0), bevel=0.01)
         P.bake(ob)
-        for x in wrapped([0.125 + 0.25 * i for i in range(16)], xa, xb):
-            P.bake(P.cyl(self.m_awn, (x, -0.6, 0.86), 0.125, 0.04, rot=(90, 0, 0), verts=16))
+        bx(self.m_awn, xa, xb, 0.84, 0.99, y0=-0.66, y1=-0.6, bevel=0.005)          # the valance
+        for x in wrapped([0.125 + 0.25 * i for i in range(16)], xa, xb):             # scallops hang below it
+            P.bake(P.cyl(self.m_awn, (x, -0.62, 0.84), 0.125, 0.02, rot=(90, 0, 0), verts=20))
         P.bake(P.cyl(self.m_metal, ((xa + xb) / 2, -0.55, 0.99), 0.035, xb - xa, rot=(0, 90, 0)))
         if side in "ls":
             P.bake(P.cyl(self.m_metal, (0.0, -0.3, 0.6), 0.03, 0.8, rot=(0, 25, 0)))
