@@ -20,6 +20,7 @@
  * `flipY` on a sprite draws its reflection (a wet road: a second batch with depthTest off and low opacity).
  */
 import * as THREE from "three";
+import { getQuality } from "../../quality/store";
 import { type SpriteManifest, cellIndex, cellUv, directionIndex, frameAt, parseManifest, screenHeading, worldSize } from "./manifest";
 
 export interface SpriteSheet {
@@ -32,9 +33,40 @@ export interface SpriteSheet {
 
 const sheets = new Map<string, Promise<SpriteSheet>>();
 
-function loadTexture(url: string): Promise<THREE.Texture> {
+/**
+ * Largest atlas side kept in memory on the lite tier. A 1 GB TV's WebView is killed when a game decodes a few
+ * hundred MB of sprite atlases (Kalari Clash ships 3840 px sheets: 57 MB of RGBA each). Capped at 1536 px a sheet
+ * costs at most 9.4 MB. UVs are fractions of the atlas, so a shrunk atlas needs no other change. 0 = no cap.
+ */
+export function liteAtlasCap(): number {
+  return getQuality().profile.prerendered ? 1536 : 0;
+}
+
+/** The scale an atlas of w×h needs to fit `cap` (1 when it already fits or there is no cap). */
+export function atlasScale(w: number, h: number, cap: number): number {
+  return cap > 0 && Math.max(w, h) > cap ? cap / Math.max(w, h) : 1;
+}
+
+function loadTexture(url: string, cap: number): Promise<THREE.Texture> {
   // TextureLoader decodes through an <img> element: allowed by our CSP (img-src 'self'), no blob: fetch.
-  return new THREE.TextureLoader().loadAsync(url).then((t) => {
+  return new THREE.TextureLoader().loadAsync(url).then((loaded) => {
+    let t: THREE.Texture = loaded;
+    const img = loaded.image as HTMLImageElement;
+    const k = atlasScale(img.naturalWidth || img.width, img.naturalHeight || img.height, cap);
+    if (k < 1) {
+      // shrink once on a canvas, upload it, then give the canvas memory back (the TV never re-uploads)
+      const c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(img.naturalWidth * k));
+      c.height = Math.max(1, Math.round(img.naturalHeight * k));
+      const g = c.getContext("2d")!;
+      g.imageSmoothingQuality = "high";
+      g.drawImage(img, 0, 0, c.width, c.height);
+      loaded.dispose();
+      t = new THREE.CanvasTexture(c);
+      t.onUpdate = () => {
+        c.width = c.height = 1;
+      };
+    }
     t.colorSpace = THREE.SRGBColorSpace;
     t.generateMipmaps = false; // atlases are NPOT; bilinear without mips is crisp at TV sprite sizes
     t.minFilter = THREE.LinearFilter;
@@ -43,9 +75,14 @@ function loadTexture(url: string): Promise<THREE.Texture> {
   });
 }
 
-/** Loads a manifest and its atlas (WebP, falling back to PNG if listed); cached per URL. */
-export function loadSpriteSheet(manifestUrl: string, opts: { normals?: boolean } = {}): Promise<SpriteSheet> {
-  const key = `${manifestUrl}|${opts.normals ? 1 : 0}`;
+/**
+ * Loads a manifest and its atlas (WebP, falling back to PNG if listed); cached per URL. On the lite tier atlases
+ * are shrunk to fit `maxSize` (default liteAtlasCap(): 1536 px) and the normal sheet is skipped, to protect 1 GB TVs
+ * (setLight() then does nothing). Pass maxSize: 0 to keep full size.
+ */
+export function loadSpriteSheet(manifestUrl: string, opts: { normals?: boolean; maxSize?: number } = {}): Promise<SpriteSheet> {
+  const cap = opts.maxSize ?? liteAtlasCap();
+  const key = `${manifestUrl}|${opts.normals ? 1 : 0}|${cap}`;
   let p = sheets.get(key);
   if (!p) {
     p = (async () => {
@@ -54,11 +91,12 @@ export function loadSpriteSheet(manifestUrl: string, opts: { normals?: boolean }
       const manifest = parseManifest(await res.json());
       const base = new URL(manifestUrl, location.href);
       const at = (f: string) => new URL(f, base).pathname;
-      const texture = await loadTexture(at(manifest.image)).catch((e) => {
+      const texture = await loadTexture(at(manifest.image), cap).catch((e) => {
         if (!manifest.fallback) throw e;
-        return loadTexture(at(manifest.fallback));
+        return loadTexture(at(manifest.fallback), cap);
       });
-      const normals = opts.normals && manifest.normals ? await loadTexture(at(manifest.normals)) : null;
+      // the normal sheet only adds light (lightning flashes): a capped (TV) budget skips it, saving half the memory
+      const normals = opts.normals && manifest.normals && !cap ? await loadTexture(at(manifest.normals), 0) : null;
       if (normals) normals.colorSpace = THREE.NoColorSpace;
       return { manifest, texture, normals, url: manifestUrl };
     })();
