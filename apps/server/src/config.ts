@@ -16,6 +16,10 @@ export interface Config {
    * 0 = no proxy (use the socket address).
    */
   trustProxyHops: number;
+  /** Capacity guards for one hub process: live rooms, open WebSockets, and open WebSockets from one address. */
+  maxRooms: number;
+  maxSockets: number;
+  maxSocketsPerIp: number;
 }
 
 export function loadConfig(env = process.env): Config {
@@ -31,7 +35,17 @@ export function loadConfig(env = process.env): Config {
     roomIdleMs: Number(env.ROOM_IDLE_MS ?? 2 * 60 * 60_000),
     webDist: env.WEB_DIST || undefined,
     trustProxyHops: Math.max(0, Math.min(5, Number(env.TRUST_PROXY_HOPS ?? 1) || 0)),
+    maxRooms: positive(env.MAX_ROOMS, 5_000),
+    maxSockets: positive(env.MAX_SOCKETS, 20_000),
+    // generous: a home is a TV, up to 8 phones and their reconnects, and carrier-grade NAT puts many homes
+    // behind one address (common on Indian broadband and mobile data)
+    maxSocketsPerIp: positive(env.MAX_SOCKETS_PER_IP, 200),
   };
+}
+
+function positive(v: string | undefined, fallback: number): number {
+  const n = Math.floor(Number(v));
+  return v !== undefined && v !== "" && Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
 /** An empty allow-list means "development: allow any origin"; production deployments must set it. */

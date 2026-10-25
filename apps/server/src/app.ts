@@ -4,6 +4,8 @@ import fastifyStatic from "@fastify/static";
 import { WebSocketServer } from "ws";
 import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
+import type { IncomingMessage } from "node:http";
+import { relative, sep } from "node:path";
 import { CreateRoomResponse, JoinRequest, MAX_FRAME_BYTES } from "@playwithtv/protocol";
 import { type Config, originAllowed } from "./config.js";
 import { Hub, HubError, metrics } from "./hub.js";
@@ -12,6 +14,7 @@ import type { Persistence } from "./persistence.js";
 import type { Presence } from "./presence.js";
 import { type AdStore, MemoryAdStore, todayIST } from "./ads.js";
 import { registerAdRoutes } from "./adRoutes.js";
+import { REVALIDATE, cacheControlFor } from "./caching.js";
 
 export interface App {
   http: FastifyInstance;
@@ -181,21 +184,41 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
 
   // ---- web app (production) ----------------------------------------------------------
   if (cfg.webDist && existsSync(cfg.webDist)) {
-    await http.register(fastifyStatic, { root: cfg.webDist, wildcard: false });
+    await http.register(fastifyStatic, {
+      root: cfg.webDist,
+      wildcard: false,
+      cacheControl: false, // set per file below, so the CDN keeps game files and pages still update on deploy
+      setHeaders: (reply, filePath) => reply.header("cache-control", cacheControlFor("/" + relative(cfg.webDist!, filePath).split(sep).join("/"))),
+    });
     http.setNotFoundHandler((req, reply) => {
-      if (req.method === "GET" && !req.url.startsWith("/api")) return reply.sendFile("index.html");
+      if (req.method === "GET" && !req.url.startsWith("/api")) return reply.header("cache-control", REVALIDATE).sendFile("index.html");
       return reply.status(404).send({ error: "not_found", message: "Not found" });
     });
   }
 
   // ---- WebSocket hub -----------------------------------------------------------------
   const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_FRAME_BYTES });
+  const socketsByIp = new Map<string, number>();
   http.server.on("upgrade", (req, socket, head) => {
     if (!req.url?.startsWith("/ws") || !originAllowed(cfg, req.headers.origin)) {
       socket.write("HTTP/1.1 403 Forbidden\r\n\r\n");
       return socket.destroy();
     }
+    // capacity guards: one busy hub must not take the rest of the machine down with it
+    const ip = upgradeIp(req, cfg.trustProxyHops);
+    const fromIp = socketsByIp.get(ip) ?? 0;
+    if (wss.clients.size >= cfg.maxSockets || fromIp >= cfg.maxSocketsPerIp) {
+      metrics.serverBusy++;
+      socket.write("HTTP/1.1 503 Service Unavailable\r\nRetry-After: 5\r\nConnection: close\r\n\r\n");
+      return socket.destroy();
+    }
     wss.handleUpgrade(req, socket, head, (ws) => {
+      socketsByIp.set(ip, (socketsByIp.get(ip) ?? 0) + 1);
+      ws.once("close", () => {
+        const n = (socketsByIp.get(ip) ?? 1) - 1;
+        if (n > 0) socketsByIp.set(ip, n);
+        else socketsByIp.delete(ip);
+      });
       wss.emit("connection", ws, req); // registers the socket with the heartbeat below
       hub.attach(ws);
     });
@@ -228,6 +251,17 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
       await http.close();
     },
   };
+}
+
+/**
+ * The client address of a WebSocket upgrade, trusting the same number of proxy hops as the HTTP routes (Fastify's
+ * trustProxy): walk X-Forwarded-For from the right, one entry per trusted proxy.
+ */
+export function upgradeIp(req: Pick<IncomingMessage, "headers" | "socket">, trustedHops: number): string {
+  const xff = req.headers["x-forwarded-for"];
+  const forwarded = (Array.isArray(xff) ? xff.join(",") : xff ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const chain = [req.socket.remoteAddress ?? "unknown", ...forwarded.reverse()];
+  return chain[Math.min(trustedHops, chain.length - 1)]!;
 }
 
 /**

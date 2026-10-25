@@ -37,6 +37,10 @@ export class Hub {
   // ---- rooms and invitations --------------------------------------------------------
 
   createRoom() {
+    if (this.rooms.size >= this.cfg.maxRooms) {
+      metrics.serverBusy++;
+      throw new HubError("server_busy", "Lots of people are playing right now. Trying again in a few seconds…", 503);
+    }
     const room: Room = {
       id: randomUUID(),
       hostToken: token(),

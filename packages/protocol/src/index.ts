@@ -167,7 +167,8 @@ export type ErrorCode =
   | "not_allowed"
   | "unknown_game"
   | "player_count"
-  | "removed";
+  | "removed"
+  | "server_busy";
 
 // ---- HTTP API ---------------------------------------------------------------------------
 

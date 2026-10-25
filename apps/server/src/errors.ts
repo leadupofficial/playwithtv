@@ -9,5 +9,5 @@ export class HubError extends Error {
 /** Counters for the admin console and /metrics. */
 export const metrics = {
   roomsCreated: 0, joins: 0, rejoins: 0, inputsRelayed: 0, inputsDropped: 0, staleInputs: 0,
-  rateLimited: 0, badMessages: 0, roomsExpired: 0, matchesFinished: 0, rtcSignals: 0,
+  rateLimited: 0, serverBusy: 0, badMessages: 0, roomsExpired: 0, matchesFinished: 0, rtcSignals: 0,
 };
