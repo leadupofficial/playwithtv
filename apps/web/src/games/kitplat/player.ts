@@ -62,7 +62,7 @@ export function stepMover(m: Mover, inp: PadInput, f: Feel, col: Collider, dt: n
   else m.buffer = Math.max(0, m.buffer - dt);
   m.dropT = Math.max(0, m.dropT - dt);
   m.noGrabT = Math.max(0, m.noGrabT - dt);
-  if (Math.abs(inp.x) > 0.25) m.facing = inp.x > 0 ? 1 : -1;
+  if (Math.abs(inp.x) > 0.25 && m.state !== "hang" && m.state !== "climbup") m.facing = inp.x > 0 ? 1 : -1;
   const jumpV = (launchSpeed(f.jumpHeight, f.gravity) + f.gravity * dt * 0.5) * mods.jump; // + half a step: exact peak
 
   // ---- ladders

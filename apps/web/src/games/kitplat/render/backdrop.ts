@@ -81,6 +81,7 @@ export class Backdrop {
   }
 
   dispose() {
+    (this.mesh.material.uniforms.map!.value as THREE.Texture).dispose();
     this.mesh.geometry.dispose();
     this.mesh.material.dispose();
   }

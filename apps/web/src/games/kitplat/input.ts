@@ -54,7 +54,7 @@ export class PlatControls {
       const jump = !!state.buttons?.jump;
       const run = !!state.buttons?.run;
       if (jump && !s.jump) {
-        s.pressed++;
+        s.pressed = 1;
         this.received.get(id)!.jump++;
         this.kit.seen.get(id)?.add("jump");
       }
@@ -71,12 +71,12 @@ export class PlatControls {
       const r = this.received.get(id);
       if (!s || !r) return;
       if (action === "hop") {
-        s.pressed++;
+        s.pressed = 1;
         s.hopUntil = performance.now() + 300; // a flick or a tap is a near-full jump
         r.hop++;
         this.kit.seen.get(id)?.add("jump");
       } else if (action === "act") {
-        s.act++;
+        s.act = 1;
         r.act++;
       }
     }));

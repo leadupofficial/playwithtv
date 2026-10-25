@@ -22,9 +22,10 @@ export function stepHero(w: World, h: Hero, inp: PadInput, dt: number) {
   h.boostT = Math.max(0, h.boostT - dt);
   h.flipT = Math.max(0, h.flipT - dt);
   h.shotCd = Math.max(0, h.shotCd - dt);
+  h.loopCd = Math.max(0, h.loopCd - dt);
   h.landT += dt;
   if (h.down) return stepDown(w, h, inp, dt);
-  if (h.finished && w.phase === "play") { b.vx = 0; return; }
+  if (h.finished && w.phase === "play") { b.vx *= 0.85; stepMover(h, NO_INPUT, w.spec.feel, w.col, dt, NO_MODS); return; }
   if (h.power && h.power.seconds > 0) {
     h.powerT -= dt;
     if (h.powerT <= 0) { h.power = null; emit(w, "powerlost", b.x, b.y + 1, h.slot); }
@@ -127,6 +128,8 @@ function items(w: World, h: Hero, inp: PadInput) {
           b.y = it.y + 0.7;
           h.jumpHeld = false;
           h.launched = true;
+          h.coyote = 0;
+          h.buffer = 0;
           h.flipT = 0.7;
           it.t = 0;
           emit(w, "spring", it.x, it.y + 0.5, h.slot);
@@ -142,7 +145,7 @@ function items(w: World, h: Hero, inp: PadInput) {
         }
         break;
       case "loop":
-        if (b.grounded && b.vx >= w.spec.loopSpeed && Math.abs(dx) < 0.25 + b.vx / 60 && Math.abs(b.y - it.y) < 0.3) {
+        if (!h.loop && h.loopCd <= 0 && b.grounded && b.vx >= w.spec.loopSpeed && Math.abs(dx) < 0.25 + b.vx / 60 && Math.abs(b.y - it.y) < 0.3) {
           h.loop = { cx: it.x, cy: it.y + LOOP_R + b.h / 2, a: -Math.PI / 2, speed: Math.max(b.vx, w.spec.loopSpeed) };
           h.stats.loops++;
           emit(w, "loop", it.x, it.y, h.slot);
@@ -150,10 +153,12 @@ function items(w: World, h: Hero, inp: PadInput) {
         break;
       case "checkpoint":
         if (Math.abs(dx) < 0.8 && Math.abs(b.y - it.y) < 1.6) {
-          if (w.mode === "race") h.checkpoint = { x: it.x, y: it.y };
-          else if (w.teamCheckpoint.x < it.x) w.teamCheckpoint = { x: it.x, y: it.y };
-          if (!it.on || (w.mode === "race" && h.checkpoint.x === it.x && h.stats.checkpoints < 99 && it.power !== h.id)) {
-            if (!it.on) { scoreTo(w, h.slot, 50); h.stats.checkpoints++; emit(w, "checkpoint", it.x, it.y + 1.5, h.slot); }
+          if (w.mode === "race" && h.checkpoint.x < it.x) { h.checkpoint.x = it.x; h.checkpoint.y = it.y; }
+          else if (w.mode === "coop" && w.teamCheckpoint.x < it.x) w.teamCheckpoint = { x: it.x, y: it.y };
+          if (!it.on) {
+            scoreTo(w, h.slot, 50);
+            h.stats.checkpoints++;
+            emit(w, "checkpoint", it.x, it.y + 1.5, h.slot);
             it.on = true;
           }
         }
@@ -199,7 +204,8 @@ function rideLoop(w: World, h: Hero, dt: number) {
   L.a += (L.speed / LOOP_R) * dt;
   if (L.a >= Math.PI * 1.5) {
     h.loop = null;
-    b.x = L.cx + 0.05;
+    h.loopCd = 0.6;
+    b.x = L.cx + 0.6;
     b.y = L.cy - LOOP_R - b.h / 2;
     b.vx = L.speed;
     b.vy = 0;
@@ -221,14 +227,17 @@ function bounce(w: World, h: Hero, inp: PadInput, extra = 0) {
   b.grounded = false;
   h.jumpHeld = false;
   h.launched = true;
+  h.coyote = 0;
+  h.buffer = 0;
   h.combo++;
 }
 
 export function touchFoesAndBoss(w: World, h: Hero, inp: PadInput) {
   const b = h.body;
+  const falling = b.vy < 0.5;
   for (const f of w.foes) {
     if (f.state === "dead" || !overlaps(b, f.body)) continue;
-    const above = b.vy < 0.5 && b.y > f.body.y + f.body.h * 0.45;
+    const above = falling && b.y > f.body.y + f.body.h * 0.45;
     if (f.state === "ball") {
       if (f.grace > 0) continue;
       kick(f, b.x, h.slot);
@@ -295,6 +304,8 @@ function goDown(w: World, h: Hero, why: "fall" | "hit") {
   h.state = "air";
   h.stats.falls++;
   h.body.vx = h.body.vy = 0;
+  h.body.grounded = false;
+  h.body.platform = -1;
   if (why === "fall") {
     // float back up from where they fell, inside the view
     h.body.y = Math.max(h.body.y, w.cam.y - w.cam.vh / 2 + 1.5);
@@ -329,6 +340,7 @@ function stepDown(w: World, h: Hero, inp: PadInput, dt: number) {
 
 /** Back in play at (x, y), with full hearts (on a respawn) and a moment of invulnerability. */
 export function reviveAt(w: World, h: Hero, x: number, y: number, respawn: boolean) {
+  h.loopCd = 0.6;
   h.down = "";
   h.downT = 0;
   h.body.x = x;

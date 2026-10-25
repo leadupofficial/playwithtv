@@ -68,6 +68,8 @@ export interface Hero extends Mover {
   stragT: number;
   /** Height of the last ground stood on: the camera frames this instead of every jump. */
   groundY: number;
+  /** Seconds before a loop can catch this hero again. */
+  loopCd: number;
   stats: HeroStats;
 }
 

@@ -113,6 +113,28 @@ describe("world: items, springs, crates, levers, power-ups", () => {
   });
 });
 
+describe("world: loops, springs and finishing", () => {
+  it("a fast hero rides a loop once and runs on (no endless re-capture)", () => {
+    const w = play([ROW(), ROW(), ROW(), ROW(), ROW(), ROW(), ROW("   P          Q"), FLOOR]);
+    const h = w.heroes[0]!;
+    const ev = steps(w, 240, () => [inp({ x: 1, run: true })]);
+    // running (9.5 tiles/s) is above this spec's loopSpeed (8): captured once, released past the trigger
+    expect(ev.filter((k) => k === "loop").length).toBe(1);
+    expect(h.loop).toBeNull();
+    expect(h.body.x).toBeGreaterThan(20);
+  });
+  it("a JUMP press just after a spring does not cancel the launch", () => {
+    const w = play([ROW(), ROW(), ROW(), ROW(), ROW(), ROW(), ROW(), ROW(), ROW(), ROW("   P  S"), FLOOR]);
+    const h = w.heroes[0]!;
+    let peak = 0;
+    for (let i = 0; i < 120; i++) {
+      stepWorld(w, [inp({ x: h.body.x < 6.5 ? 1 : 0, jump: true, jumpPressed: i > 0 && w.events.some((e) => e.kind === "spring") })], DT);
+      peak = Math.max(peak, h.body.y);
+    }
+    expect(peak).toBeGreaterThan(1 + SPEC.feel.spring - 0.5);
+  });
+});
+
 describe("world: co-op and race rules", () => {
   it("co-op: a hero who falls becomes a bubble; a team-mate's touch revives them", () => {
     const w = play([ROW(), ROW(), ROW(), ROW(), ROW(), ROW("   P"), "#".repeat(8) + "   " + "#".repeat(29)], ["a", "b"]);

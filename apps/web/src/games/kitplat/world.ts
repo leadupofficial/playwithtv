@@ -22,7 +22,7 @@ export function newHero(slot: number, id: string, x: number, y: number, hearts: 
   return {
     ...newMover(x, y), slot, id, hearts, inv: 0, power: null, powerT: 0, shield: 0, down: "", downT: 0, checkpoint: { x, y },
     finished: false, finishT: 0, place: 0, score: 0, levelScore: 0, combo: 0, boostT: 0, flipT: 0, hurtT: 0, landT: -9, landV: 0,
-    loop: null, shotCd: 0, stragT: 0, groundY: y, stats: emptyStats(),
+    loop: null, shotCd: 0, stragT: 0, groundY: y, loopCd: 0, stats: emptyStats(),
   };
 }
 
@@ -156,7 +156,7 @@ function stepPlatforms(w: World, dt: number) {
     p.x = nx;
     p.y = ny;
     for (const h of w.heroes) {
-      if (h.body.platform !== i || !h.body.grounded) continue;
+      if (h.down || h.body.platform !== i || !h.body.grounded) continue;
       w.col.moveX(h.body, p.dx);
       h.body.y = p.y;
     }
@@ -213,6 +213,8 @@ function bumpHeroes(w: World) {
         top.body.vy = 9;
         top.jumpHeld = false;
         top.launched = true;
+        top.coyote = 0;
+        top.buffer = 0;
         low.landT = 0;
         low.landV = 8;
         top.stats.bonks++;

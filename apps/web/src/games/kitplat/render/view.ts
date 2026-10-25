@@ -50,6 +50,8 @@ export interface ViewOptions {
 export interface HeroLook { color: string; name: string }
 
 const TILE_EXTRA = 64;
+const UNIT_BOX: [number, number, number, number] = [0, 0, 1, 1];
+const PLATFORM_BOX: [number, number, number, number] = [-1.6, 0.25, 3.2, 0.9];
 
 export class PlatView {
   readonly renderer: THREE.WebGLRenderer;
@@ -120,7 +122,7 @@ export class PlatView {
       for (const t of list) {
         const s = S[t.sprite];
         if (!s) continue;
-        const bx = s.box ?? [0, 0, 1, 1];
+        const bx = s.box ?? UNIT_BOX;
         // deeper ground is darker (baked ambient occlusion, for free)
         const d = L.depth.get(t.r * w.level.w + t.c) ?? 0;
         const k = Math.max(0.42, 1 - d * 0.13);
@@ -164,7 +166,7 @@ export class PlatView {
       const t = w.col.tile(d.c, d.r);
       const s = S[d.sprite];
       if (!s) continue;
-      const bx = s.box ?? [0, 0, 1, 1];
+      const bx = s.box ?? UNIT_BOX;
       let x = d.c + bx[0], y = d.r + bx[1];
       if (d.sprite === "crate" && t !== Tile.Crate) continue;
       if (d.sprite === "crumble") {
@@ -183,7 +185,7 @@ export class PlatView {
     }
     const plat = S.platform;
     if (plat) {
-      const bx = plat.box ?? [-1.6, 0.25, 3.2, 0.9];
+      const bx = plat.box ?? PLATFORM_BOX;
       for (const p of w.col.platforms) {
         const k = (p.hw * 2) / 3;
         T.putBox(plat, 0, p.x + bx[0] * k, p.y - 1 + bx[1], bx[2] * k, bx[3]);
@@ -306,15 +308,17 @@ export class PlatView {
   }
 
   private drawGlow(w: World) {
-    const G = this.glow!, col = this.opt.glow, t = this.time;
+    const G = this.glow!, col = this.opt.glow, t = this.time, cam = w.cam;
+    const x0 = cam.x - cam.vw / 2 - 3, x1 = cam.x + cam.vw / 2 + 3;
     G.begin();
     for (const it of w.items) {
+      if (it.x < x0 || it.x > x1) continue;
       if ((it.kind === "gem" || it.kind === "biggem") && !it.taken) G.add(it.x, it.y, it.kind === "gem" ? 0.75 : 1.2, col, 0.32 + 0.08 * Math.sin(t * 4 + it.x));
       else if (it.kind === "powerup" && !it.taken) G.add(it.x, it.y, 1.3, "#ffffff", 0.35);
       else if (it.kind === "checkpoint" && it.on) G.add(it.x + 0.3, it.y + 1.5, 1.2, "#ffd27a", 0.3);
       else if (it.kind === "goal") G.add(it.x, it.y + 1.6, 2.6, "#ffe7a0", 0.35 + 0.1 * Math.sin(t * 3));
     }
-    for (const l of this.lamps) G.add(l.x, l.y, 1.5, "#ffb04a", 0.42 + 0.06 * Math.sin(t * 9 + l.x));
+    for (const l of this.lamps) if (l.x > x0 && l.x < x1) G.add(l.x, l.y, 1.5, "#ffb04a", 0.42 + 0.06 * Math.sin(t * 9 + l.x));
     for (const s of w.shots) if (s.alive) G.add(s.x, s.y, 1.0, "#fff0b0", 0.5);
     if (w.boss) for (const s of w.boss.shots) if (s.alive) G.add(s.x, s.y, 0.9, "#ff9a5a", 0.35);
     for (const h of w.heroes) if (h.power && !h.down) G.add(h.body.x, h.body.y + 0.6, 1.4, h.power.aura ?? "#fff3c4", 0.18);
@@ -340,6 +344,7 @@ export class PlatView {
     this.vignette?.dispose();
     this.fg?.dispose();
     this.renderer.dispose();
+    this.renderer.forceContextLoss(); // a 1 GB TV gets the GPU memory back now, not at garbage collection
   }
 
   /** Hero's head position in normalised screen coordinates (for name tags), into `out`. */

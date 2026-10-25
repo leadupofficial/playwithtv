@@ -58,6 +58,7 @@ export class PlatSession {
   private tags: HTMLDivElement[] = [];
   private inputs: PadInput[];
   private started = Date.now();
+  private hudKey = "";
   private loadMs = 0;
 
   constructor(private o: SessionOpts) {
@@ -129,7 +130,7 @@ export class PlatSession {
     }, o.def.theme, (id) => o.def.spec.powers.find((p) => p.id === id)?.toast ?? "Power-up!");
     o.controls.flush();
     return new Promise((resolve) => {
-      let last = performance.now(), acc = 0, frames = 0, fps = 60, fpsT = last, lastHud = 0, lastPhone = 0, time = 0;
+      let last = performance.now(), acc = 0, frames = 0, fps = 60, fpsT = last, lastHud = 0, lastDebug = 0, lastPhone = 0, time = 0;
       const frame = (now: number) => {
         if (!this.alive) return resolve();
         this.raf = requestAnimationFrame(frame);
@@ -154,7 +155,12 @@ export class PlatSession {
         this.placeTags(w);
         if (now - lastHud > 120) {
           lastHud = now;
-          o.onHud(this.hud(w, idx, count));
+          const hud = this.hud(w, idx, count);
+          const key = JSON.stringify(hud);
+          if (key !== this.hudKey) { this.hudKey = key; o.onHud(hud); }
+        }
+        if (now - lastDebug > 250) {
+          lastDebug = now;
           const info = view.info();
           o.onDebug(JSON.stringify({
             game: o.def.spec.id, phase: w.phase, level: idx + 1, levels: count, levelId: w.level.meta.id, mode: w.mode, clock: Math.ceil(w.clock),
@@ -192,7 +198,7 @@ export class PlatSession {
       : w.phase === "clear" ? { title: w.boss?.dead ? "BOSS DEFEATED!" : "LEVEL CLEAR!", sub: w.heroes.map((h) => `${this.o.players[h.slot]!.name} +${h.levelScore}`).join("   ") }
         : w.phase === "timeup" ? { title: "TIME UP!", sub: "On to the next one…" } : null;
     return {
-      level: idx + 1, levels: count, name: w.level.meta.name, clock: w.clock, mode: w.mode, phase: w.phase, card,
+      level: idx + 1, levels: count, name: w.level.meta.name, clock: Math.ceil(w.clock), mode: w.mode, phase: w.phase, card,
       boss: w.boss && w.boss.awake && !w.boss.dead ? { name: w.boss.def.name, hp: w.boss.hp, max: w.boss.def.hp } : null,
       heroes: w.heroes.map((h) => ({
         slot: h.slot, name: this.o.players[h.slot]!.name, color: this.o.players[h.slot]!.color, hearts: h.hearts, maxHearts: w.spec.hearts, gems: h.stats.gems,

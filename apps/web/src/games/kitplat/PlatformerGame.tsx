@@ -66,8 +66,9 @@ function ModeSelect({ def, humans, kit, controls, onDone }: { def: PlatGameDef; 
       const x = inp.x > 0.5 ? 1 : inp.x < -0.5 ? -1 : 0;
       if (x !== 0 && x !== lastX) setPick((p) => Math.max(0, Math.min(modes.length - 1, p + x)));
       lastX = x;
-      for (const h of humans.slice(1)) controls.read(h.id, inp);
-      if (inp.jumpPressed || inp.action) onDone(modes[pickRef.current]!);
+      let go = inp.jumpPressed || inp.action;
+      for (const h of humans.slice(1)) { controls.read(h.id, inp); go ||= inp.jumpPressed || inp.action; }
+      if (go) onDone(modes[pickRef.current]!);
     }, 50);
     const key = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") setPick(0);
