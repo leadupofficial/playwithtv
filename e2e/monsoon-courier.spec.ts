@@ -58,3 +58,24 @@ for (const tier of ["lite", "high"] as const) {
     expect(st.tier).toBe(tier);
   });
 }
+
+test("Monsoon Courier loads in under 10 s on a normal home connection (10 Mbit/s, 40 ms)", async ({ browser }) => {
+  test.setTimeout(120_000);
+  const { tv, code } = await platTv(browser, "quality=lite&mode=race");
+  const a = await joinPhone(browser, code, "Asha");
+  const cdp = await tv.context().newCDPSession(tv);
+  await cdp.send("Network.enable");
+  await cdp.send("Network.setCacheDisabled", { cacheDisabled: true });
+  await cdp.send("Network.emulateNetworkConditions", { offline: false, latency: 40, downloadThroughput: (10e6 / 8), uploadThroughput: (2e6 / 8) });
+  const t0 = Date.now();
+  await startGame(tv, "Monsoon Courier");
+  await ready(tv, a, "Asha");
+  const s = platState(tv);
+  await expect.poll(async () => (await s()).phase ?? "", { timeout: 30_000 }).toMatch(/intro|play/);
+  const total = Date.now() - t0;
+  const st = await s();
+  console.log(`monsoon load on 10 Mbit/s: assets ${st.loadMs} ms, start → level on screen ${total} ms (includes the get-ready screen)`);
+  expect(st.loadMs).toBeLessThan(10_000);
+  expect(total).toBeLessThan(15_000);
+  expect(await csp(tv)).toEqual([]);
+});

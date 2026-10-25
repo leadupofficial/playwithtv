@@ -43,4 +43,11 @@ describe("Stepwell Secrets levels", () => {
     expect(b.hp).toBe(hp - 1);
     expect(h.stats.bossHits).toBe(1);
   });
+  it("four players, in both modes, reach the end of the quick level (camera, bubbles and leash never stall)", () => {
+    for (const mode of ["coop", "race"] as const) {
+      const w = runBot(DEF.spec, 0, true, 4, mode, 0.45, 0.3, 160, 0.07);
+      expect(w.done, mode).toBe(true);
+      expect(w.heroes.some((h) => h.finished), mode).toBe(true);
+    }
+  });
 });

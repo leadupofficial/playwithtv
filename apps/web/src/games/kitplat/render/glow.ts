@@ -32,7 +32,6 @@ export class GlowBatch {
   readonly mesh: THREE.Mesh<THREE.InstancedBufferGeometry, THREE.ShaderMaterial>;
   private glow: THREE.InstancedBufferAttribute;
   private color: THREE.InstancedBufferAttribute;
-  private c = new THREE.Color();
   private attrs: THREE.InstancedBufferAttribute[];
   n = 0;
 
@@ -57,11 +56,15 @@ export class GlowBatch {
 
   begin() { this.n = 0; }
 
-  add(x: number, y: number, radius: number, color: THREE.ColorRepresentation, strength = 0.5) {
+  private cache = new Map<string, THREE.Color>();
+
+  /** Adds a halo; `color` is a CSS colour string (parsed once, then cached). */
+  add(x: number, y: number, radius: number, color: string, strength = 0.5) {
     if (this.n >= this.capacity) return;
-    this.c.set(color);
+    let c = this.cache.get(color);
+    if (!c) { c = new THREE.Color(color); this.cache.set(color, c); }
     this.glow.setXYZW(this.n, x, y, radius, strength);
-    this.color.setXYZ(this.n, this.c.r, this.c.g, this.c.b);
+    this.color.setXYZ(this.n, c.r, c.g, c.b);
     this.n++;
   }
 

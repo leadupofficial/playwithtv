@@ -24,4 +24,11 @@ describe("Monsoon Courier levels", () => {
     expect(w.done).toBe(true);
     expect(w.heroes.reduce((n, h) => n + h.stats.bossHits, 0)).toBe(DEF.spec.bosses[0]!.hp);
   });
+  it("four players, in both modes, reach the end of the quick level (camera, bubbles and leash never stall)", () => {
+    for (const mode of ["coop", "race"] as const) {
+      const w = runBot(DEF.spec, 0, true, 4, mode, 0.45, 0.3, 160, 0.07);
+      expect(w.done, mode).toBe(true);
+      expect(w.heroes.some((h) => h.finished), mode).toBe(true);
+    }
+  });
 });

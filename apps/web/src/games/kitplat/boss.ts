@@ -65,8 +65,12 @@ export function currentMove(b: Boss): BossMove {
   return list[b.move % list.length]!;
 }
 
+const ALWAYS_OPEN = new WeakMap<BossDef, boolean>();
+
 export function bossVulnerable(b: Boss): boolean {
-  return !b.dead && b.hurtT <= 0 && b.awake && (currentMove(b).vulnerable === true || b.def.pattern.every((m) => !m.vulnerable));
+  let always = ALWAYS_OPEN.get(b.def);
+  if (always === undefined) { always = b.def.pattern.every((m) => !m.vulnerable); ALWAYS_OPEN.set(b.def, always); }
+  return !b.dead && b.hurtT <= 0 && b.awake && (currentMove(b).vulnerable === true || always);
 }
 
 function next(b: Boss) {

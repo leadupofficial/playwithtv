@@ -32,6 +32,8 @@ export async function startGame(tv: Page, title: string) {
 
 /** Get-ready screen: a buttons phone practises JUMP (a hold button: press and release). */
 export async function ready(tv: Page, phone: Page, name: string) {
+  // the phone shows the game's pad once the TV has loaded the game (slower on a slow connection)
+  await expect(phone.locator(".game-pad .action", { hasText: "JUMP" }).first()).toBeVisible({ timeout: 30_000 }).catch(() => undefined);
   await holdAction(phone, "JUMP", 120).catch(() => undefined);
   await practiseUntilReady(tv, phone, name, []).catch(async (e) => {
     if (!(await tv.locator("[data-plat]").count())) throw e;

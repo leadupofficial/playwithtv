@@ -202,14 +202,19 @@ export class PlatSession {
   }
 
   private tagPos = { x: 0, y: 0 };
+  private tagLast: number[] = [];
   private placeTags(w: World) {
     const v = this.view!;
     for (const h of w.heroes) {
       const d = this.tags[h.slot];
       if (!d) continue;
       v.headOnScreen(h, this.tagPos);
-      d.style.transform = `translate(${(this.tagPos.x * 1920).toFixed(0)}px, ${(this.tagPos.y * 1080).toFixed(0)}px) translate(-50%, -100%)`;
-      d.style.opacity = h.down === "wait" ? "0" : "1";
+      const px = Math.round(this.tagPos.x * 1920), py = Math.round(this.tagPos.y * 1080), hidden = h.down === "wait" ? 1 : 0;
+      const key = px * 4096 + py + hidden * 1e8;
+      if (this.tagLast[h.slot] === key) continue; // the DOM is touched only when a tag moves
+      this.tagLast[h.slot] = key;
+      d.style.transform = `translate(${px}px, ${py}px) translate(-50%, -100%)`;
+      d.style.opacity = hidden ? "0" : "1";
     }
   }
 

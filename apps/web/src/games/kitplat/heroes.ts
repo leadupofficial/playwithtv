@@ -7,7 +7,7 @@ import { bossVulnerable, hitBoss } from "./boss";
 import { curl, kick, kill, overlaps } from "./foes";
 import { launchSpeed } from "./feel";
 import { Tile } from "./level";
-import { type MoveMods, NO_MODS, type PadInput, stepMover } from "./player";
+import { type MoveMods, NO_INPUT, NO_MODS, type PadInput, stepMover } from "./player";
 import { powerMods } from "./powerups";
 import type { Hero, World } from "./types";
 import { bossHit, emit, nearestHero, scoreTo, spikesOut } from "./world";
@@ -210,20 +210,22 @@ function rideLoop(w: World, h: Hero, dt: number) {
   b.y = L.cy + Math.sin(L.a) * LOOP_R - b.h / 2;
   b.vx = -Math.sin(L.a) * L.speed;
   b.vy = Math.cos(L.a) * L.speed;
-  items(w, h, { x: 0, y: 0, jump: false, jumpPressed: false, run: false, action: false });
+  items(w, h, NO_INPUT);
 }
 
 /** Contact with foes, balls and the boss: stomp from above, otherwise get hurt. */
+/** Bounce off something stomped: higher with JUMP held. */
+function bounce(w: World, h: Hero, inp: PadInput, extra = 0) {
+  const f0 = w.spec.feel, b = h.body;
+  b.vy = launchSpeed(f0.stomp + (inp.jump ? f0.stompBoost : 0) + extra, f0.gravity);
+  b.grounded = false;
+  h.jumpHeld = false;
+  h.launched = true;
+  h.combo++;
+}
+
 export function touchFoesAndBoss(w: World, h: Hero, inp: PadInput) {
   const b = h.body;
-  const f0 = w.spec.feel;
-  const bounce = (extra = 0) => {
-    b.vy = launchSpeed(f0.stomp + (inp.jump ? f0.stompBoost : 0) + extra, f0.gravity);
-    b.grounded = false;
-    h.jumpHeld = false;
-    h.launched = true;
-    h.combo++;
-  };
   for (const f of w.foes) {
     if (f.state === "dead" || !overlaps(b, f.body)) continue;
     const above = b.vy < 0.5 && b.y > f.body.y + f.body.h * 0.45;
@@ -231,7 +233,7 @@ export function touchFoesAndBoss(w: World, h: Hero, inp: PadInput) {
       if (f.grace > 0) continue;
       kick(f, b.x, h.slot);
       h.stats.kicks++;
-      if (above) bounce();
+      if (above) bounce(w, h, inp);
       emit(w, "kick", f.body.x, f.body.y + 0.3, h.slot);
       continue;
     }
@@ -240,7 +242,7 @@ export function touchFoesAndBoss(w: World, h: Hero, inp: PadInput) {
     if (above) {
       if (f.kind === "curler") curl(f);
       else kill(f);
-      bounce();
+      bounce(w, h, inp);
       h.stats.stomps++;
       scoreTo(w, h.slot, 100 * Math.min(8, h.combo));
       emit(w, "stomp", f.body.x, f.body.y + f.body.h, h.slot, h.combo);
@@ -250,8 +252,8 @@ export function touchFoesAndBoss(w: World, h: Hero, inp: PadInput) {
   if (boss && !boss.dead && boss.awake) {
     if (overlaps(b, boss.body, 0.15)) {
       const above = b.vy < 0.5 && b.y > boss.body.y + boss.body.h * 0.55;
-      if (above && bossVulnerable(boss) && hitBoss(boss, "stomp")) { bounce(2); bossHit(w, h.slot); }
-      else if (above) { bounce(0.5); emit(w, "bump", b.x, b.y, h.slot, 1); }
+      if (above && bossVulnerable(boss) && hitBoss(boss, "stomp")) { bounce(w, h, inp, 2); bossHit(w, h.slot); }
+      else if (above) { bounce(w, h, inp, 0.5); emit(w, "bump", b.x, b.y, h.slot, 1); }
       else if (boss.hurtT <= 0) hurt(w, h, boss.body.x, false);
     }
     for (const s of boss.shots) {

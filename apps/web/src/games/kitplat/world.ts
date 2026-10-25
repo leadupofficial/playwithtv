@@ -93,7 +93,14 @@ export function spikesOut(w: World, c: number): boolean {
   return ((w.time + (c % 4) * 0.15) % 2.4) < 1.0;
 }
 
-const targets: Target[] = [];
+const targets: Target[] = [0, 1, 2, 3].map(() => ({ x: 0, y: 0, vx: 0, grounded: false, weight: 0 }));
+let curWorld: World | null = null;
+const onBossEvent = (e: BossEvent) => { if (curWorld) bossEvent(curWorld, e); };
+
+function anyHeroIn(w: World, t: Tile): boolean {
+  for (const h of w.heroes) if (!h.down && w.col.touches(h.body, t, 0.02)) return true;
+  return false;
+}
 
 /** Advances the world by dt (DT). `inputs[slot]`; edges (jumpPressed, action) are read once. Clears w.events first. */
 export function stepWorld(w: World, inputs: PadInput[], dt: number) {
@@ -129,7 +136,8 @@ export function stepWorld(w: World, inputs: PadInput[], dt: number) {
   }
   if (w.boss) {
     const near = nearestHero(w, w.boss.body.x);
-    stepBoss(w.boss, w.col, dt, near ? near.body.x : NaN, near ? near.body.y : NaN, (e) => bossEvent(w, e));
+    curWorld = w;
+    stepBoss(w.boss, w.col, dt, near ? near.body.x : NaN, near ? near.body.y : NaN, onBossEvent);
     if (w.boss.awake && !w.boss.dead) { w.cam.lockX0 = w.boss.arena[0]; w.cam.lockX1 = w.boss.arena[1]; }
   }
   stepShots(w, dt);
@@ -164,7 +172,7 @@ function stepTiles(w: World, dt: number) {
       if (w.gateT[g] === 0) {
         // never close a gate on someone: wait until it is clear
         const t = g === 0 ? Tile.GateA : Tile.GateB;
-        if (w.heroes.some((h) => !h.down && w.col.touches(h.body, t, 0.02))) w.gateT[g] = 0.2;
+        if (anyHeroIn(w, t)) w.gateT[g] = 0.2;
         else w.col.gateOpen[g] = false;
       }
     }
@@ -183,7 +191,8 @@ function stepTiles(w: World, dt: number) {
       w.crumble[i] = Math.min(0, v + dt);
       if (w.crumble[i] === 0) {
         const c = i % L.w, r = Math.floor(i / L.w);
-        const busy = w.heroes.some((h) => Math.abs(h.body.x - (c + 0.5)) < 0.5 + h.body.hw && h.body.y < r + 1 && h.body.y + h.body.h > r);
+        let busy = false;
+        for (const h of w.heroes) if (Math.abs(h.body.x - (c + 0.5)) < 0.5 + h.body.hw && h.body.y < r + 1 && h.body.y + h.body.h > r) busy = true;
         if (busy) w.crumble[i] = -0.5;
         else setTile(L, c, r, Tile.Crumble);
       }
@@ -289,8 +298,9 @@ function leader(w: World): Hero | null {
 }
 
 function updateCamera(w: World, dt: number) {
-  targets.length = 0;
+  targets.length = w.heroes.length;
   const lead = leader(w);
+  let any = false;
   for (const h of w.heroes) {
     const active = !h.down && !(h.finished && w.mode === "race");
     const weight = !active ? 0 : w.mode === "race" && h === lead ? 2.5 : 1;
@@ -298,9 +308,11 @@ function updateCamera(w: World, dt: number) {
     let y = h.groundY;
     if (h.body.y < y - 0.5) y = h.body.y + 0.5;
     else if (h.body.y > y + 3.5) y = h.body.y - 3.5;
-    targets.push({ x: h.body.x, y, vx: h.body.vx, grounded: h.body.grounded, weight });
+    const t = (targets[h.slot] ??= { x: 0, y: 0, vx: 0, grounded: false, weight: 0 });
+    t.x = h.body.x; t.y = y; t.vx = h.body.vx; t.grounded = h.body.grounded; t.weight = weight;
+    if (weight > 0) any = true;
   }
-  if (targets.every((t) => t.weight === 0)) for (const [i, h] of w.heroes.entries()) if (!h.down) targets[i]!.weight = 1;
+  if (!any) for (const h of w.heroes) if (!h.down) targets[h.slot]!.weight = 1;
   updateCam(w.cam, targets, w.level.w, w.level.h, dt);
 }
 
@@ -322,8 +334,9 @@ function rules(w: World, dt: number, lead: Hero | null) {
     }
   }
   if (w.mode === "coop") {
-    const alive = w.heroes.filter((h) => !h.down);
-    if (alive.length === 0) {
+    let alive = 0;
+    for (const h of w.heroes) if (!h.down) alive++;
+    if (alive === 0) {
       w.wipeT += dt;
       if (w.wipeT > 1.6) {
         w.wipeT = 0;
@@ -335,9 +348,10 @@ function rules(w: World, dt: number, lead: Hero | null) {
       }
     } else w.wipeT = 0;
   }
-  const finished = w.heroes.filter((h) => h.finished).length;
+  let finished = 0;
+  for (const h of w.heroes) if (h.finished) finished++;
   const bossDone = w.boss?.dead && w.boss.deadT > 1.6;
-  const all = w.heroes.every((h) => h.finished);
+  const all = finished === w.heroes.length;
   const grace = w.mode === "race" ? 12 : 6;
   if (bossDone || all || (finished > 0 && w.time - w.firstFinishT > grace)) {
     w.phase = "clear";
