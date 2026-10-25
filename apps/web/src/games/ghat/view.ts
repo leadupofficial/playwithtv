@@ -75,7 +75,7 @@ export class GhatView {
       this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     } else {
       // no GTAO: at 1080p it alone cost ~15 ms on an M4; the sprites' and models' baked shading carries the look
-      this.cine = createCinematic(canvas, { ...q, resolution: res, post: { ...q.post, ao: false } }, { scene: this.scene, camera: this.extra[0] });
+      this.cine = createCinematic(canvas, { ...q, resolution: res, post: { ...q.post, ao: false } }, { scene: this.scene, camera: this.extra[0], adaptive: false }); // GHAT RUSH runs its own guard (session.ts), which can also step the tier down
       this.renderer = this.cine.renderer;
       // ACES: more contrast and colour than AgX for a rainy, overcast scene (AgX greys it out)
       this.renderer.toneMapping = THREE.ACESFilmicToneMapping;

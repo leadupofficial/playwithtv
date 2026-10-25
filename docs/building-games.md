@@ -231,7 +231,7 @@ forces a tier on any page.
 |---|---|---|---|
 | `lite` | the owner's TV: 1 GB, Mali-G31, WebView | Blender-lit **sprite sheets** (16 directions, contact shadows, rim light, AgX) + **H.264 video loops** (hardware-decoded) + cheap 3D for the playfield | 1280×720, no shadow maps, no post, Lambert/Toon, 1–10 draw calls for sprites |
 | `high` | a better TV box, a laptop with integrated graphics | real-time PBR, HDRI image-based light, soft shadow map, AgX, bloom + FXAA | 1920×1080, 1024 px shadows, textures ≤ 1024 |
-| `ultra` | a laptop/PC with a strong GPU casting or on HDMI ("power-host mode") | as high + GTAO ambient occlusion, SMAA, bigger shadows | 2560×1440, 2048 px shadows, textures ≤ 2048 |
+| `ultra` | a laptop/PC with a strong GPU casting or on HDMI ("power-host mode") | as high + GTAO ambient occlusion, SMAA, bigger shadows | 1920×1080, 2048 px shadows, textures ≤ 2048 |
 
 ### Reading the tier (`apps/web/src/quality/`)
 
@@ -326,6 +326,18 @@ cine.setBloom(0.6);                                                  // punch on
 `.hdr` (HDRLoader) and `.exr` (EXRLoader) fetch the same-origin file and decode in JavaScript: they work under the
 CSP (tested in `e2e/showroom.spec.ts`). Use 1k HDRIs (~1.2 MB) for lighting; blur the background
 (`blur: 0.04`) or replace it with your own scenery. Load GLBs only through `kit3d/assets.ts` `loadGltf()`.
+
+**Adaptive quality (on by default).** `createCinematic()` includes a frame governor (`kit3d/governor.ts`,
+unit-tested) that keeps high/ultra smooth on whatever laptop or TV box they land on. It times every frame, including
+games that call `cine.composer.render()` themselves, and steps quality down after two slow seconds (< 50 fps):
+ambient occlusion off, then render scale 0.85 → 0.75 → 0.67 of the profile's resolution, then bloom off. It steps
+back up one level after five smooth seconds (≥ 57 fps), and a step up that fails at once is blocked for a while, so
+it never oscillates. The first three seconds (shader compilation) don't count. Viewports stay in CSS-size pixels:
+`kit3d/multiview.ts` scales split-screen rects for you. Show `cine.adaptive()` (`{ level, scale, ao, bloom, fps }`)
+in your debug attribute; pass `{ adaptive: false }` to opt out. A game that still runs slowly at the floor (0.67)
+is limited by draw calls or CPU, not pixels: merge static meshes, instance repeats, and keep shadow casters few.
+Measured on GHAT RUSH (Apple M4, Metal), before → after: high 1 player 51–54 → 54–58 fps, high 2 players 30–49 →
+50–60, ultra 1 player 16–21 → 60, ultra 2 players 40 → 60. Ultra renders at 1080p, which is what a TV shows anyway.
 
 ### Making assets: the Blender pipeline (`tools/blender/`, see its README)
 

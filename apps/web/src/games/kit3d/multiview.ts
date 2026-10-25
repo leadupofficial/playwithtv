@@ -23,6 +23,7 @@ export interface View {
 }
 
 const clear = new THREE.Color();
+const size = new THREE.Vector2();
 
 function drawViews(renderer: THREE.WebGLRenderer, scene: THREE.Scene, views: View[], target: THREE.WebGLRenderTarget | null) {
   const autoClear = renderer.autoClear;
@@ -30,11 +31,14 @@ function drawViews(renderer: THREE.WebGLRenderer, scene: THREE.Scene, views: Vie
   renderer.setRenderTarget(target);
   renderer.getClearColor(clear);
   renderer.clear();
+  // rects are in the renderer's CSS-size pixels; a render target is sized × pixel ratio (adaptive render scale)
+  const k = target ? target.width / renderer.getSize(size).x : 1;
   for (const v of views) {
     v.before?.();
     if (target) {
-      target.viewport.set(v.x, v.y, v.w, v.h);
-      target.scissor.set(v.x, v.y, v.w, v.h);
+      const x = Math.round(v.x * k), y = Math.round(v.y * k), w = Math.round(v.w * k), h = Math.round(v.h * k);
+      target.viewport.set(x, y, w, h);
+      target.scissor.set(x, y, w, h);
       target.scissorTest = true;
       renderer.setRenderTarget(target); // re-applies the target's viewport and scissor
     } else {

@@ -5,7 +5,7 @@
  *   lite   the owner's 1 GB Android TV (Mali-G31, fill-rate bound): pre-rendered sprites, video backdrops,
  *          Lambert/Toon, no shadow maps, no post-processing, 1280×720
  *   high   a decent TV box, a laptop with integrated graphics: PBR, HDRI lighting, soft shadows, bloom + FXAA
- *   ultra  a laptop/PC with a strong GPU casting to the TV ("power-host mode"): bigger shadow maps, AO, SMAA, 1440p
+ *   ultra  a laptop/PC with a strong GPU casting to the TV ("power-host mode"): bigger shadow maps, AO, SMAA (1080p: what a TV shows anyway)
  */
 
 export type Tier = "lite" | "high" | "ultra";
@@ -170,7 +170,7 @@ const PROFILES: Record<Tier, QualityProfile> = {
     toneMapping: "agx", maxTexture: 1024, particleBudget: 800, assetSuffix: "-high", prerendered: false,
   },
   ultra: {
-    tier: "ultra", pixelRatioCap: 2, resolution: { w: 2560, h: 1440 }, msaa: false, materials: "physical", envMap: true,
+    tier: "ultra", pixelRatioCap: 2, resolution: { w: 1920, h: 1080 }, msaa: false, materials: "physical", envMap: true,
     shadows: { enabled: true, mapSize: 2048, soft: true }, post: { level: 2, bloom: true, ao: true, aa: "smaa" },
     toneMapping: "agx", maxTexture: 2048, particleBudget: 3000, assetSuffix: "-ultra", prerendered: false,
   },
