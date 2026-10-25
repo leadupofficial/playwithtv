@@ -256,7 +256,7 @@ const IMPLEMENTED: GameManifest[] = [
       { asset: "sound effects (Kenney Sci-Fi Sounds, Interface Sounds)", licence: "CC0 1.0", source: "https://kenney.nl/assets/sci-fi-sounds · https://kenney.nl/assets/interface-sounds" },
       { asset: "body tracking runtime (MediaPipe Tasks Vision 0.10.35) and Pose Landmarker lite model, self-hosted", licence: "Apache-2.0", source: "https://ai.google.dev/edge/mediapipe" },
     ],
-    controlModes: ["camera", "buttons", "motion"], automatedTestStatus: "unit+e2e",
+    controlModes: ["camera", "buttons", "motion"], perfClass: "camera", automatedTestStatus: "unit+e2e",
   },
   {
     id: "emoji-dhamaka",
@@ -310,7 +310,7 @@ const IMPLEMENTED: GameManifest[] = [
       { asset: "announcer voice: Kenney Voiceover Pack", licence: "CC0 1.0", source: "https://kenney.nl/assets/voiceover-pack" },
       THREE,
     ],
-    controlModes: ["buttons", "touchpad", "motion"], automatedTestStatus: "unit+e2e",
+    controlModes: ["buttons", "touchpad", "motion"], perfClass: "heavy", automatedTestStatus: "unit+e2e",
   },
   {
     id: "ghat-rush",
@@ -338,7 +338,7 @@ const IMPLEMENTED: GameManifest[] = [
       { asset: "impact, interface and cloth sounds, countdown voice: Kenney audio packs", licence: "CC0 1.0", source: "https://kenney.nl/assets" },
       THREE,
     ],
-    controlModes: ["hybrid", "buttons", "motion"], automatedTestStatus: "unit+e2e",
+    controlModes: ["hybrid", "buttons", "motion"], perfClass: "heavy", automatedTestStatus: "unit+e2e",
   },
   {
     id: "gully-super-over",
@@ -367,7 +367,7 @@ const IMPLEMENTED: GameManifest[] = [
       { asset: "Baloo 2, Baloo Thambi 2, Noto Sans Tamil / Devanagari fonts", licence: "OFL-1.1", source: "https://github.com/EkType/Baloo2" },
       THREE,
     ],
-    controlModes: ["motion", "buttons", "touchpad"], automatedTestStatus: "unit+e2e",
+    controlModes: ["motion", "buttons", "touchpad"], perfClass: "heavy", automatedTestStatus: "unit+e2e",
   },
   {
     id: "kalari-clash",
@@ -394,7 +394,7 @@ const IMPLEMENTED: GameManifest[] = [
       { asset: "impact, interface and cloth sounds, announcer voice: Kenney Impact Sounds, Interface Sounds, RPG Audio, Voiceover Pack", licence: "CC0 1.0", source: "https://kenney.nl/assets" },
       THREE,
     ],
-    controlModes: ["buttons", "touchpad", "motion"], automatedTestStatus: "unit+e2e",
+    controlModes: ["buttons", "touchpad", "motion"], perfClass: "heavy", automatedTestStatus: "unit+e2e",
   },
   {
     id: "tiffin-tornado",
@@ -422,7 +422,7 @@ const IMPLEMENTED: GameManifest[] = [
       { asset: "sound effects: Kenney Interface Sounds, Impact Sounds, RPG Audio, Voiceover Pack; sizzle, rails, horn and bell synthesised in code", licence: "CC0 1.0", source: "https://kenney.nl/assets" },
       THREE,
     ],
-    controlModes: ["buttons", "touchpad", "motion"], automatedTestStatus: "unit+e2e",
+    controlModes: ["buttons", "touchpad", "motion"], perfClass: "heavy", automatedTestStatus: "unit+e2e",
   },
   {
     id: "monsoon-courier",

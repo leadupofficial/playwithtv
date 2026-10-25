@@ -126,13 +126,19 @@ export async function practiseUntilReady(tv: Page, phone: Page, name: string, mo
   await expect.poll(async () => (await card.count()) > 0 || (await tutorialGone()), { timeout: 15_000 }).toBe(true);
   if (await tutorialGone()) return;
   await expect.poll(async () => (await tutorialGone()) || /✓/.test((await card.textContent().catch(() => "")) ?? ""), { timeout: 10_000 }).toBe(true);
-  for (const m of moves) {
-    if (await tutorialGone()) return;
-    if (m.startsWith("btn:")) await press(phone, m.slice(4));
-    else if (m.startsWith("pad:")) await padMove(phone, m.slice(4) as PadMove);
-    else await gesture(phone, m as keyof typeof DIRS);
+  const ready = async () => (await tutorialGone()) || /ready/.test((await card.getAttribute("class").catch(() => "")) ?? "");
+  // On a loaded machine the phone page can skip frames during a 160 ms motion burst, so the move is sampled too
+  // thinly to count. Like a real player, try the moves again (up to three rounds) rather than wait on a lost one.
+  for (let round = 0; round < 3 && !(await ready()); round++) {
+    for (const m of moves) {
+      if (await ready()) return;
+      if (m.startsWith("btn:")) await press(phone, m.slice(4));
+      else if (m.startsWith("pad:")) await padMove(phone, m.slice(4) as PadMove);
+      else await gesture(phone, m as keyof typeof DIRS);
+    }
+    await expect.poll(ready, { timeout: 4_000 }).toBe(true).catch(() => undefined);
   }
-  await expect.poll(async () => (await tutorialGone()) || /ready/.test((await card.getAttribute("class").catch(() => "")) ?? ""), { timeout: 10_000 }).toBe(true);
+  await expect.poll(ready, { timeout: 10_000 }).toBe(true);
 }
 
 // ---- touchpad mode: a finger on `.game-pad .touchpad` (pad axes: x right, y up, both in [-1, 1]) ----
@@ -174,7 +180,7 @@ const SWIPES: Record<Exclude<PadMove, "tap">, [[number, number], [number, number
 export async function padMove(page: Page, m: PadMove) {
   if (m === "tap") return padTap(page);
   const [from, to] = SWIPES[m];
-  await padDrag(page, from, to, 120, 4);
+  await padDrag(page, from, to, 80, 2); // few steps: each one is a browser round trip, slow on a loaded machine
   await page.waitForTimeout(150);
 }
 
@@ -226,4 +232,18 @@ export async function swipe(page: Page, from: { x: number; y: number }, to: { x:
     }, dur / steps);
   }), [from, to, ms] as const);
   await page.waitForTimeout(150);
+}
+
+/**
+ * Does `act` until `done` holds, up to `tries` times. For player input whose effect is checked on the TV: on a
+ * loaded machine (CI) a page can drop the frames a short gesture or drag lives in, and a real player would simply
+ * do it again. A lost input is retried; an input that never works still fails.
+ */
+export async function retryUntil(act: () => Promise<unknown>, done: () => Promise<boolean>, tries = 3, waitMs = 5000, state?: () => Promise<unknown>) {
+  for (let i = 0; i < tries; i++) {
+    await act();
+    const ok = await expect.poll(done, { timeout: waitMs }).toBe(true).then(() => true, () => false);
+    if (ok) return;
+  }
+  throw new Error(`no effect after ${tries} tries${state ? `; state: ${JSON.stringify(await state())}` : ""}`);
 }

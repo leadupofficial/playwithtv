@@ -27,7 +27,9 @@ export function Touchpad({ onMove, onSwipe }: { onMove(x: number, y: number): vo
       onPointerDown={(e) => {
         capture(e);
         const p = pos(e);
-        start.current = { ...p, t: performance.now(), id: e.pointerId };
+        // event timestamps, not "now": on a busy phone the handler can run late, and a real tap or swipe must
+        // not turn into nothing because of it
+        start.current = { ...p, t: e.timeStamp, id: e.pointerId };
         onMove(p.x, p.y);
       }}
       onPointerMove={(e) => {
@@ -41,7 +43,7 @@ export function Touchpad({ onMove, onSwipe }: { onMove(x: number, y: number): vo
         onMove(0, 0);
         if (!s || s.id !== e.pointerId) return;
         const p = pos(e);
-        const dx = (p.x - s.x) / 2, dy = (p.y - s.y) / 2, dt = performance.now() - s.t;
+        const dx = (p.x - s.x) / 2, dy = (p.y - s.y) / 2, dt = e.timeStamp - s.t;
         if (dt < TAP_MS && Math.hypot(dx, dy) < TAP_MOVE) return onSwipe("tap");
         if (dt > SWIPE_MS || Math.hypot(dx, dy) < SWIPE_MIN) return;
         onSwipe(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "swipe-right" : "swipe-left") : dy > 0 ? "swipe-up" : "swipe-down");

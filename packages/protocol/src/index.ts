@@ -7,6 +7,7 @@
  * 4 Hz heartbeat, with a per-player sequence number: a lost or reordered frame is simply superseded,
  * and a button can never stay "stuck" after a disconnect (the hub tells the TV to clear that player).
  */
+import { PERF_CLASSES } from "./perfBudget.js";
 import "./zod-config.js";
 import { z } from "zod";
 import { ImpressionItems } from "./ads.js";
@@ -242,9 +243,12 @@ export const GameManifest = z.object({
   automatedTestStatus: z.enum(["none", "unit", "unit+e2e"]),
   /** Control modes the game offers on phones, best first (see controls.ts). */
   controlModes: z.array(z.enum(["buttons", "motion", "hybrid", "touchpad", "camera"])).optional(),
+  /** Performance class CI holds the game to (perfBudget.ts, docs/performance.md). Absent = "light". */
+  perfClass: z.enum(PERF_CLASSES).optional(),
 });
 export type GameManifest = z.infer<typeof GameManifest>;
 
 export { CATALOG, findGame } from "./catalog.js";
 export * from "./ads.js";
 export * from "./controls.js";
+export * from "./perfBudget.js";

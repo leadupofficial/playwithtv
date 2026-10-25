@@ -13,6 +13,7 @@
     "docs:catalogue": "pnpm --filter @playwithtv/server exec tsx ../../scripts/catalogue-doc.ts",
     "hooks:install": "git config core.hooksPath scripts/git-hooks",
     "e2e:prod": "playwright test -c playwright.prod.config.ts",
+    "perf": "playwright test -c playwright.perf.config.ts",
     "ship": "sh scripts/deploy.sh",
     "content:check": "pnpm --filter @playwithtv/server exec tsx ../../scripts/content-check.ts",
     "assets:sprites": "blender -b --factory-startup -P tools/blender/render_sprites.py --",

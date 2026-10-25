@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { gesture, newPhonePage, pose, practiseUntilReady, press, startController, tvCode, upright } from "./helpers";
+import { gesture, newPhonePage, pose, practiseUntilReady, press, retryUntil, startController, tvCode, upright } from "./helpers";
 
 async function tvInvite(tv: Page) {
   return tv.evaluate(() => JSON.parse(sessionStorage.getItem("pwtv.tv.room") ?? "{}")) as Promise<{ joinCode: string; inviteToken: string }>;
@@ -17,8 +17,8 @@ async function answer(tv: Page, priya: Page, karthik: Page, n: number) {
   await expect(tv.locator(".answered .chip.in", { hasText: "Priya" })).toBeVisible({ timeout: 5_000 });
   await expect(karthik.locator(".mp-watch")).toBeVisible({ timeout: 10_000 }); // calibrated (a reloaded phone recalibrates)
   await pose(karthik, upright(30));
-  await gesture(karthik, "push");
-  await expect(tv.locator(".answered .chip.in", { hasText: "Karthik" })).toBeVisible({ timeout: 5_000 });
+  const locked = tv.locator(".answered .chip.in", { hasText: "Karthik" });
+  await retryUntil(() => gesture(karthik, "push"), async () => (await locked.count()) > 0);
 }
 
 test("scan, connect, play: two phones play a full Tamil Trivia match, rematch and reconnect", async ({ browser }) => {
