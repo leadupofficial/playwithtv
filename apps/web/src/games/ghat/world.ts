@@ -4,6 +4,7 @@
  * lighting baked in. High/ultra: PBR (wet glossy road with a roughness map, image-based light from the HDRI).
  */
 import * as THREE from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { QualityProfile } from "../../quality/tier";
 import { HAIRPIN_GHAT } from "./course";
 import { frameAt, toWorld, type Track } from "./track";
@@ -33,19 +34,14 @@ export function segmentStart(name: string): number {
   return 0;
 }
 
-function skyDome(): THREE.Mesh {
+function skyDome(radius = 900): THREE.Mesh {
   // a band of the sphere from SKY_LAT[0] to SKY_LAT[1], plus a cap in the top colour
   const lat0 = THREE.MathUtils.degToRad(SKY_LAT[0]), lat1 = THREE.MathUtils.degToRad(SKY_LAT[1]);
-  const g = new THREE.SphereGeometry(900, 48, 12, 0, Math.PI * 2, Math.PI / 2 - lat1, lat1 - lat0);
+  const g = new THREE.SphereGeometry(radius, 36, 9, 0, Math.PI * 2, Math.PI / 2 - lat1, lat1 - lat0);
   const tex = skyPanorama();
   const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: tex, side: THREE.BackSide, fog: false, depthWrite: false }));
-  const cap = new THREE.Mesh(new THREE.SphereGeometry(900, 24, 4, 0, Math.PI * 2, 0, Math.PI / 2 - lat1 + 0.01),
-    new THREE.MeshBasicMaterial({ color: "#4f5f66", side: THREE.BackSide, fog: false, depthWrite: false }));
-  m.add(cap);
   m.renderOrder = -10;
-  cap.renderOrder = -10;
   m.frustumCulled = false;
-  cap.frustumCulled = false;
   return m;
 }
 
@@ -99,7 +95,7 @@ export function buildWorld(track: Track, kit: PropKit, q: QualityProfile): World
   }
   disposables.push(roadMat);
   const bridgeSeg = HAIRPIN_GHAT.segments.findIndex((s) => s.name === "River Bridge");
-  for (const ch of buildRoad(track, { bakeLight: lite, bridgeSeg })) {
+  for (const ch of buildRoad(track, { bakeLight: lite, bridgeSeg, per: lite ? 60 : 45, lite })) {
     const m = new THREE.Mesh(ch.geometry, roadMat);
     m.receiveShadow = q.shadows.enabled;
     group.add(m);
@@ -108,10 +104,15 @@ export function buildWorld(track: Track, kit: PropKit, q: QualityProfile): World
 
   // the river / reservoir in the valley
   const water = new THREE.Mesh(
-    new THREE.PlaneGeometry(2400, 2400).rotateX(-Math.PI / 2),
+    new THREE.PlaneGeometry(lite ? 420 : 2400, lite ? 420 : 2400).rotateX(-Math.PI / 2),
     lite ? new THREE.MeshBasicMaterial({ color: "#56706c" }) : new THREE.MeshStandardMaterial({ color: "#2e4a48", roughness: 0.08, metalness: 0.1, envMapIntensity: 1.2 }),
   );
   water.position.y = WATER_Y;
+  if (lite) {
+    const b = frameAt(track, segmentStart("River Bridge") + 40);
+    water.position.x = b.x;
+    water.position.z = b.z;
+  }
   water.receiveShadow = q.shadows.enabled;
   group.add(water);
   disposables.push(water.geometry, water.material as THREE.Material);
@@ -208,7 +209,33 @@ export function buildWorld(track: Track, kit: PropKit, q: QualityProfile): World
   stall.rotation.y = sf.heading - Math.PI / 2;
   group.add(stall);
 
-  const sky = skyDome();
+  // lite: every plain-coloured prop (stall, gantry posts, sign poles) becomes ONE vertex-coloured mesh
+  if (lite) {
+    group.updateMatrixWorld(true);
+    const solids: THREE.Mesh[] = [];
+    group.traverse((o) => {
+      const m = o as THREE.Mesh;
+      const mat = m.material as THREE.MeshBasicMaterial | undefined;
+      if (m.isMesh && mat && !mat.map && !mat.vertexColors && m !== water && m.geometry.type !== "SphereGeometry") solids.push(m);
+    });
+    const parts = solids.map((m) => {
+      const g = (m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone()).applyMatrix4(m.matrixWorld);
+      const c = (m.material as THREE.MeshBasicMaterial).color;
+      const col = new Float32Array(g.getAttribute("position").count * 3);
+      for (let i = 0; i < col.length; i += 3) col.set([c.r, c.g, c.b], i);
+      for (const k of Object.keys(g.attributes)) if (k !== "position") g.deleteAttribute(k);
+      g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+      return g;
+    });
+    if (parts.length) {
+      for (const m of solids) m.removeFromParent();
+      const merged = new THREE.Mesh(mergeGeometries(parts)!, new THREE.MeshBasicMaterial({ vertexColors: true }));
+      group.add(merged);
+      disposables.push(merged.geometry, merged.material);
+    }
+  }
+
+  const sky = skyDome(lite ? 160 : 600); // inside the camera's far plane (lite draws only 172 m)
   group.add(sky);
   disposables.push(sky.geometry, sky.material as THREE.Material, (sky.material as THREE.MeshBasicMaterial).map!);
 

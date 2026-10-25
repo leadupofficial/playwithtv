@@ -82,11 +82,11 @@ export class GhatAudio {
     if (!e || !this.ctx) return;
     this.resume();
     const t = this.ctx.currentTime;
-    const f = 55 + speed * 120 + (boosting ? 25 : 0);
+    const f = 50 + speed * 230 + (boosting ? 45 : 0);
     e.osc.frequency.setTargetAtTime(f, t, 0.05);
     e.sub.frequency.setTargetAtTime(f / 2, t, 0.05);
     e.filter.frequency.setTargetAtTime(500 + speed * 1400 + (boosting ? 900 : 0), t, 0.08);
-    e.gain.gain.setTargetAtTime(on ? (0.05 + speed * 0.05) / Math.max(1, this.engines.length * 0.7) : 0, t, 0.1);
+    e.gain.gain.setTargetAtTime(on ? (0.07 + speed * 0.1) / Math.max(1, this.engines.length * 0.7) : 0, t, 0.1);
   }
 
   thunder() {

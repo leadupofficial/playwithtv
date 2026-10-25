@@ -56,7 +56,8 @@ export class ChaseCam {
       const want = p.travel * 0.75 + (p.travel + wrapAngle(p.yaw - p.travel)) * 0.25;
       this.yaw += wrapAngle(want - this.yaw) * (1 - Math.exp(-dt * 4.5));
       const near = p.kind === "scooter" ? 0.8 : p.kind === "car" ? 1.06 : 1;
-      const dist = (4.4 + speedFrac * 1.3) * near, height = (1.95 + speedFrac * 0.2) * (0.9 + near * 0.1);
+      // pull back and drop a little as speed builds: the road rushes at you
+      const dist = (4.0 + speedFrac * 2.3) * near, height = (2.0 - speedFrac * 0.15) * (0.9 + near * 0.1);
       const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw);
       tmp.set(p.x - fx * dist, p.y + height, p.z - fz * dist);
       // the yaw is smoothed, the distance is not (a positional lag would leave the car 3 m further away at speed)
@@ -67,7 +68,7 @@ export class ChaseCam {
       look.set(p.x + fx * 4, p.y + 1.0, p.z + fz * 4);
       cam.lookAt(look);
       cam.rotateZ(-p.drift * 0.035);
-      const target = 60 + speedFrac * 13 + (this.kick > 0 ? 9 : 0);
+      const target = 56 + speedFrac * speedFrac * 24 + (this.kick > 0 ? 14 : 0);
       this.fov += (target - this.fov) * (1 - Math.exp(-dt * (this.kick > 0 ? 8 : 3)));
     }
     this.kick = Math.max(0, this.kick - dt);

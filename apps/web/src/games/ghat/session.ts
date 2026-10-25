@@ -4,7 +4,8 @@
  * component only mounts it and draws the HUD it reports.
  */
 import type { PlayerView } from "@playwithtv/protocol";
-import type { QualityProfile } from "../../quality/tier";
+import { profileFor, type QualityProfile, type Tier } from "../../quality/tier";
+import { AdaptiveQuality } from "../../quality/adaptive";
 import type { ControlPlayers } from "../controlKit";
 import type { GameBridge } from "../types";
 import { GameClock } from "../kit3d/juice";
@@ -24,6 +25,8 @@ import type { HudState, PlayerHud } from "./Hud";
 
 const CPU_CREW: Array<[string, string]> = [["Rapid Rani", "#ff9f1c"], ["Chai Charlie", "#2ec4b6"], ["Ghat Guru", "#b5179e"], ["Monsoon Mani", "#7bd389"], ["Hairpin Hari", "#f15bb5"], ["Tea Leaf Tara", "#00bbf9"]];
 const KIND_ORDER: Kind[] = ["auto", "scooter", "car"];
+/** `?adaptive=0` turns the frame-rate guard off (measuring a tier's raw cost). */
+const ADAPTIVE = typeof location === "undefined" || new URLSearchParams(location.search).get("adaptive") !== "0";
 const ORD = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th"];
 
 export interface SessionOpts { quick: boolean; seed: number; profile: QualityProfile }
@@ -51,6 +54,7 @@ export class Session {
   private time = 0;
   private lastPhone = 0;
   private lastWreckBy = new Map<string, string>();
+  private rumbleAt = new Map<string, number>();
   private racerPoses: RacerPose[] = [];
   private startedAt = Date.now();
   /** Smoothed CPU milliseconds per frame: simulation, scene dressing, draw submission. */
@@ -80,10 +84,46 @@ export class Session {
     this.layout = splitLayout(this.humans.length);
   }
 
+  /** The profile in use (the adaptive guard may have stepped down from the detected one). */
+  profile!: QualityProfile;
+  private guard!: AdaptiveQuality;
+  private rebuilding = false;
+
   async load(canvas: HTMLCanvasElement, onProgress: (p: number) => void) {
-    const field = this.race.racers.map((r) => ({ kind: r.kind, color: this.colors.get(r.id)! }));
-    const [view] = await Promise.all([GhatView.create(canvas, this.o.profile, this.race.track, field, this.humans.length, onProgress), this.audio.load()]);
+    // frame-rate guard: starts from what it learned on this device last time, steps down if a match runs slow
+    this.guard = new AdaptiveQuality({ game: "ghat-rush", tier: this.o.profile.tier, features: ["shadows-small", "shadows", "bloom"] });
+    const tier = this.guard.state.tier;
+    this.profile = tier === this.o.profile.tier ? this.o.profile : profileFor(tier);
+    const [view] = await Promise.all([this.makeView(canvas, this.profile, onProgress), this.audio.load()]);
     this.view = view;
+  }
+
+  private async makeView(canvas: HTMLCanvasElement, profile: QualityProfile, onProgress?: (p: number) => void) {
+    const field = this.race.racers.map((r) => ({ kind: r.kind, color: this.colors.get(r.id)! }));
+    const view = await GhatView.create(canvas, profile, this.race.track, field, this.humans.length, onProgress);
+    if (this.guard.state.scale < 1) view.setScale(this.guard.state.scale);
+    for (const f of this.guard.state.dropped) view.drop(f);
+    return view;
+  }
+
+  /** Steps the whole view down a tier mid-match: a new canvas is built off-screen, then swapped in. */
+  private rebuild(tier: Tier) {
+    this.rebuilding = true;
+    const old = this.view;
+    const canvas = document.createElement("canvas");
+    canvas.className = old.canvas.className;
+    old.canvas.after(canvas);
+    this.profile = profileFor(tier);
+    void this.makeView(canvas, this.profile).then((v) => {
+      this.view = v;
+      old.canvas.style.display = "none";
+      old.dispose();
+      old.renderer.forceContextLoss();
+      this.rebuilding = false;
+    }).catch(() => {
+      canvas.remove();
+      this.rebuilding = false;
+    });
   }
 
   private say(id: string, text: string, color = "#fff", big = false) {
@@ -319,7 +359,16 @@ export class Session {
         const p = racers.find((r) => r.id === id)!;
         const r = race.racers.find((x) => x.id === id)!;
         const cam = this.view.cams[i]!;
-        cam.update(p, realDt, Math.min(1, r.v / 40), now / 1000);
+        cam.update(p, realDt, Math.min(1.15, r.v / 44), now / 1000);
+        // rumble strips: a buzz near the edge at speed
+        if (r.v > 15 && r.wreckT <= 0 && Math.abs(r.d) > race.track.hw[Math.floor(((r.s % race.track.length) + race.track.length) % race.track.length / 2) % race.track.n]! - 1.6) {
+          cam.shake(realDt * 1.2);
+          if (now - (this.rumbleAt.get(id) ?? 0) > 350) {
+            this.rumbleAt.set(id, now);
+            this.vibrate(id, 25);
+            this.audio.play("bump", 0.18, 0.6);
+          }
+        }
         views.push({ rect: this.layout.player[i]!, camera: cam.camera, focus: p });
       });
       const leader = standings(race)[0]!;
@@ -331,6 +380,12 @@ export class Session {
       });
     }
     this.view.draw(views, this.time);
+    if (!paused && !this.rebuilding && ADAPTIVE && race.phase !== "podium" && race.phase !== "replay") {
+      const stepQ = this.guard.frame(realDt);
+      if (stepQ?.kind === "scale") this.view.setScale(stepQ.scale);
+      else if (stepQ?.kind === "drop") this.view.drop(stepQ.feature);
+      else if (stepQ?.kind === "tier") this.rebuild(stepQ.tier);
+    }
     const t3 = performance.now();
     const k = 0.1;
     this.ms.sim += (t1 - t0 - this.ms.sim) * k;
@@ -340,7 +395,7 @@ export class Session {
     // engines
     this.humans.forEach((id, i) => {
       const r = race.racers.find((x) => x.id === id)!;
-      this.audio.engine(i, Math.min(1, r.v / 42), r.boostT > 0 || r.turboT > 0, race.phase === "race" || race.phase === "countdown");
+      this.audio.engine(i, Math.min(1, r.v / 50), r.boostT > 0 || r.turboT > 0, race.phase === "race" || race.phase === "countdown");
     });
 
     // phones
@@ -392,11 +447,11 @@ export class Session {
       const r = race.racers.find((x) => x.id === id)!;
       return {
         id, name: this.names.get(id)!, color: this.colors.get(id)!, rect: this.layout.player[i]!,
-        place: r.place, field: race.racers.length, lap: lapOf(race, r), laps: race.opts.laps, kmh: Math.round(r.v * 3.6),
+        place: r.place, field: race.racers.length, lap: lapOf(race, r), laps: race.opts.laps, kmh: Math.round(r.v * 3.6 * 1.2), // a stylised world: the gauge reads a little hot
         meter: r.meter, item: r.item, rolling: r.rollT > 0, level: driftLevel(r), drifting: r.drift !== 0,
         blind: r.blindT, wrecked: r.wreckT > 0, by: r.wreckT > 0 ? this.lastWreckBy.get(id) ?? null : null, finished: r.finishedAt !== null,
         msgs: this.msgs.get(id) ?? [],
-        boost: r.boostT > 0 || r.turboT > 0.3, fx: !this.o.profile.prerendered,
+        boost: r.boostT > 0 || r.turboT > 0.3, fast: r.v > 36, fx: !this.profile.prerendered,
       };
     });
     const fmt = (t: number | null) => (t === null ? "—" : `${Math.floor(t / 60)}:${(t % 60).toFixed(2).padStart(5, "0")}`);
@@ -415,7 +470,7 @@ export class Session {
     const race = this.race;
     const info = this.view.renderer.info.render;
     return {
-      phase: race.phase, time: +race.time.toFixed(1), fps: this.fps, ms: { sim: +this.ms.sim.toFixed(1), dress: +this.ms.dress.toFixed(1), draw: +this.ms.draw.toFixed(1) }, calls: info.calls, tris: info.triangles, tier: this.o.profile.tier,
+      phase: race.phase, time: +race.time.toFixed(1), fps: this.fps, ms: { sim: +this.ms.sim.toFixed(1), dress: +this.ms.dress.toFixed(1), draw: +this.ms.draw.toFixed(1) }, calls: info.calls, tris: info.triangles, tier: this.profile.tier, startTier: this.o.profile.tier, adaptive: { ...this.guard.state, dropped: [...this.guard.state.dropped], w: this.view.width, h: this.view.height },
       views: this.layout.player.length + this.layout.director.length, laps: race.opts.laps, length: race.track.length,
       cams: this.view ? this.humans.map((id, i) => { const p = this.racerPoses.find((r) => r.id === id); const c = this.view.cams[i]!.camera.position; return p ? +Math.hypot(p.x - c.x, p.z - c.z).toFixed(1) : null; }) : [],
       finish: race.finishOrder, replay: !!race.recorder.best,

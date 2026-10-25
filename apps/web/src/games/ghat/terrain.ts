@@ -124,10 +124,13 @@ export interface TerrainOpts {
   hedgeRows: number;
   bakeLight: boolean;
   seed: number;
+  /** Only the lowest-poly props (palms, the plain tall tree, small rocks). */
+  lite: boolean;
 }
 
-export const LITE_TERRAIN: TerrainOpts = { spacing: 7, margin: 170, chunk: 110, trees: 230, rocks: 60, hedgeRows: 5, bakeLight: true, seed: 5 };
-export const HIGH_TERRAIN: TerrainOpts = { spacing: 4.5, margin: 200, chunk: 110, trees: 520, rocks: 120, hedgeRows: 9, bakeLight: false, seed: 5 };
+// lite: coarse grid, a short apron (the painted sky panorama carries the distant ridges), few, cheap props
+export const LITE_TERRAIN: TerrainOpts = { spacing: 11, margin: 90, chunk: 150, trees: 80, rocks: 16, hedgeRows: 1, bakeLight: true, seed: 5, lite: true };
+export const HIGH_TERRAIN: TerrainOpts = { spacing: 4.5, margin: 200, chunk: 160, trees: 520, rocks: 120, hedgeRows: 9, bakeLight: false, seed: 5, lite: false };
 
 const c = new THREE.Color();
 function albedo(ground: Ground, x: number, z: number, y: number, slope: number, out: THREE.Color) {
@@ -227,6 +230,10 @@ export function buildTerrain(t: Track, kit: PropKit, o: TerrainOpts): { chunks: 
     const p = spot(5, 90);
     if (!p || ground.heightAt(p.x, p.z) < WATER_Y + 0.5) continue;
     k++;
+    if (o.lite) {
+      place(rnd() < 0.7 ? "tree_tall_dark" : "tree_palmTall", p.x, p.z, 3.4 + rnd() * 2.6, rnd() * 6.28);
+      continue;
+    }
     const pick: PropName = p.side === "village" ? (rnd() < 0.7 ? "tree_palmTall" : "tree_palmDetailedTall")
       : p.side === "estate" ? (rnd() < 0.6 ? "tree_tall_dark" : "tree_palmTall")
       : p.side === "drop" ? (["tree_detailed_dark", "tree_palmDetailedTall", "tree_default_dark"] as const)[Math.floor(rnd() * 3)]!
@@ -237,6 +244,10 @@ export function buildTerrain(t: Track, kit: PropKit, o: TerrainOpts): { chunks: 
     const p = spot(3, 40);
     if (!p || p.side === "estate") continue;
     k++;
+    if (o.lite) {
+      place("rock_smallC", p.x, p.z, 3 + rnd() * 3, rnd() * 6.28, 0.4);
+      continue;
+    }
     const pick: PropName = rnd() < 0.4 ? "rock_tallB" : rnd() < 0.5 ? "rock_largeA" : "plant_bushLarge";
     place(pick, p.x, p.z, pick === "plant_bushLarge" ? 2.5 + rnd() * 2 : 2 + rnd() * 3.5, rnd() * 6.28, 0.4);
   }

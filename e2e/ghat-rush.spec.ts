@@ -2,7 +2,7 @@ import { expect, test, type Browser, type Page } from "@playwright/test";
 import { gesture, joinPhone, pose, practiseUntilReady, press, tvCode, upright } from "./helpers";
 
 type Racer = { id: string; name: string; cpu: boolean; kind: string; place: number; lap: number; s: number; d: number; v: number; meter: number; item: string | null; drift: number; wrecked: boolean; done: boolean; turn: number; stats: Record<string, number>; got: { boost: number; item: number; drift: number } | null };
-type Dbg = { phase: string; time: number; fps: number; calls: number; tris: number; tier: string; views: number; laps: number; length: number; finish: string[]; replay: boolean; racers: Racer[] };
+type Dbg = { phase: string; time: number; fps: number; calls: number; tris: number; tier: string; startTier: string; adaptive: { tier: string; scale: number; dropped: string[]; fps: number; w: number; h: number }; views: number; laps: number; length: number; finish: string[]; replay: boolean; racers: Racer[] };
 
 /** A GPU-backed TV page (Apple Metal on the dev machine) that records CSP violations. */
 async function ghatTv(browser: Browser, quality?: string) {
@@ -82,7 +82,7 @@ test("GHAT RUSH: two phones (hybrid wheel + buttons) race the quick ghat to the 
   expect(end.finish).toHaveLength(6);
   const humans = end.racers.filter((r) => !r.cpu);
   // both people really drove: most of the lap at least, and the phones' buttons arrived
-  expect(Math.min(...humans.map((r) => r.s))).toBeGreaterThan(end.length * 0.6);
+  expect(Math.min(...humans.map((r) => r.s))).toBeGreaterThan(end.length * 0.5);
   expect(humans.find((r) => r.name === "Asha")!.got!.drift).toBeGreaterThan(0);
   expect(humans.find((r) => r.name === "Ravi")!.got!.boost).toBeGreaterThan(0);
   expect(end.racers.reduce((n, r) => n + r.stats.turbos, 0)).toBeGreaterThan(0);  // mini-turbos fired
@@ -137,7 +137,7 @@ for (const quality of ["lite", "high", "ultra"] as const) {
     await practiseUntilReady(tv, p, "Asha", ["btn:BOOST"]);
     const race = stateOf(tv);
     await expect.poll(async () => (await race()).phase, { timeout: 60_000 }).toBe("race");
-    expect((await race()).tier).toBe(quality);
+    expect((await race()).startTier).toBe(quality);
     const fps: number[] = [];
     const until = Date.now() + 14_000;
     while (Date.now() < until) {

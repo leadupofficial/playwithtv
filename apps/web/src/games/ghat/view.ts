@@ -9,6 +9,8 @@ import { createCinematic, type Cinematic } from "../kit3d/cinematic";
 import { Particles, sparkleGeometry } from "../kit3d/particles";
 import { renderViews, useMultiView, type MultiViewPass, type View } from "../kit3d/multiview";
 import { GTAOPass } from "three/examples/jsm/postprocessing/GTAOPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import type { Feature } from "../../quality/adaptive";
 import { FOG, buildWorld, type World } from "./world";
 import { loadProps } from "./props";
 import { BASE, modelActors, spriteActors, type ActorLayer, type CoconutPose, type PickupPose } from "./vehicles";
@@ -48,17 +50,21 @@ export class GhatView {
   private nextFlash = 9;
   private fog: THREE.Fog;
   private fogBase = new THREE.Color(FOG);
-  readonly width: number;
-  readonly height: number;
+  width: number;
+  height: number;
+  /** Full-size drawing buffer before the adaptive render scale. */
+  readonly baseW: number;
+  readonly baseH: number;
+  scale = 1;
 
   private constructor(readonly canvas: HTMLCanvasElement, readonly q: QualityProfile, readonly track: Track, players: number) {
     const lite = q.prerendered;
-    // split screen on ultra: every view re-renders the scene and its shadows, so draw at 1080p (the views are
-    // smaller anyway) and keep ultra's materials, shadows and post
-    const res = players > 1 && q.resolution.w > 1920 ? { w: 1920, h: 1080 } : q.resolution;
-    this.width = res.w;
-    this.height = res.h;
-    this.fog = new THREE.Fog(FOG, lite ? 35 : 45, lite ? 300 : 420);
+    // GHAT RUSH draws at most 1080p (ultra keeps its materials, shadows and post; the 1440p buffer cost half the
+    // frame rate) and at 960×540 on lite (the TV upscales; a Mali-G31 is fill-rate bound)
+    const res = lite ? { w: 960, h: 540 } : q.resolution.w > 1920 ? { w: 1920, h: 1080 } : q.resolution;
+    this.width = this.baseW = res.w;
+    this.height = this.baseH = res.h;
+    this.fog = new THREE.Fog(FOG, lite ? 18 : 45, lite ? 155 : 420);
     this.scene.fog = this.fog;
     this.scene.background = new THREE.Color(FOG);
     if (lite) {
@@ -68,7 +74,8 @@ export class GhatView {
       this.renderer.setSize(this.width, this.height, false);
       this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     } else {
-      this.cine = createCinematic(canvas, { ...q, resolution: res }, { scene: this.scene, camera: this.extra[0] });
+      // no GTAO: at 1080p it alone cost ~15 ms on an M4; the sprites' and models' baked shading carries the look
+      this.cine = createCinematic(canvas, { ...q, resolution: res, post: { ...q.post, ao: false } }, { scene: this.scene, camera: this.extra[0] });
       this.renderer = this.cine.renderer;
       // ACES: more contrast and colour than AgX for a rainy, overcast scene (AgX greys it out)
       this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -81,20 +88,23 @@ export class GhatView {
     this.hemi = new THREE.HemisphereLight("#dbe6e4", "#4a5a3a", lite ? 1.6 : 0.6);
     this.scene.add(this.hemi);
     for (let i = 0; i < Math.max(1, players); i++) this.cams.push(new ChaseCam());
-    this.glows = new Glows(lite ? 170 : 380);
-    this.rain = new Rain(lite ? 90 : Math.min(1400, q.particleBudget), lite ? 30 : 40);
+    this.glows = new Glows(lite ? 140 : 380);
+    this.rain = new Rain(lite ? 60 : Math.min(1400, q.particleBudget), lite ? 26 : 40);
     this.trails = new Trails(16, lite ? 10 : 16);
     const budget = q.particleBudget;
     this.sparks = new Particles(sparkleGeometry(), new THREE.MeshBasicMaterial({ color: "#ffffff", side: THREE.DoubleSide, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }), Math.round(budget * 0.4));
     this.spray = new Puffs(this.glows, lite ? 40 : 140);
     this.debris = new Particles(new THREE.BoxGeometry(0.4, 0.12, 0.3), lite ? new THREE.MeshLambertMaterial({ color: "#ffffff" }) : new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.5 }), Math.round(budget * 0.25));
-    this.mist = new Glows(lite ? 6 : 18, false);
+    this.mist = new Glows(lite ? 1 : 18, false);
     this.mist.mesh.renderOrder = 2;
-    this.scene.add(this.glows.mesh, this.rain.mesh, this.trails.mesh, this.sparks.mesh, this.debris.mesh, this.mist.mesh);
+    this.scene.add(this.glows.mesh, this.rain.mesh, this.sparks.mesh, this.debris.mesh);
+    // lite: no tail-light ribbons or mist banks (big transparent quads are what a fill-rate bound TV can't afford)
+    if (!lite) this.scene.add(this.trails.mesh, this.mist.mesh);
+    for (const c of [...this.cams.map((x) => x.camera), ...this.extra]) c.far = lite ? 172 : 640; // fog hides everything past ~420 m anyway: do not draw it
     // mist banks: over the drops beside the road, below and around road level
     let seed = 7;
     const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-    for (let k = 0; k < (lite ? 6 : 18); k++) {
+    for (let k = 0; k < (lite ? 0 : 18); k++) {
       for (let tries = 0; tries < 40; tries++) {
         const i = Math.floor(rnd() * track.n);
         const side = rnd() < 0.5 ? -1 : 1;
@@ -119,6 +129,35 @@ export class GhatView {
     v.world = buildWorld(track, kit, q);
     v.scene.add(v.world.group, actors.group);
     return v;
+  }
+
+  /** Adaptive quality: draw at `s` × the full drawing-buffer size (the canvas is CSS-stretched). */
+  setScale(s: number) {
+    this.scale = s;
+    this.width = Math.round(this.baseW * s);
+    this.height = Math.round(this.baseH * s);
+    this.renderer.setSize(this.width, this.height, false);
+    this.cine?.composer?.setSize(this.width, this.height);
+  }
+
+  /** Adaptive quality: turn an expensive feature off. */
+  drop(f: Feature) {
+    const composer = this.cine?.composer;
+    if (f === "ao" && composer) for (const p of [...composer.passes]) if (p instanceof GTAOPass) composer.removePass(p);
+    if (f === "bloom" && composer) for (const p of [...composer.passes]) if (p instanceof UnrealBloomPass) composer.removePass(p);
+    if (f === "shadows-small" && this.sun) {
+      this.sun.shadow.mapSize.set(512, 512);
+      this.sun.shadow.map?.dispose();
+      this.sun.shadow.map = null;
+    }
+    if (f === "shadows" && this.sun) {
+      this.sun.castShadow = false;
+      this.renderer.shadowMap.enabled = false;
+      this.scene.traverse((o) => {
+        const m = (o as THREE.Mesh).material;
+        if (m) (Array.isArray(m) ? m : [m]).forEach((x) => (x.needsUpdate = true));
+      });
+    }
   }
 
   /** A burst for a race moment at a pose. */
@@ -206,7 +245,9 @@ export class GhatView {
     this.trails.commit();
     this.rain.update(time);
     this.sparks.update(dt);
+    this.sparks.mesh.visible = this.sparks.alive > 0;
     this.debris.update(dt);
+    this.debris.mesh.visible = this.debris.alive > 0;
     this.world.update(time);
     this.mist.begin();
     this.mistSpots.forEach((m, i) => this.mist.add(m.x + Math.sin(time * 0.05 + i) * 12, m.y + Math.sin(time * 0.08 + i * 2) * 1.5, m.z + Math.cos(time * 0.04 + i) * 12, m.size, "#e4ebe8", m.k));

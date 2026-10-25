@@ -87,6 +87,13 @@ export function roadTexture(rough = false): THREE.CanvasTexture {
       g.fillRect(x0 + rnd() * (x1 - x0), rnd() * H, 2 + rnd() * 3, 2 + rnd() * 3);
     }
   }
+  // rumble kerbs: 1 m red/white blocks just inside each shoulder
+  for (const [u0, u1] of [[0.085, 0.1], [0.9, 0.915]] as const) {
+    for (let k = 0; k < ROAD_REPEAT; k++) {
+      g.fillStyle = rough ? "rgb(150,150,150)" : k % 2 ? "#c9302c" : "#ece8de";
+      g.fillRect(px(u0), (k * H) / ROAD_REPEAT, px(u1) - px(u0), H / ROAD_REPEAT);
+    }
+  }
   // lane markings: solid edge lines, dashed centre line (3 m dash per ROAD_REPEAT)
   g.fillStyle = col("#e9e6da", 150);
   const lw = 7;
@@ -125,9 +132,9 @@ function ridge(rnd: () => number, period: number, octaves: number) {
  * misty ridges (aerial perspective), mist banks between them and thin waterfalls on the nearer cliffs.
  * Covers latitudes SKY_LAT[0]..SKY_LAT[1] (degrees) from bottom to top.
  */
-export const SKY_LAT = [-14, 46] as const;
+export const SKY_LAT = [-14, 90] as const; // the whole upper sky: one dome mesh, one draw call
 export function skyPanorama(): THREE.CanvasTexture {
-  const W = 2048, H = 512;
+  const W = 2048, H = 768;
   const { c, g } = canvas(W, H);
   const rnd = makeRng(2024);
   const latToY = (lat: number) => H - ((lat - SKY_LAT[0]) / (SKY_LAT[1] - SKY_LAT[0])) * H;

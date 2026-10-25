@@ -36,7 +36,8 @@ const STRIPES: Record<Side, [[number, number, number], [number, number, number],
 export interface RoadChunk { geometry: THREE.BufferGeometry; center: THREE.Vector3; radius: number }
 
 /** Builds the road in chunks of `per` samples. `bakeLight` darkens wall feet and wall sides (lite tier). */
-export function buildRoad(t: Track, opts: { per?: number; bakeLight: boolean; bridgeSeg?: number }): RoadChunk[] {
+/** `lite`: no parapet backs and no telephone wires (fewer triangles for a 1 GB TV). */
+export function buildRoad(t: Track, opts: { per?: number; bakeLight: boolean; bridgeSeg?: number; lite?: boolean }): RoadChunk[] {
   const per = opts.per ?? 30;
   const chunks: RoadChunk[] = [];
   const P = (i: number, d: number, up = 0) => {
@@ -74,7 +75,19 @@ export function buildRoad(t: Track, opts: { per?: number; bakeLight: boolean; br
         const q = (a: THREE.Vector3[], col: [number, number, number]) => quad(b, order > 0 ? a : [a[0]!, a[3]!, a[2]!, a[1]!], col);
         q([P(i, dIn, 0), P(i, dIn, hgt), P(j, dInB, hgt), P(j, dInB, 0)], face);       // road-facing side
         q([P(i, dIn, hgt), P(i, dOut, hgt), P(j, dOutB, hgt), P(j, dInB, hgt)], top);   // top
-        q([P(i, dOut, hgt), P(i, dOut, -0.6), P(j, dOutB, -0.6), P(j, dOutB, hgt)], back); // outer side
+        if (!opts.lite) q([P(i, dOut, hgt), P(i, dOut, -0.6), P(j, dOutB, -0.6), P(j, dOutB, hgt)], back); // outer side
+        // marker posts every 8 m just behind the parapet: they whip past at speed (the best speed cue there is)
+        if (i % 4 === side + 1) {
+          const dp = side * (hwA + 0.15 + th + 0.3), w = 0.07;
+          const hh = t.heading[i % t.n]!;
+          const fw = new THREE.Vector3(Math.sin(hh), 0, Math.cos(hh)).multiplyScalar(w);
+          const rt = new THREE.Vector3(-Math.cos(hh), 0, Math.sin(hh)).multiplyScalar(w);
+          for (const [y0, y1, col] of [[0, 1.05, [0.08, 0.08, 0.08]], [1.05, 1.4, [0.95, 0.95, 0.9]]] as const) {
+            const a0 = P(i, dp, y0), a1 = P(i, dp, y1);
+            const c = shade(col as unknown as [number, number, number], 1);
+            quad(b, [a0.clone().sub(rt).sub(fw), a1.clone().sub(rt).sub(fw), a1.clone().add(rt).sub(fw), a0.clone().add(rt).sub(fw)], c);
+            quad(b, [a0.clone().add(rt).add(fw), a1.clone().add(rt).add(fw), a1.clone().sub(rt).add(fw), a0.clone().sub(rt).add(fw)], c);          }
+        }
         // milestones every 200 m on the left verge: white block, yellow cap
         if (side < 0 && i % 100 === 50) {
           const m = side * (hwA + 1.2);
@@ -110,7 +123,7 @@ export function buildRoad(t: Track, opts: { per?: number; bakeLight: boolean; br
         const j2 = i + 22;
         const hw2 = t.hw[j2 % t.n]!, h2 = t.heading[j2 % t.n]!;
         const rt2 = new THREE.Vector3(-Math.cos(h2), 0, Math.sin(h2));
-        for (const off of [-0.65, 0.65]) {
+        for (const off of opts.lite ? [] : [-0.65, 0.65]) {
           const a = bar.clone().addScaledVector(rt, off).setY(bar.y + 0.12);
           const bEnd = P(j2, -(hw2 + 3.2), H - 0.28).addScaledVector(rt2, off);
           const segs = 8, wire = shade([0.05, 0.05, 0.05], 1);

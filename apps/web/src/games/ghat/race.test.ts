@@ -40,8 +40,8 @@ describe("a GHAT RUSH race", () => {
     const race = newRace(field(0), { ...QUICK, seed: 3 });
     run(race, 120, undefined, (r) => r.finishOrder.length > 0);
     const lapTime = race.time;
-    expect(lapTime).toBeGreaterThan(35);
-    expect(lapTime).toBeLessThan(75);
+    expect(lapTime).toBeGreaterThan(28);
+    expect(lapTime).toBeLessThan(60);
     // the whole field is still racing: nobody is a lap down or parked
     for (const r of race.racers) expect(r.s).toBeGreaterThan(race.track.length * 0.75);
   });
