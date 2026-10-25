@@ -70,6 +70,8 @@ export interface ControlSpec {
   hints?: Partial<Record<ControlMode, string>>;
   /** false = keep the current calibration (the next round of the same game). */
   calibrate?: boolean;
+  /** Motion mode reads flicks as saber cuts: from the gyroscope, timed at their peak (rhythm games). */
+  saber?: boolean;
 }
 
 /** Which actions a mode shows as buttons. */

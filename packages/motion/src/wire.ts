@@ -7,6 +7,7 @@ import type { MotionFrame } from "./engine.js";
  *   axes.ok                           1 while the controller is ready (sensors live and calibrated, or buttons)
  *   axes.m                            the mode code / 4 (0 buttons, 1/4 motion, 2/4 hybrid, 3/4 touchpad, 1 camera)
  *   axes.gs                           strength of the latest gesture / GESTURE_SCALE (sent together with its tap)
+ *   axes.pk, axes.pv                  when that gesture peaked, in TV time (encodeStamp, beat.ts); pv = 1 if valid
  *   taps[action]                      a counter per game action (the phone maps gestures/swipes to actions)
  *   buttons[action]                   held actions
  *   taps["calibrated"]                increments each time the player finishes calibrating
@@ -45,6 +46,8 @@ export class ControlReader {
   lastUpdate = 0;
   /** Strength of the latest gesture (motion mode; 1 = a minimal gesture, 2+ strong), 0 if none was sent. */
   gesture = 0;
+  /** The latest gesture's peak as an encoded TV-time stamp (beat.ts unwrapStamp), null if the phone had no clock. */
+  stamp: number | null = null;
 
   /** Returns the actions tapped since the previous state (an action tapped twice appears twice, at most 3). */
   update(s: WireState, now = Date.now()): string[] {
@@ -58,6 +61,7 @@ export class ControlReader {
     this.ok = (a.ok ?? 0) > 0.5;
     this.mode = Math.round((a.m ?? 0) * MODE_DIVISOR); // sent as code / MODE_DIVISOR (axes are clamped to [-1, 1])
     this.gesture = (a.gs ?? 0) * GESTURE_SCALE;
+    this.stamp = (a.pv ?? 0) > 0.5 && typeof a.pk === "number" ? a.pk : null;
     this.heldNow = { ...s.buttons };
     const taps = s.taps ?? {};
     const out: string[] = [];
@@ -84,6 +88,7 @@ export class ControlReader {
   clear() {
     this.x = this.y = this.roll = this.pitch = this.yaw = 0;
     this.ok = false;
+    this.stamp = null;
     this.heldNow = {};
     this.taps = null;
   }

@@ -12,6 +12,8 @@ export class InputSender {
   private dirty = false;
   private heartbeat: ReturnType<typeof setInterval>;
   private axesTimer: ReturnType<typeof setInterval>;
+  /** Phone time → TV time over the direct link (null while unsynced or on the server relay). */
+  tvClock: (phoneMs: number) => number | null = () => null;
 
   /** `direct` sends a frame over the phone→TV link and returns false when that link is not open. */
   constructor(private socket: HubSocket, private direct?: (seq: number, state: InputState) => boolean) {
@@ -40,7 +42,11 @@ export class InputSender {
   /** Analog values in [-1, 1]; throttled. */
   axes(values: Record<string, number>) {
     const clamped: Record<string, number> = {};
-    for (const [k, v] of Object.entries(values)) clamped[k] = Math.round(Math.max(-1, Math.min(1, v)) * 100) / 100;
+    // two decimals is plenty for a stick, but a swing stamp (pk) needs all of them: 0.01 of its period is 41 ms
+    for (const [k, v] of Object.entries(values)) {
+      const c = Math.max(-1, Math.min(1, v));
+      clamped[k] = k === "pk" ? Math.round(c * 1e6) / 1e6 : Math.round(c * 100) / 100;
+    }
     this.state = { ...this.state, axes: { ...this.state.axes, ...clamped } };
     this.dirty = true;
   }

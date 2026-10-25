@@ -8,13 +8,14 @@
  * flowing through the server as before.
  */
 import { InputState, type RtcSignal } from "@playwithtv/protocol";
+import { ClockSync } from "@playwithtv/motion";
 import type { HubSocket } from "./net";
 
 const ICE: RTCConfiguration = { iceServers: [] };
 const OPEN_TIMEOUT_MS = 8000;
 const MAX_DIRECT_BYTES = 4096;
 
-type Direct = { t: "in"; seq: number; state: InputState } | { t: "ping"; at: number } | { t: "pong"; at: number };
+type Direct = { t: "in"; seq: number; state: InputState } | { t: "ping"; at: number } | { t: "pong"; at: number; tv?: number };
 
 /** Direct links are on by default; `?p2p=0` turns them off on this device (remembered), `?p2p=1` back on. */
 export function p2pEnabled(): boolean {
@@ -53,6 +54,8 @@ class CandidateQueue {
 export class PhoneLink {
   mode: "server" | "direct" = "server";
   rttMs = 0;
+  /** The TV's clock as seen from this phone (rhythm games stamp swings in TV time, see @playwithtv/motion beat.ts). */
+  readonly clock = new ClockSync();
   private pc: RTCPeerConnection | null = null;
   private dc: RTCDataChannel | null = null;
   private cands: CandidateQueue | null = null;
@@ -90,12 +93,19 @@ export class PhoneLink {
     dc.onopen = () => {
       this.mode = "direct";
       this.clearTimers();
-      this.ping = setInterval(() => dc.readyState === "open" && dc.send(JSON.stringify({ t: "ping", at: performance.now() })), 2000);
+      this.clock.reset();
+      // quick pings while the clock syncs, then every 2 s (the fastest round trips keep it accurate)
+      const ping = () => dc.readyState === "open" && dc.send(JSON.stringify({ t: "ping", at: performance.now() }));
+      let fast = 8;
+      this.ping = setInterval(() => (fast-- > 0 || fast % 8 === 0) && ping(), 250);
     };
     dc.onclose = () => this.fallBack(3000);
     dc.onmessage = (e) => {
       const m = JSON.parse(String(e.data)) as Direct;
-      if (m.t === "pong") this.rttMs = Math.round(performance.now() - m.at);
+      if (m.t !== "pong") return;
+      const now = performance.now();
+      this.rttMs = Math.round(now - m.at);
+      if (typeof m.tv === "number") this.clock.add(m.at, m.tv, now);
     };
     pc.onicecandidate = (e) => e.candidate && this.signal({ candidate: candidateOf(e.candidate) });
     pc.onconnectionstatechange = () => pc.connectionState === "failed" && this.fallBack(15_000);
@@ -218,7 +228,7 @@ export class TvLinks {
     } catch {
       return;
     }
-    if (m.t === "ping" && typeof m.at === "number") return dc.send(JSON.stringify({ t: "pong", at: m.at }));
+    if (m.t === "ping" && typeof m.at === "number") return dc.send(JSON.stringify({ t: "pong", at: m.at, tv: performance.now() }));
     if (m.t !== "in" || !Number.isInteger(m.seq) || m.seq < 0) return;
     const state = InputState.safeParse(m.state);
     if (state.success) this.cbs.forEach((cb) => cb(from, m.seq, state.data));

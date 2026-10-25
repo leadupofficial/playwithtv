@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { GESTURE_SCALE, STRONG, frameAxes } from "@playwithtv/motion";
+import { GESTURE_SCALE, STRONG, encodeStamp, frameAxes } from "@playwithtv/motion";
 import { MODE_CODE, MODE_DIVISOR, buttonsFor, type ControlAction, type ControlMode, type ControlSpec, type GestureName, type SwipeName } from "@playwithtv/protocol";
 import type { InputSender } from "./inputSender";
 import type { PhoneMotion } from "./motion";
@@ -109,6 +109,7 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
   // bat-style swings are detected only for games that map them
   useEffect(() => {
     motion.engine.settings.swing = spec.actions.some((a) => a.gestures?.includes("swing"));
+    motion.engine.settings.saber = spec.saber === true;
   }, [motion, spec]);
 
   // gestures → actions (motion mode only: in hybrid the buttons do the actions, so a bump can't fire one)
@@ -116,7 +117,9 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
     if (mode !== "motion" || phase !== "ready") return;
     const a = map.gesture(g.kind, g.strength);
     if (!a) return;
-    input.axes({ gs: g.strength / GESTURE_SCALE }); // the strength rides along with the tap (ControlReader.gesture)
+    // the strength and the moment of the swing (in TV time, for rhythm games) ride along with the tap
+    const tv = input.tvClock(g.t);
+    input.axes({ gs: g.strength / GESTURE_SCALE, pk: tv === null ? 0 : encodeStamp(tv), pv: tv === null ? 0 : 1 });
     fire(a);
     navigator.vibrate?.(g.strength >= STRONG ? 35 : 12);
   }), [motion, mode, phase, map]); // eslint-disable-line react-hooks/exhaustive-deps

@@ -1,4 +1,5 @@
 import { type Vec3, clamp, cross, deg, dot, len, lerp, norm, scale, sub, v } from "./vec.js";
+import { SaberDetector } from "./saber.js";
 import { SwingDetector } from "./swing.js";
 
 /**
@@ -24,6 +25,8 @@ export interface MotionSettings {
   cooldownMs: number;
   /** Also detect "swing" (a bat swing in any direction, see swing.ts). Off unless a game maps it. */
   swing?: boolean;
+  /** Saber cuts (rhythm games, see saber.ts): flicks come from the gyroscope and are reported at their peak. */
+  saber?: boolean;
 }
 
 export const DEFAULT_SETTINGS: MotionSettings = {
@@ -87,6 +90,7 @@ export class MotionEngine {
   private tw = { armed: true, quietSince: 0, cooldown: 0, pending: null as Pending | null };
   private shake = { lastSign: 0, flips: [] as number[], cooldown: 0, axis: "" };
   private swingDetector = new SwingDetector();
+  private saberDetector = new SaberDetector();
 
   constructor(settings: Partial<MotionSettings> = {}) {
     this.settings = { ...DEFAULT_SETTINGS, ...settings };
@@ -123,6 +127,13 @@ export class MotionEngine {
     const out: Gesture[] = [];
     // project onto the calibrated frame: right, up, towards the TV
     const a = v(dot(lin, this.r), dot(lin, this.n), -dot(lin, this.f));
+    if (this.settings.saber) {
+      // the blade's turn in the calibrated frame: around right, up, towards the player
+      const rot = s.rotation ? v(dot(s.rotation, this.r), dot(s.rotation, this.n), dot(s.rotation, this.f)) : null;
+      const c = this.saberDetector.push(rot, a, s.t);
+      if (c) out.push({ kind: `flick-${c.dir}`, strength: c.strength, t: c.t });
+      return out; // a cut is not also a push, a twist or a shake
+    }
     const g1 = this.linear(a, s.t);
     if (g1) out.push(g1);
     const g2 = this.twist(s.rotation ?? null, s.t);

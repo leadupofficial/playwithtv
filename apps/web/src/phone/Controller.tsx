@@ -79,6 +79,7 @@ export function Controller({ session, onLeave }: { session: PhoneSession; onLeav
     socket.current = s;
     const link = new PhoneLink(s); // same Wi-Fi as the TV: motion goes straight to it, not via the server
     input.current = new InputSender(s, (seq, state) => link.send(seq, state));
+    input.current.tvClock = (t) => (link.mode === "direct" ? link.clock.tvTime(t) : null);
     s.onStatus(setStatus);
     s.on((m) => {
       if (m.type === "welcome" || m.type === "room.state") setRoom(m.room);
