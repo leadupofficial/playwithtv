@@ -24,6 +24,8 @@ const TiffinGame = lazy(() => import("./tiffin/TiffinGame").then((m) => ({ defau
 const MonsoonCourierGame = lazy(() => import("./monsoon").then((m) => ({ default: m.MonsoonCourierGame })));
 const LanternLaneGame = lazy(() => import("./lantern").then((m) => ({ default: m.LanternLaneGame })));
 const CarryHomeGame = lazy(() => import("./carry-home").then((m) => ({ default: m.CarryHomeGame })));
+const KitchenRushGame = lazy(() => import("./kitchen-rush").then((m) => ({ default: m.KitchenRushGame })));
+const TandemRideGame = lazy(() => import("./tandem-ride").then((m) => ({ default: m.TandemRideGame })));
 const GlowwormGame = lazy(() => import("./glowworm").then((m) => ({ default: m.GlowwormGame })));
 const SkylineGame = lazy(() => import("./skyline").then((m) => ({ default: m.SkylineGame })));
 const CometKittyGame = lazy(() => import("./comet-kitty").then((m) => ({ default: m.CometKittyGame })));
@@ -60,6 +62,8 @@ export const GAMES: Record<string, GameComponent> = {
   "stepwell-secrets": StepwellSecretsGame,
   "glowworm-grove": GlowwormGame,
   "carry-home": CarryHomeGame,
+  "kitchen-rush": KitchenRushGame,
+  "tandem-ride": TandemRideGame,
   "skyline-stacker": SkylineGame,
   "comet-kitty": CometKittyGame,
   "buzz-field": BuzzFieldGame,

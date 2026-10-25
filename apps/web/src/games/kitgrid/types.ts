@@ -104,6 +104,8 @@ export interface GridTitle {
   practice: string[];
   /** Everyone plays at once (see the top of this file). */
   coop?: boolean;
+  /** Actions only used in the menus (level picker), hidden from the phone while a level is being played. */
+  menuOnly?: string[];
   /** Builds a level. `skin` and `theme` are the reward ids the household picked (or ""); co-op titles also
    * get the players' colours (one per phone, in join order). */
   create(level: number, seed: number, opts: { skin: string; theme: string; quick: boolean; colors: string[] }): Sim;

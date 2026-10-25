@@ -174,7 +174,7 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
       } else if (phase === "story") kit.status(p.id, { text: "Story time! Tap ▶ to start", labels: { ...actionLabels, [title.menu.ok]: "▶ Start" } });
       else if (phase === "result") {
         kit.status(p.id, { text: "Tap ▶ for the next level or ◀ for the map", labels: { ...actionLabels, [title.menu.ok]: "▶ Next", [title.menu.back]: "◀ Map" } });
-      } else kit.status(p.id, { text: title.levels[cursor]!.brief, labels: actionLabels });
+      } else kit.status(p.id, { text: title.levels[cursor]!.brief, labels: { ...actionLabels, ...Object.fromEntries((title.menuOnly ?? []).map((id) => [id, ""])) } });
     }
   }, [phase, pilot.id, cursor]); // eslint-disable-line react-hooks/exhaustive-deps
 
