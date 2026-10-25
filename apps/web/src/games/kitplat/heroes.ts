@@ -158,7 +158,8 @@ function items(w: World, h: Hero, inp: PadInput) {
         }
         break;
       case "goal":
-        if (!h.finished && Math.abs(dx) < 0.9 && b.y < it.y + 3 && b.y + b.h > it.y) finish(w, h);
+        // the goal is a tall gate: crossing its line at any height counts (fast heroes are often mid-jump)
+        if (!h.finished && b.x >= it.x - 0.5 && b.x < it.x + 6 && b.y > it.y - 1.5 && b.y < it.y + 9) finish(w, h);
         break;
       case "leverA": case "leverB":
         if (inp.action && Math.abs(dx) < 0.9 && Math.abs(b.y - it.y) < 1.2) pull(w, h, it);

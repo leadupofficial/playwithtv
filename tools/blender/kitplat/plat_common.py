@@ -81,6 +81,10 @@ def mat(hexc: str, rough: float = 0.55, metal: float = 0.0, emit: float = 0.0, s
         b.inputs["Emission Strength"].default_value = emit
     if alpha < 1:
         b.inputs["Alpha"].default_value = alpha
+        try:
+            m.surface_render_method = "BLENDED"  # EEVEE: smooth glass instead of dithered noise
+        except AttributeError:
+            m.blend_method = "BLEND"
     if bump or vary:
         tc = nt.nodes.new("ShaderNodeTexCoord")
         nz = nt.nodes.new("ShaderNodeTexNoise")
@@ -348,6 +352,7 @@ def render_rgba() -> np.ndarray:
 def project(cam, pt) -> tuple[float, float]:
     """A world point in render pixels (top-left origin)."""
     from bpy_extras.object_utils import world_to_camera_view
+    bpy.context.view_layer.update()  # the camera's matrix_world is stale right after moving it
     s = bpy.context.scene
     u = world_to_camera_view(s, cam, Vector(pt))
     return u.x * s.render.resolution_x, (1 - u.y) * s.render.resolution_y
@@ -365,7 +370,7 @@ class Sheet:
         self.sprites: list[dict] = []
 
     def add(self, sid: str, frames: list[np.ndarray], pivot_px: tuple[float, float], fps: float = 10, loop: bool = True,
-            pad: int = 3, crop: bool = True):
+            pad: int = 3, crop: bool = True, box: list[float] | None = None):
         frames = [atlas.clean_alpha(f, 4 / 255) for f in frames]
         if crop:
             x0, y0, x1, y1 = atlas.union_bbox(frames, pad=pad)
@@ -373,7 +378,7 @@ class Sheet:
             x0, y0, x1, y1 = 0, 0, frames[0].shape[1], frames[0].shape[0]
         cells = [np.ascontiguousarray(f[y0:y1, x0:x1]) for f in frames]
         w, h = x1 - x0, y1 - y0
-        self.sprites.append(dict(id=sid, cells=cells, w=w, h=h, fps=fps, loop=loop,
+        self.sprites.append(dict(id=sid, cells=cells, w=w, h=h, fps=fps, loop=loop, box=box,
                                  pivot=(round((pivot_px[0] - x0) / w, 4), round((pivot_px[1] - y0) / h, 4))))
         log(f"  {sid}: {len(frames)} x {w}x{h}")
 
@@ -410,17 +415,22 @@ class Sheet:
             atlas.save_rgba(atlas.preview(sheet), preview, "PNG")
         full = atlas.bleed_edges(sheet)
         atlas.save_rgba(full, os.path.join(out_dir, f"{self.name}.webp"), "WEBP", quality)
-        lite = half(sheet)
-        atlas.save_rgba(atlas.bleed_edges(lite), os.path.join(out_dir, f"{self.name}-lite.webp"), "WEBP", quality)
+        # a half-size copy for 1 GB TVs, only when the atlas is over their 1536 px cap
+        big = max(sheet.shape[0], sheet.shape[1]) > 1536
+        lite_path = os.path.join(out_dir, f"{self.name}-lite.webp")
+        if big:
+            atlas.save_rgba(atlas.bleed_edges(half(sheet)), lite_path, "WEBP", quality)
+        elif os.path.exists(lite_path):
+            os.remove(lite_path)
         man = {
-            "format": "pwtv-plat", "version": 1, "name": self.name, "image": f"{self.name}.webp", "lite": f"{self.name}-lite.webp",
+            "format": "pwtv-plat", "version": 1, "name": self.name, "image": f"{self.name}.webp", "lite": f"{self.name}-lite.webp" if big else None,
             "size": {"w": int(sheet.shape[1]), "h": int(sheet.shape[0])}, "ppm": self.ppm,
             "sprites": {s["id"]: {"frames": [s["rects"][i] for i in range(len(s["cells"]))], "pivot": {"x": s["pivot"][0], "y": s["pivot"][1]},
-                                  "fps": s["fps"], "loop": s["loop"]} for s in self.sprites},
+                                  "fps": s["fps"], "loop": s["loop"], **({"box": s["box"]} if s["box"] else {})} for s in self.sprites},
         }
         with open(os.path.join(out_dir, f"{self.name}.json"), "w") as fh:
             json.dump(man, fh, separators=(",", ":"))
-        log(f"{self.name}: atlas {sheet.shape[1]}x{sheet.shape[0]}, lite {lite.shape[1]}x{lite.shape[0]}, {len(self.sprites)} sprites")
+        log(f"{self.name}: atlas {sheet.shape[1]}x{sheet.shape[0]}{' + half-size lite copy' if big else ''}, {len(self.sprites)} sprites")
 
 
 def half(a: np.ndarray) -> np.ndarray:
@@ -434,6 +444,22 @@ def half(a: np.ndarray) -> np.ndarray:
     al = np.maximum(q[:, :, 3:4], 1e-6)
     out[:, :, :3] = np.where(q[:, :, 3:4] > 0, q[:, :, :3] / al, 0)
     return out
+
+
+def bake(ob):
+    """Applies an object's transform into its mesh (origin at the world origin), so Object texture coordinates are
+    world coordinates and periodic materials line up across separate objects."""
+    bpy.ops.object.select_all(action="DESELECT")
+    ob.select_set(True)
+    bpy.context.view_layer.objects.active = ob
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    return ob
+
+
+def clear_scene_objects(keep=("key", "fill", "rim", "rim2", "cam")):
+    for ob in list(bpy.data.objects):
+        if ob.name not in keep:
+            bpy.data.objects.remove(ob, do_unlink=True)
 
 
 def save_still(arr: np.ndarray, path: str, quality: int = 80):

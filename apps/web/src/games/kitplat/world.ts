@@ -115,6 +115,7 @@ export function stepWorld(w: World, inputs: PadInput[], dt: number) {
   }
   w.time += dt;
   w.clock = Math.max(0, w.clock - dt);
+  for (const it of w.items) it.t += dt;
   stepPlatforms(w, dt);
   stepTiles(w, dt);
   for (const h of w.heroes) stepHero(w, h, inputs[h.slot] ?? NO_INPUT, dt);

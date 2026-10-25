@@ -4,7 +4,7 @@
  * arena). Heroes it cannot fit are reported as stragglers; the world bubbles or leashes them. Pure.
  */
 
-export const VIEW_W = 24;            // tiles across at zoom 1 (16:9)
+export const VIEW_W = 20;            // tiles across at zoom 1 (16:9)
 export const VIEW_H = VIEW_W * 9 / 16;
 export const MAX_ZOOM = 1.3;
 
@@ -48,7 +48,7 @@ export function updateCam(cam: Cam, targets: Target[], levelW: number, levelH: n
 export function clampCam(cam: Cam, levelW: number, levelH: number) {
   const x0 = Math.max(0, cam.lockX0), x1 = Math.min(levelW, cam.lockX1);
   cam.x = x1 - x0 <= cam.vw ? (x0 + x1) / 2 : Math.max(x0 + cam.vw / 2, Math.min(x1 - cam.vw / 2, cam.x));
-  cam.y = Math.max(cam.vh / 2 - 0.6, Math.min(Math.max(cam.vh / 2, levelH - cam.vh / 2 + 1), cam.y));
+  cam.y = Math.max(cam.vh / 2, Math.min(Math.max(cam.vh / 2, levelH - cam.vh / 2 + 1), cam.y));
 }
 
 /** Is a point outside the view (with a margin)? */
