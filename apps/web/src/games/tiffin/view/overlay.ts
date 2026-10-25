@@ -21,7 +21,9 @@ export class Overlay {
     let t = this.tags.get(id);
     if (!t) {
       t = nameTag(name, color);
-      t.el.firstElementChild!.setAttribute("style", (t.el.firstElementChild as HTMLElement).style.cssText + ";font-size:22px;padding:1px 10px");
+      const chip = t.el.firstElementChild as HTMLElement;
+      chip.style.fontSize = "22px";
+      chip.style.padding = "1px 10px";
       t.sub.style.fontSize = "30px";
       this.labels.add(t.el);
       this.tags.set(id, t);
