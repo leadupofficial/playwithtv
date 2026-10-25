@@ -35,9 +35,9 @@ export interface ActorLayer {
 /** A steel tiffin carrier: three stacked tins, a lid knob and a handle (one merged geometry). */
 function tiffinGeometry(): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = [];
-  for (let k = 0; k < 3; k++) parts.push(new THREE.CylinderGeometry(0.42, 0.42, 0.3, 18).translate(0, 0.17 + k * 0.33, 0));
-  parts.push(new THREE.SphereGeometry(0.12, 10, 6).translate(0, 1.12, 0));
-  parts.push(new THREE.TorusGeometry(0.36, 0.04, 6, 16, Math.PI).translate(0, 1.05, 0));
+  for (let k = 0; k < 3; k++) parts.push(new THREE.CylinderGeometry(0.42, 0.42, 0.3, 10).translate(0, 0.17 + k * 0.33, 0));
+  parts.push(new THREE.SphereGeometry(0.12, 6, 3).translate(0, 1.12, 0));
+  parts.push(new THREE.TorusGeometry(0.36, 0.04, 3, 8, Math.PI).translate(0, 1.05, 0));
   const g = new THREE.BufferGeometry();
   const merged = parts.map((p) => p.toNonIndexed());
   const pos: number[] = [], nor: number[] = [];
@@ -75,6 +75,7 @@ class Pickups {
       this.tiffins.setMatrixAt(n++, this.m);
     }
     this.tiffins.count = n;
+    this.tiffins.visible = n > 0;
     this.tiffins.instanceMatrix.needsUpdate = true;
     n = 0;
     for (const c of coconuts) {
@@ -84,13 +85,15 @@ class Pickups {
       this.coconuts.setMatrixAt(n++, this.m);
     }
     this.coconuts.count = n;
+    this.coconuts.visible = n > 0;
     this.coconuts.instanceMatrix.needsUpdate = true;
   }
 }
 
 // ---- lite: sprites -----------------------------------------------------------------------------------------
 
-export async function spriteActors(onProgress?: (p: number) => void): Promise<ActorLayer> {
+/** `withMirrors`: faint wet-road reflections of the racers (one more draw call per racer sheet). */
+export async function spriteActors(onProgress?: (p: number) => void, withMirrors = false): Promise<ActorLayer> {
   const names = [...KINDS, "bus", "lorry", "goat"] as const;
   let done = 0;
   const sheets = await Promise.all(names.map((n) => loadSpriteSheet(`${BASE}/${n}.json`, { normals: true }).then((s) => {
@@ -140,7 +143,7 @@ export async function spriteActors(onProgress?: (p: number) => void): Promise<Ac
         const hide = r.shield; // respawn blink
         racers.get(r.kind)!.set(i, { x: r.x, y: r.y, z: r.z, heading: r.yaw, tint: r.color, scale: scale(r.kind), opacity: hide ? 0.35 : 1 });
         bases.get(r.kind)![i] = hide ? 0.35 : 1;
-        if (!r.wrecked) mirrors.get(r.kind)!.set(i, { x: r.x, y: r.y - 0.02, z: r.z, heading: r.yaw, tint: r.color, scale: scale(r.kind), opacity: 0.13, flipY: true });
+        if (!r.wrecked && withMirrors) mirrors.get(r.kind)!.set(i, { x: r.x, y: r.y - 0.02, z: r.z, heading: r.yaw, tint: r.color, scale: scale(r.kind), opacity: 0.13, flipY: true });
       }
       for (const c of ts) {
         const i = slot(c.kind);
@@ -161,7 +164,10 @@ export async function spriteActors(onProgress?: (p: number) => void): Promise<Ac
           st.opacity = base[i]! * Math.min(1, Math.max(0, (d - 2.2) / 2));
         }
       }
-      for (const b of all) b.update(camera, time);
+      for (const b of all) {
+        b.update(camera, time);
+        b.mesh.visible = b.mesh.geometry.instanceCount > 0; // an empty batch costs no draw call
+      }
     },
     flash(a) {
       for (const b of [...racers.values(), ...traffic.values(), goats]) b.setLight([-0.4, 0.8, 0.45], "#d8e6ff", a * 1.3);

@@ -14,6 +14,8 @@ export interface PlayerHud {
   blind: number; wrecked: boolean; by: string | null; finished: boolean;
   /** Boosting (speed lines) and whether screen effects are affordable (not on the lite tier). */
   boost: boolean; fx: boolean;
+  /** Near top speed: faint speed lines even without a boost. */
+  fast: boolean;
   msgs: Array<{ key: number; text: string; color: string; big?: boolean }>;
 }
 
@@ -33,7 +35,7 @@ function PlayerPanel({ p, phase }: { p: PlayerHud; phase: Phase }) {
   const segs = [0, 1, 2].map((i) => Math.max(0, Math.min(1, p.meter * 3 - i)));
   return (
     <div className="gr-view gr-shadow" data-hud-player={p.name} style={{ left: `${p.rect.x * 100}%`, top: `${p.rect.y * 100}%`, width: `${p.rect.w * 100}%`, height: `${p.rect.h * 100}%`, ["--big" as string]: `${big}px`, ["--col" as string]: p.color }}>
-      {p.fx && p.boost && phase === "race" && <div className="gr-speedlines" />}
+      {(p.boost || p.fast) && phase === "race" && <div className={`gr-speedlines${p.boost ? "" : " faint"}`} />}
       {p.blind > 0 && <div className="gr-blind" style={{ opacity: Math.min(1, p.blind / 0.8) }} />}
       <div className="gr-name">{p.name}</div>
       {phase !== "intro" && (

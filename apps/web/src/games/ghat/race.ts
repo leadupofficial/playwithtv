@@ -28,7 +28,7 @@ export interface RaceOpts {
 }
 
 export const FULL: RaceOpts = { laps: 3, seed: 1, introSeconds: 6, countdownSeconds: 3, graceSeconds: 25, replaySeconds: 7, podiumSeconds: 10, traffic: 8 };
-export const QUICK: RaceOpts = { laps: 1, seed: 1, introSeconds: 2.5, countdownSeconds: 3, graceSeconds: 10, replaySeconds: 5, podiumSeconds: 7, traffic: 6 };
+export const QUICK: RaceOpts = { laps: 1, seed: 1, introSeconds: 2.5, countdownSeconds: 3, graceSeconds: 15, replaySeconds: 5, podiumSeconds: 7, traffic: 6 };
 
 export interface Entrant { id: string; cpu: boolean; kind: Kind }
 

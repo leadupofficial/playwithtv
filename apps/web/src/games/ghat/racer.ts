@@ -12,9 +12,9 @@ export interface KindStats { len: number; wid: number; vmax: number; accel: numb
 
 /** Different feel, equal pace: scooters are nimble and light, cars heavy (they shove harder), autos in between. */
 export const KINDS: Record<Kind, KindStats> = {
-  auto: { len: 2.3, wid: 1.35, vmax: 33, accel: 15, turn: 1.9, mass: 1.0, label: "Auto" },
-  scooter: { len: 1.8, wid: 0.85, vmax: 33.6, accel: 16.5, turn: 2.05, mass: 0.75, label: "Scooter" },
-  car: { len: 2.8, wid: 1.5, vmax: 32.6, accel: 14.5, turn: 1.8, mass: 1.35, label: "Hatch" },
+  auto: { len: 2.3, wid: 1.35, vmax: 40, accel: 19, turn: 2.05, mass: 1.0, label: "Auto" },
+  scooter: { len: 1.8, wid: 0.85, vmax: 40.7, accel: 21, turn: 2.2, mass: 0.75, label: "Scooter" },
+  car: { len: 2.8, wid: 1.5, vmax: 39.5, accel: 18.5, turn: 1.95, mass: 1.35, label: "Hatch" },
 };
 
 export const G = 22;                       // arcade gravity (snappy jumps)
@@ -23,13 +23,15 @@ export const DRIFT_LEVELS = [0.6, 1.25, 2.0] as const; // seconds of drifting fo
 /** Drift yaw rate (rad/s) = base + range × (into + 1), into = steer × drift direction (-1 counter … 1 full). */
 export const DRIFT_YAW = [0.25, 0.5] as const;
 export const TURBO = [
-  { t: 0.55, power: 1.22 },
-  { t: 0.95, power: 1.3 },
-  { t: 1.45, power: 1.38 },
+  { t: 0.55, power: 1.25 },
+  { t: 0.95, power: 1.33 },
+  { t: 1.45, power: 1.45 },
 ] as const;
 export const BOOST_COST = 1 / 3;
 export const BOOST_TIME = 1.5;
-export const BOOST_POWER = 1.32;
+export const BOOST_POWER = 1.42;
+/** Instant kick when a boost fires (m/s): the jump you feel. */
+export const BOOST_KICK = 6;
 export const WRECK_TIME = 1.25;
 export const RESPAWN_SHIELD = 1.6;
 export const SPIN_TIME = 0.9;
@@ -150,6 +152,7 @@ export function tryBoost(r: Racer): boolean {
   if (r.meter < BOOST_COST - 1e-6 || r.boostT > 0.25 || !canDrive(r) || r.spinT > 0) return false;
   r.meter -= BOOST_COST;
   r.boostT = BOOST_TIME;
+  r.v += BOOST_KICK;
   r.stats.boosts++;
   return true;
 }

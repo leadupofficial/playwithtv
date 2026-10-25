@@ -292,6 +292,24 @@ autos.setLight([-0.5, 0.8, 0.4], "#cfe0ff", flash); // optional relight through 
   the poster covers loading and browsers without H.264 (Playwright's Chromium does have it on macOS). The service
   worker leaves Range (video) requests alone.
 
+### Holding the frame rate: `quality/adaptive.ts` (opt-in)
+
+Detection picks a tier once; a match can still run slow (a hot laptop, a busy TV). `AdaptiveQuality` watches real
+frame times and steps quality DOWN when the 2.5 s average is under 50 fps: render scale 1 → 0.85 → 0.72 → 0.6, then
+the features you list (`"ao"`, `"shadows-small"`, `"shadows"`, `"bloom"`), then the next tier down. It ignores a 3 s
+warm-up and waits a full window after every step, never steps back up mid-session, and remembers the result per game
+(`localStorage["pwtv.adaptive.<game>"]`, for the same starting tier).
+
+```ts
+const guard = new AdaptiveQuality({ game: "ghat-rush", tier: profile.tier, features: ["shadows-small", "shadows", "bloom"] });
+const tier = guard.state.tier;                        // may be lower than detected: build for this one
+loop: const s = guard.frame(realDt);                  // null, or { kind: "scale" | "drop" | "tier", ... }
+```
+
+Apply scale with `renderer.setSize(w * s, h * s, false)` (and the composer's); expose `guard.state` in your debug
+attribute. GHAT RUSH (`games/ghat/session.ts`) is the reference, including a mid-race tier swap onto a fresh canvas;
+`?adaptive=0` turns it off for measuring.
+
 ### High and ultra: `kit3d/cinematic.ts`
 
 ```ts
