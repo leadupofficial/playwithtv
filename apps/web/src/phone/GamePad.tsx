@@ -61,7 +61,10 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
   const pad = useRef({ x: 0, y: 0 });
   const firstRecentre = useRef(recentre);
   const map = useMemo(() => resolver(spec), [spec]);
-  const buttons = buttonsFor(spec, mode).map((b) => (status?.labels?.[b.id] ? { ...b, label: status.labels[b.id]! } : b));
+  // a label of "" hides that button for now (e.g. a 2-answer question on a 4-button pad)
+  const buttons = buttonsFor(spec, mode)
+    .filter((b) => status?.labels?.[b.id] !== "")
+    .map((b) => (status?.labels?.[b.id] ? { ...b, label: status.labels[b.id]! } : b));
 
   const fire = (a: ControlAction) => {
     input.tap(a.id);

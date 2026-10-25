@@ -46,6 +46,8 @@ for (const g of games) {
     // a buttons phone is "ready" at once, so the get-ready screen ends by itself in quick mode
     const mode: Mode | undefined = g.controlModes?.includes("buttons") ? "buttons" : undefined;
     const phone = await joinPhone(browser, code, "Perf", mode ? { [g.title]: mode } : {});
+    // games that need more players (couples: 2) get them, or Start stays disabled
+    for (let i = 1; i < (g.minPlayers ?? 1); i++) await joinPhone(browser, code, `Perf${i + 1}`, mode ? { [g.title]: mode } : {});
     await tv.locator(".game-card", { hasText: g.title }).first().click();
     await perfMarkDownloads(tv);
     const started = Date.now();

@@ -264,6 +264,8 @@ export const GameManifest = z.object({
   controlModes: z.array(z.enum(["buttons", "motion", "hybrid", "touchpad", "camera"])).optional(),
   /** Performance class CI holds the game to (perfBudget.ts, docs/performance.md). Absent = "light". */
   perfClass: z.enum(PERF_CLASSES).optional(),
+  /** Has an adults-only (18+) deck that stays hidden until every player confirms their age in the game. */
+  matureOptIn: z.boolean().optional(),
 });
 export type GameManifest = z.infer<typeof GameManifest>;
 

@@ -4,6 +4,9 @@
  */
 import type { GridTitle, Reward } from "./types";
 
+/** Anything with levels and star rewards (grid titles, couples games) can keep progress here. */
+export type Campaign = Pick<GridTitle, "id" | "rewards"> & { levels: readonly unknown[] };
+
 export interface Progress {
   /** Best stars per level index (0 = not cleared). */
   stars: number[];
@@ -21,7 +24,7 @@ function storage(): Storage | null {
   }
 }
 
-export function load(t: GridTitle): Progress {
+export function load(t: Campaign): Progress {
   const blank: Progress = { stars: t.levels.map(() => 0), skin: "", theme: "" };
   try {
     const raw = storage()?.getItem(KEY(t.id));
@@ -37,7 +40,7 @@ export function load(t: GridTitle): Progress {
   }
 }
 
-export function save(t: GridTitle, p: Progress) {
+export function save(t: Campaign, p: Progress) {
   try {
     storage()?.setItem(KEY(t.id), JSON.stringify(p));
   } catch {
@@ -50,7 +53,7 @@ export const total = (stars: number[]) => stars.reduce((a, b) => a + b, 0);
 /** A level is open when it is the first or the one before it has been cleared. */
 export const isOpen = (stars: number[], i: number) => i === 0 || (stars[i - 1] ?? 0) > 0;
 
-export function unlocked(t: GridTitle, stars: number[]): Reward[] {
+export function unlocked(t: Campaign, stars: number[]): Reward[] {
   const n = total(stars);
   return t.rewards.filter((r) => r.stars <= n);
 }
@@ -59,7 +62,7 @@ export function unlocked(t: GridTitle, stars: number[]): Reward[] {
  * Records a finished level. Keeps the best stars, returns the rewards this run newly unlocked and, when the
  * newest reward is a skin or theme, wears it straight away (the household can still see all rewards).
  */
-export function record(t: GridTitle, p: Progress, level: number, stars: number): { progress: Progress; fresh: Reward[] } {
+export function record(t: Campaign, p: Progress, level: number, stars: number): { progress: Progress; fresh: Reward[] } {
   const before = new Set(unlocked(t, p.stars).map((r) => r.id));
   const next = p.stars.slice();
   next[level] = Math.max(next[level] ?? 0, stars);
@@ -73,7 +76,7 @@ export function record(t: GridTitle, p: Progress, level: number, stars: number):
 }
 
 /** The next reward still to earn, for the "3 more ★ for …" line. */
-export function nextReward(t: GridTitle, stars: number[]): Reward | null {
+export function nextReward(t: Campaign, stars: number[]): Reward | null {
   const n = total(stars);
   return t.rewards.filter((r) => r.stars > n).sort((a, b) => a.stars - b.stars)[0] ?? null;
 }
