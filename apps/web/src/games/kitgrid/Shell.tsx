@@ -4,7 +4,8 @@
  *   practice → map (pick a level) → story (once per world) → play → result → map … → Finish
  *
  * One phone plays at a time (the pilot) and the turn passes to the next phone after every level, so a
- * family can share a campaign; each player's points add up to the match result. Progress and rewards are
+ * family can share a campaign; each player's points add up to the match result. Co-op titles are played by
+ * every phone at once: anyone can drive the menus and everyone shares the level's points. Progress and rewards are
  * saved on the TV (progress.ts). The level runs in a pure simulation (types.ts Sim) drawn on a 2D canvas.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -128,7 +129,7 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
 
   const beginLevel = (level: number) => {
     const p = live.current.progress;
-    sim.current = title.create(level, (Math.random() * 2 ** 31) | 0, { skin: p.skin, theme: p.theme, quick: QUICK });
+    sim.current = title.create(level, (Math.random() * 2 ** 31) | 0, { skin: p.skin, theme: p.theme, quick: QUICK, colors: ids.map((x) => x.color) });
     drawRef.current?.reset();
     setPhase("play");
   };
@@ -147,25 +148,27 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
     const { progress: next, fresh } = record(title, live.current.progress, lvl, o.won ? o.stars : 0);
     save(title, next);
     setProgress(next);
-    const pid = live.current.pilot.id;
-    points.current.set(pid, (points.current.get(pid) ?? 0) + o.score);
+    const scorers = title.coop ? ids.map((p) => p.id) : [live.current.pilot.id];
+    for (const pid of scorers) {
+      points.current.set(pid, (points.current.get(pid) ?? 0) + o.score);
+      kit.toast(pid, o.won ? `${"★".repeat(o.stars)} Level clear!` : "Level lost. Try again!", o.won ? "good" : "bad");
+    }
     setResult({ outcome: o, fresh, best: o.won && o.stars > before });
     sfx.play(o.won ? "win" : "lose");
     if (o.won) for (let i = 0; i < o.stars; i++) setTimeout(() => sfx.play("star"), 500 + i * 350);
-    kit.toast(pid, o.won ? `${"★".repeat(o.stars)} Level clear!` : "Level lost. Try again!", o.won ? "good" : "bad");
     setPhase("result");
   };
 
   // phone status lines follow the phase and the pilot
   useEffect(() => {
     for (const p of ids) {
-      if (p.id !== pilot.id) {
+      if (p.id !== pilot.id && !title.coop) {
         kit.status(p.id, { text: `👀 ${pilot.name} is playing. Your turn comes after this level` });
         continue;
       }
       if (phase === "map") {
         kit.status(p.id, {
-          text: `Your turn! ${title.menu.hint}`,
+          text: title.coop ? title.menu.hint : `Your turn! ${title.menu.hint}`,
           labels: { ...actionLabels, [title.menu.prev]: "◀ Level", [title.menu.next]: "Level ▶", [title.menu.ok]: "▶ Play", [title.menu.back]: "✓ Finish" },
         });
       } else if (phase === "story") kit.status(p.id, { text: "Story time! Tap ▶ to start", labels: { ...actionLabels, [title.menu.ok]: "▶ Start" } });
@@ -176,12 +179,16 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
   }, [phase, pilot.id, cursor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handle = (evs: SimEvent[]) => {
-    const pid = live.current.pilot.id;
+    const pilotId = live.current.pilot.id;
     for (const e of evs) {
       if (e.sfx) sfx.play(e.sfx);
-      if (e.toast) kit.toast(pid, e.toast, e.tone ?? "info");
       if (e.shake) shake.current = Math.max(shake.current, e.shake);
-      if (e.buzz) bridge.event(pid, "vibrate", { ms: e.buzz });
+      if (!e.toast && !e.buzz) continue;
+      const to = !title.coop ? [pilotId] : e.player !== undefined ? [ids[e.player]?.id ?? pilotId] : ids.map((p) => p.id);
+      for (const pid of to) {
+        if (e.toast) kit.toast(pid, e.toast, e.tone ?? "info");
+        if (e.buzz) bridge.event(pid, "vibrate", { ms: e.buzz });
+      }
     }
   };
 
@@ -189,12 +196,12 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
   useEffect(() => {
     return kit.onAction((id, action) => {
       const L = live.current;
-      if (L.paused || finished.current || id !== L.pilot.id) return;
+      if (L.paused || finished.current || (id !== L.pilot.id && !title.coop)) return;
       const m = title.menu;
       if (L.phase === "play") {
         const s = sim.current;
         if (s && !s.outcome()) {
-          handle(s.act(action));
+          handle(s.act(action, ids.findIndex((p) => p.id === id)));
           // puzzles (Buzz Field) can finish on a move, not just on a tick
           const o = s.outcome();
           if (o) setTimeout(() => endLevel(o), o.won ? 600 : 900);
@@ -212,8 +219,8 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
           setCursor(next);
           setTurn((t) => t + 1);
           setResult(null);
-          // alone: straight into the level; with friends the next pilot starts from the map to see it first
-          if (ids.length === 1) openLevel(next);
+          // alone (or together): straight into the level; with friends the next pilot starts from the map
+          if (ids.length === 1 || title.coop) openLevel(next);
           else setPhase("map");
         } else if (action === m.back) {
           setTurn((t) => t + 1);
@@ -269,6 +276,10 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
       const s = sim.current;
       if (L.phase === "play" && s && !L.paused && !s.outcome()) {
         t += dt / 1000;
+        if (s.steer) ids.forEach((p, i) => {
+          const r = kit.get(p.id);
+          s.steer!(i, r.x, r.y);
+        });
         handle(s.step(dt));
         const o = s.outcome();
         if (o) setTimeout(() => endLevel(o), o.won ? 600 : 900);
@@ -323,7 +334,7 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
       <div className="grid-top">
         <span className="grid-title">{title.emoji} {title.name}</span>
         <span className="grid-level">Level {cursor + 1} · {level.name}</span>
-        <span className="grid-pilot">🎮 {pilot.name}</span>
+        <span className="grid-pilot">🎮 {title.coop ? ids.map((p) => p.name).join(" + ") : pilot.name}</span>
         {hud && (
           <>
             <span className="grid-goal">
@@ -362,7 +373,7 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
           <p className="grid-hint">
             ★ {total(progress.stars)} / {title.levels.length * 3}
             {upcoming ? ` · ${upcoming.stars - total(progress.stars)} more ★ for ${upcoming.name}` : " · Every reward unlocked!"}
-            {" · "}<b>{pilot.name}</b>: {title.menu.hint}
+            {" · "}{title.coop ? "" : <><b>{pilot.name}</b>: </>}{title.menu.hint}
           </p>
         </div>
       )}
@@ -372,7 +383,7 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
           {atlas && <SpriteImg atlas={atlas} id={title.story.heroSprite} size={140} />}
           <h2>{world.name}</h2>
           <p>{world.text}</p>
-          <p className="grid-hint">{title.story.heroName} is counting on you, {pilot.name}. Tap ▶ to start.</p>
+          <p className="grid-hint">{title.story.heroName} is counting on you, {title.coop ? "both of you" : pilot.name}. Tap ▶ to start.</p>
         </div>
       )}
 
@@ -385,14 +396,14 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
               <li key={i} className={c.ok ? "ok" : ""}>{c.ok ? "★" : "☆"} {c.text}</li>
             ))}
           </ul>
-          <p className="grid-score-line">{name(pilot.id)} scored <b>{result.outcome.score.toLocaleString("en")}</b>{result.best ? " · new best!" : ""}</p>
+          <p className="grid-score-line">{title.coop ? "Together you" : name(pilot.id)} scored <b>{result.outcome.score.toLocaleString("en")}</b>{result.best ? " · new best!" : ""}</p>
           {result.fresh.length > 0 && (
             <div className="grid-unlocked">
               <span>Unlocked:</span>
               {result.fresh.map((r) => <RewardChip key={r.id} r={r} owned atlas={atlas} />)}
             </div>
           )}
-          <p className="grid-hint">Next up: <b>{ids[(turn + 1) % ids.length]!.name}</b> · ▶ next level · ◀ map</p>
+          <p className="grid-hint">{title.coop ? "" : <>Next up: <b>{ids[(turn + 1) % ids.length]!.name}</b> · </>}▶ next level · ◀ map</p>
         </div>
       )}
     </div>

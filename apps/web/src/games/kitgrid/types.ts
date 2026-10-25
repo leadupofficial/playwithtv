@@ -3,6 +3,10 @@
  * Comet Kitty, Buzz Field). A title is plain data plus a pure simulation; the shell (Shell.tsx) gives every
  * title the same story card, level map, turn-taking between phones, stars and rewards, so a new grid game is
  * one folder with a `sim.ts` and a `levels.ts`.
+ *
+ * Co-op titles (`coop: true`, the couples shelf) are played by every phone at once instead of in turns:
+ * each player's stick/tilt reaches the sim every frame (Sim.steer) and taps say who tapped (Sim.act's
+ * `player`); stars and points are shared.
  */
 import type { ControlSpec } from "@playwithtv/protocol";
 import type { Draw } from "./draw";
@@ -18,6 +22,8 @@ export interface SimEvent {
   shake?: number;
   /** Phone buzz in ms. */
   buzz?: number;
+  /** Co-op: the player the toast/buzz is for (default: everyone). */
+  player?: number;
 }
 
 export interface Outcome {
@@ -46,8 +52,10 @@ export interface Sim {
   readonly rows: number;
   /** Advances the world by `ms` (at most ~50 ms per call). */
   step(ms: number): SimEvent[];
-  /** The pilot tapped a phone action. */
-  act(action: string): SimEvent[];
+  /** The pilot (co-op: player `player`) tapped a phone action. */
+  act(action: string, player?: number): SimEvent[];
+  /** Co-op only: player `player`'s stick/tilt this frame, x right and y up, each -1..1 (0, 0 when idle). */
+  steer?(player: number, x: number, y: number): void;
   draw(d: Draw): void;
   hud(): Hud;
   /** Set once the level is over. */
@@ -94,6 +102,9 @@ export interface GridTitle {
   /** Phone action ids the level map listens to. */
   menu: { prev: string; next: string; ok: string; back: string; hint: string };
   practice: string[];
-  /** Builds a level. `skin` and `theme` are the reward ids the household picked (or ""). */
-  create(level: number, seed: number, opts: { skin: string; theme: string; quick: boolean }): Sim;
+  /** Everyone plays at once (see the top of this file). */
+  coop?: boolean;
+  /** Builds a level. `skin` and `theme` are the reward ids the household picked (or ""); co-op titles also
+   * get the players' colours (one per phone, in join order). */
+  create(level: number, seed: number, opts: { skin: string; theme: string; quick: boolean; colors: string[] }): Sim;
 }
