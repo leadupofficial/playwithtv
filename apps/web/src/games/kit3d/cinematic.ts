@@ -23,6 +23,7 @@ import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { FXAAPass } from "three/examples/jsm/postprocessing/FXAAPass.js";
 import { SMAAPass } from "three/examples/jsm/postprocessing/SMAAPass.js";
 import type { QualityProfile } from "../../quality/tier";
+import { FrameGovernor, LEVELS, type GovernorLevel } from "./governor";
 
 export interface Cinematic {
   renderer: THREE.WebGLRenderer;
@@ -36,6 +37,11 @@ export interface Cinematic {
   render(scene: THREE.Scene, camera: THREE.Camera): void;
   /** Bloom strength, e.g. a punch on a hit (no-op without bloom). */
   setBloom(strength: number): void;
+  /**
+   * The adaptive-quality state: the frame governor sheds AO, render scale and bloom when the frame rate sags
+   * and restores them when there is headroom. Show it in your debug attribute.
+   */
+  adaptive(): { level: number; fps: number } & GovernorLevel;
   dispose(): void;
 }
 
@@ -57,7 +63,7 @@ function loadEquirect(url: string): Promise<THREE.DataTexture> {
 }
 
 /** Creates the renderer and post chain for a canvas, sized to profile.resolution (the canvas is CSS-stretched). */
-export function createCinematic(canvas: HTMLCanvasElement, profile: QualityProfile, opts: { camera?: THREE.Camera; scene?: THREE.Scene } = {}): Cinematic {
+export function createCinematic(canvas: HTMLCanvasElement, profile: QualityProfile, opts: { camera?: THREE.Camera; scene?: THREE.Scene; adaptive?: boolean } = {}): Cinematic {
   const { w, h } = profile.resolution;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: profile.msaa, powerPreference: "high-performance", stencil: false });
   renderer.setPixelRatio(1);
@@ -96,6 +102,38 @@ export function createCinematic(canvas: HTMLCanvasElement, profile: QualityProfi
   let pmrem: THREE.PMREMGenerator | null = null;
   const envTargets: THREE.WebGLRenderTarget[] = [];
 
+  // Adaptive quality: timed between frames, applied before the next one. On by default; games that call
+  // composer.render() themselves are covered too (the composer's render is wrapped).
+  const governor = opts.adaptive === false ? null : new FrameGovernor(LEVELS.length);
+  let level = 0, last = 0;
+  const apply = (l: GovernorLevel) => {
+    renderer.setPixelRatio(l.scale);           // drawing buffer = resolution × scale; viewports stay in CSS px
+    if (composer) {
+      composer.setPixelRatio(l.scale);         // resizes every pass's targets
+      for (const p of composer.passes) {
+        if (p instanceof GTAOPass) p.enabled = l.ao && profile.post.ao;
+        if (p instanceof UnrealBloomPass) p.enabled = l.bloom && profile.post.bloom;
+      }
+    }
+  };
+  const govern = () => {
+    if (!governor) return;
+    const now = performance.now();
+    const next = last ? governor.sample(now - last) : null;
+    last = now;
+    if (next !== null) {
+      level = next;
+      apply(LEVELS[level]!);
+    }
+  };
+  if (composer) {
+    const inner = composer.render.bind(composer);
+    composer.render = (delta?: number) => {
+      govern();
+      inner(delta);
+    };
+  }
+
   return {
     renderer, composer, profile,
     async environment(scene, url, o = {}) {
@@ -131,6 +169,7 @@ export function createCinematic(canvas: HTMLCanvasElement, profile: QualityProfi
     },
     render(scene, camera) {
       if (!composer) {
+        govern();
         renderer.render(scene, camera);
         return;
       }
@@ -143,6 +182,9 @@ export function createCinematic(canvas: HTMLCanvasElement, profile: QualityProfi
       renderer.info.autoReset = false; // count every pass of the frame, not just the last one
       renderer.info.reset();
       composer.render();
+    },
+    adaptive() {
+      return { level, fps: Math.round(governor?.fps ?? 0), ...LEVELS[level]! };
     },
     setBloom(strength) {
       if (bloom) bloom.strength = strength;

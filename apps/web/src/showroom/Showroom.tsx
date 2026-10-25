@@ -12,7 +12,7 @@ const NAME: Record<QualitySetting, string> = { auto: "Auto", lite: "Lite", high:
 const WHAT: Record<string, string> = {
   lite: "Pre-rendered in Blender: 16-direction lit sprites + a hardware-decoded video loop. Runs on a 1 GB TV.",
   high: "Real-time PBR: HDRI sky light, soft shadows, AgX tone mapping, bloom + FXAA.",
-  ultra: "Real-time PBR at 1440p: bigger shadow maps, ambient occlusion (GTAO), bloom + SMAA.",
+  ultra: "Real-time PBR: bigger shadow maps, ambient occlusion (GTAO), bloom + SMAA.",
 };
 
 /**

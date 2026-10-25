@@ -415,7 +415,7 @@ export class Session {
     const race = this.race;
     const info = this.view.renderer.info.render;
     return {
-      phase: race.phase, time: +race.time.toFixed(1), fps: this.fps, ms: { sim: +this.ms.sim.toFixed(1), dress: +this.ms.dress.toFixed(1), draw: +this.ms.draw.toFixed(1) }, calls: info.calls, tris: info.triangles, tier: this.o.profile.tier,
+      phase: race.phase, time: +race.time.toFixed(1), fps: this.fps, ms: { sim: +this.ms.sim.toFixed(1), dress: +this.ms.dress.toFixed(1), draw: +this.ms.draw.toFixed(1) }, calls: info.calls, tris: info.triangles, tier: this.o.profile.tier, adapt: this.view?.cine?.adaptive() ?? null,
       views: this.layout.player.length + this.layout.director.length, laps: race.opts.laps, length: race.track.length,
       cams: this.view ? this.humans.map((id, i) => { const p = this.racerPoses.find((r) => r.id === id); const c = this.view.cams[i]!.camera.position; return p ? +Math.hypot(p.x - c.x, p.z - c.z).toFixed(1) : null; }) : [],
       finish: race.finishOrder, replay: !!race.recorder.best,
