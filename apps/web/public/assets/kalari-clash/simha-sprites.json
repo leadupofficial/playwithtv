@@ -2,7 +2,7 @@
  "format": "pwtv-sprites",
  "version": 1,
  "name": "simha-sprites",
- "image": "simha-sprites.webp",
+ "image": "simha-sprites.webp", "lite": "simha-sprites-lite.webp",
  "fallback": null,
  "normals": null,
  "size": {

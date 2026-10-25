@@ -91,7 +91,9 @@ export function loadSpriteSheet(manifestUrl: string, opts: { normals?: boolean; 
       const manifest = parseManifest(await res.json());
       const base = new URL(manifestUrl, location.href);
       const at = (f: string) => new URL(f, base).pathname;
-      const texture = await loadTexture(at(manifest.image), cap).catch((e) => {
+      // a TV loads the pre-shrunk copy when there is one, so it never decodes the full-size atlas at all
+      const lite = cap && manifest.lite ? await loadTexture(at(manifest.lite), cap).catch(() => null) : null;
+      const texture = lite ?? await loadTexture(at(manifest.image), cap).catch((e) => {
         if (!manifest.fallback) throw e;
         return loadTexture(at(manifest.fallback), cap);
       });

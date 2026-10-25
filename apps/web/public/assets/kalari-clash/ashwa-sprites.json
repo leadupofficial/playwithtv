@@ -2,7 +2,7 @@
  "format": "pwtv-sprites",
  "version": 1,
  "name": "ashwa-sprites",
- "image": "ashwa-sprites.webp",
+ "image": "ashwa-sprites.webp", "lite": "ashwa-sprites-lite.webp",
  "fallback": null,
  "normals": null,
  "size": {

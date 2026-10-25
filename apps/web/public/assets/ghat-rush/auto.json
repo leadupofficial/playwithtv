@@ -2,7 +2,7 @@
  "format": "pwtv-sprites",
  "version": 1,
  "name": "auto",
- "image": "auto.webp",
+ "image": "auto.webp", "lite": "auto-lite.webp",
  "fallback": null,
  "normals": "auto-normals.webp",
  "size": {

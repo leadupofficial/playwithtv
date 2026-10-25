@@ -2,7 +2,7 @@
  "format": "pwtv-sprites",
  "version": 1,
  "name": "car",
- "image": "car.webp",
+ "image": "car.webp", "lite": "car-lite.webp",
  "fallback": null,
  "normals": "car-normals.webp",
  "size": {

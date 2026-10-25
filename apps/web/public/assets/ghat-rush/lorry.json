@@ -2,7 +2,7 @@
  "format": "pwtv-sprites",
  "version": 1,
  "name": "lorry",
- "image": "lorry.webp",
+ "image": "lorry.webp", "lite": "lorry-lite.webp",
  "fallback": null,
  "normals": "lorry-normals.webp",
  "size": {

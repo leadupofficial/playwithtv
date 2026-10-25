@@ -2,7 +2,7 @@
  "format": "pwtv-sprites",
  "version": 1,
  "name": "mayil-sprites",
- "image": "mayil-sprites.webp",
+ "image": "mayil-sprites.webp", "lite": "mayil-sprites-lite.webp",
  "fallback": null,
  "normals": null,
  "size": {

@@ -2,7 +2,7 @@
  "format": "pwtv-sprites",
  "version": 1,
  "name": "chef-1",
- "image": "chef-1.webp",
+ "image": "chef-1.webp", "lite": "chef-1-lite.webp",
  "fallback": null,
  "normals": null,
  "size": {

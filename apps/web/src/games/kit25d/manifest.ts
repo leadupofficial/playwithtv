@@ -19,6 +19,8 @@ export interface SpriteManifest {
   fallback: string | null;
   /** Optional camera-space normal-map atlas with the same layout. */
   normals: string | null;
+  /** Optional smaller copy of `image` (same layout, longest side ≤ 1536 px) that the lite tier loads instead. */
+  lite?: string | null;
   size: { w: number; h: number };
   cell: { w: number; h: number };
   grid: { cols: number; rows: number };

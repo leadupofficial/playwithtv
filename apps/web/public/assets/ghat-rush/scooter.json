@@ -2,7 +2,7 @@
  "format": "pwtv-sprites",
  "version": 1,
  "name": "scooter",
- "image": "scooter.webp",
+ "image": "scooter.webp", "lite": "scooter-lite.webp",
  "fallback": null,
  "normals": "scooter-normals.webp",
  "size": {

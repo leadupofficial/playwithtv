@@ -2,7 +2,7 @@
  "format": "pwtv-sprites",
  "version": 1,
  "name": "puli-sprites",
- "image": "puli-sprites.webp",
+ "image": "puli-sprites.webp", "lite": "puli-sprites-lite.webp",
  "fallback": null,
  "normals": null,
  "size": {

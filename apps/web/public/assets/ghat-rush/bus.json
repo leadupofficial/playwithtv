@@ -2,7 +2,7 @@
  "format": "pwtv-sprites",
  "version": 1,
  "name": "bus",
- "image": "bus.webp",
+ "image": "bus.webp", "lite": "bus-lite.webp",
  "fallback": null,
  "normals": "bus-normals.webp",
  "size": {
