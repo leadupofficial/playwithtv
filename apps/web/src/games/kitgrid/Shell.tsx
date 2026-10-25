@@ -5,7 +5,9 @@
  *
  * One phone plays at a time (the pilot) and the turn passes to the next phone after every level, so a
  * family can share a campaign; each player's points add up to the match result. Co-op titles are played by
- * every phone at once: anyone can drive the menus and everyone shares the level's points. Progress and rewards are
+ * every phone at once: anyone can drive the menus and everyone shares the level's points. Versus titles are
+ * played by a pair of phones against each other (or one phone against the level's AI), and the next pair
+ * steps up after every match. Progress and rewards are
  * saved on the TV (progress.ts). The level runs in a pure simulation (types.ts Sim) drawn on a 2D canvas.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -102,14 +104,20 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
   const startedAt = useRef(Date.now());
   const finished = useRef(false);
   const pilot = ids[turn % ids.length]!;
+  /** Versus: the phones in this match (a pair, or one phone against the AI). */
+  const match = title.versus && ids.length >= 2 ? [pilot, ids[(turn + 1) % ids.length]!] : [pilot];
+  const duel = !!title.versus && match.length === 2;
+  /** The phones that play the level (and so get its toasts and the steering). */
+  const team = title.coop ? ids : match;
   const sfx = useMemo(() => new GridSfx(), []);
   const canvas = useRef<HTMLCanvasElement>(null);
   const root = useRef<HTMLDivElement>(null);
   const shake = useRef(0);
 
   // latest values for the input/rAF callbacks
-  const live = useRef({ phase, cursor, progress, pilot, paused, result });
-  live.current = { phase, cursor, progress, pilot, paused, result };
+  const live = useRef({ phase, cursor, progress, pilot, paused, result, team, duel });
+  live.current = { phase, cursor, progress, pilot, paused, result, team, duel };
+  const open = (stars: number[], i: number) => live.current.duel || isOpen(stars, i);
 
   useEffect(() => {
     loadGridAtlas().then(setAtlas, () => setAtlas(null));
@@ -129,7 +137,8 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
 
   const beginLevel = (level: number) => {
     const p = live.current.progress;
-    sim.current = title.create(level, (Math.random() * 2 ** 31) | 0, { skin: p.skin, theme: p.theme, quick: QUICK, colors: ids.map((x) => x.color) });
+    const players = live.current.team;
+    sim.current = title.create(level, (Math.random() * 2 ** 31) | 0, { skin: p.skin, theme: p.theme, quick: QUICK, colors: players.map((x) => x.color), names: players.map((x) => x.name) });
     drawRef.current?.reset();
     setPhase("play");
   };
@@ -145,6 +154,19 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
   const endLevel = (o: Outcome) => {
     const lvl = live.current.cursor;
     const before = live.current.progress.stars[lvl] ?? 0;
+    if (live.current.duel) {
+      // two players: bragging rights, no stars; the winner banks the points
+      const [a, b] = live.current.team as [PlayerView, PlayerView];
+      const w = o.winner ?? -1;
+      for (const [i, p] of [a, b].entries()) {
+        if (w === i) points.current.set(p.id, (points.current.get(p.id) ?? 0) + o.score);
+        kit.toast(p.id, w < 0 ? "A draw!" : w === i ? "You win! 🏆" : "You lose. Rematch?", w === i ? "good" : w < 0 ? "info" : "bad");
+      }
+      setResult({ outcome: o, fresh: [], best: false });
+      sfx.play(w < 0 ? "lose" : "win");
+      setPhase("result");
+      return;
+    }
     const { progress: next, fresh } = record(title, live.current.progress, lvl, o.won ? o.stars : 0);
     save(title, next);
     setProgress(next);
@@ -162,13 +184,13 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
   // phone status lines follow the phase and the pilot
   useEffect(() => {
     for (const p of ids) {
-      if (p.id !== pilot.id && !title.coop) {
-        kit.status(p.id, { text: `👀 ${pilot.name} is playing. Your turn comes after this level` });
+      if (!team.some((x) => x.id === p.id)) {
+        kit.status(p.id, { text: duel ? `👀 ${match[0]!.name} vs ${match[1]!.name}. You play the winner… or the next match` : `👀 ${pilot.name} is playing. Your turn comes after this level` });
         continue;
       }
       if (phase === "map") {
         kit.status(p.id, {
-          text: title.coop ? title.menu.hint : `Your turn! ${title.menu.hint}`,
+          text: title.coop ? title.menu.hint : duel ? `${match[0]!.name} vs ${match[1]!.name}! ${title.menu.hint}` : `Your turn! ${title.menu.hint}`,
           labels: { ...actionLabels, [title.menu.prev]: "◀ Level", [title.menu.next]: "Level ▶", [title.menu.ok]: "▶ Play", [title.menu.back]: "✓ Finish" },
         });
       } else if (phase === "story") kit.status(p.id, { text: "Story time! Tap ▶ to start", labels: { ...actionLabels, [title.menu.ok]: "▶ Start" } });
@@ -176,7 +198,7 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
         kit.status(p.id, { text: "Tap ▶ for the next level or ◀ for the map", labels: { ...actionLabels, [title.menu.ok]: "▶ Next", [title.menu.back]: "◀ Map" } });
       } else kit.status(p.id, { text: title.levels[cursor]!.brief, labels: { ...actionLabels, ...Object.fromEntries((title.menuOnly ?? []).map((id) => [id, ""])) } });
     }
-  }, [phase, pilot.id, cursor]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [phase, pilot.id, cursor, turn]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handle = (evs: SimEvent[]) => {
     const pilotId = live.current.pilot.id;
@@ -184,7 +206,8 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
       if (e.sfx) sfx.play(e.sfx);
       if (e.shake) shake.current = Math.max(shake.current, e.shake);
       if (!e.toast && !e.buzz) continue;
-      const to = !title.coop ? [pilotId] : e.player !== undefined ? [ids[e.player]?.id ?? pilotId] : ids.map((p) => p.id);
+      const team = live.current.team;
+      const to = team.length === 1 ? [pilotId] : e.player !== undefined ? [team[e.player]?.id ?? pilotId] : team.map((p) => p.id);
       for (const pid of to) {
         if (e.toast) kit.toast(pid, e.toast, e.tone ?? "info");
         if (e.buzz) bridge.event(pid, "vibrate", { ms: e.buzz });
@@ -196,12 +219,13 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
   useEffect(() => {
     return kit.onAction((id, action) => {
       const L = live.current;
-      if (L.paused || finished.current || (id !== L.pilot.id && !title.coop)) return;
+      const me = L.team.findIndex((p) => p.id === id);
+      if (L.paused || finished.current || me < 0) return;
       const m = title.menu;
       if (L.phase === "play") {
         const s = sim.current;
         if (s && !s.outcome()) {
-          handle(s.act(action, ids.findIndex((p) => p.id === id)));
+          handle(s.act(action, title.coop || title.versus ? me : ids.findIndex((p) => p.id === id)));
           // puzzles (Buzz Field) can finish on a move, not just on a tick
           const o = s.outcome();
           if (o) setTimeout(() => endLevel(o), o.won ? 600 : 900);
@@ -215,12 +239,12 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
       if (L.phase === "result") {
         if (action === m.ok) {
           const won = L.result?.outcome.won;
-          const next = won && L.cursor + 1 < title.levels.length && isOpen(L.progress.stars, L.cursor + 1) ? L.cursor + 1 : L.cursor;
+          const next = !L.duel && won && L.cursor + 1 < title.levels.length && open(L.progress.stars, L.cursor + 1) ? L.cursor + 1 : L.cursor;
           setCursor(next);
           setTurn((t) => t + 1);
           setResult(null);
           // alone (or together): straight into the level; with friends the next pilot starts from the map
-          if (ids.length === 1 || title.coop) openLevel(next);
+          if (ids.length === 1 || title.coop || (L.duel && ids.length === 2)) openLevel(next);
           else setPhase("map");
         } else if (action === m.back) {
           setTurn((t) => t + 1);
@@ -234,10 +258,10 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
         setCursor((c) => Math.max(0, c - 1));
         sfx.play("move");
       } else if (action === m.next) {
-        setCursor((c) => (c + 1 < title.levels.length && isOpen(L.progress.stars, c + 1) ? c + 1 : c));
+        setCursor((c) => (c + 1 < title.levels.length && open(L.progress.stars, c + 1) ? c + 1 : c));
         sfx.play("move");
       } else if (action === m.ok) {
-        if (isOpen(L.progress.stars, L.cursor)) {
+        if (open(L.progress.stars, L.cursor)) {
           sfx.play("select");
           openLevel(L.cursor);
         }
@@ -276,7 +300,7 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
       const s = sim.current;
       if (L.phase === "play" && s && !L.paused && !s.outcome()) {
         t += dt / 1000;
-        if (s.steer) ids.forEach((p, i) => {
+        if (s.steer) L.team.forEach((p, i) => {
           const r = kit.get(p.id);
           s.steer!(i, r.x, r.y);
         });
@@ -304,7 +328,7 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
       s.draw(d);
       if (now - hudAt > 150) {
         hudAt = now;
-        root.current?.setAttribute("data-grid", JSON.stringify({ phase: L.phase, level: L.cursor, pilot: L.pilot.name, hud: s.hud(), outcome: s.outcome(), ...s.debug() }));
+        root.current?.setAttribute("data-grid", JSON.stringify({ phase: L.phase, level: L.cursor, pilot: L.pilot.name, team: L.team.map((p) => p.name), hud: s.hud(), outcome: s.outcome(), ...s.debug() }));
         rerender((n) => n + 1);
       }
     };
@@ -316,10 +340,10 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
   useEffect(() => {
     if (phase === "play") return;
     root.current?.setAttribute("data-grid", JSON.stringify({
-      phase, level: cursor, pilot: pilot.name, stars: progress.stars, total: total(progress.stars), skin: progress.skin, theme: progress.theme,
+      phase, level: cursor, pilot: pilot.name, team: team.map((p) => p.name), stars: progress.stars, total: total(progress.stars), skin: progress.skin, theme: progress.theme,
       outcome: result?.outcome ?? null, fresh: result?.fresh.map((r) => r.id) ?? [],
     }));
-  }, [phase, cursor, pilot.name, progress, result]);
+  }, [phase, cursor, pilot.name, progress, result, turn]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const s = sim.current;
   const hud = phase === "play" && s ? s.hud() : null;
@@ -334,7 +358,7 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
       <div className="grid-top">
         <span className="grid-title">{title.emoji} {title.name}</span>
         <span className="grid-level">Level {cursor + 1} · {level.name}</span>
-        <span className="grid-pilot">🎮 {title.coop ? ids.map((p) => p.name).join(" + ") : pilot.name}</span>
+        <span className="grid-pilot">🎮 {title.coop ? ids.map((p) => p.name).join(" + ") : duel ? `${match[0]!.name} vs ${match[1]!.name}` : pilot.name}</span>
         {hud && (
           <>
             <span className="grid-goal">
@@ -354,7 +378,7 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
           <h2>{world.name}</h2>
           <div className="grid-levels">
             {title.levels.map((l, i) => {
-              const open = isOpen(progress.stars, i);
+              const open = duel || isOpen(progress.stars, i);
               return (
                 <div key={i} className={`grid-level-card ${i === cursor ? "cur" : ""} ${open ? "" : "locked"}`}>
                   <span className="no">{open ? i + 1 : "🔒"}</span>
@@ -373,7 +397,7 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
           <p className="grid-hint">
             ★ {total(progress.stars)} / {title.levels.length * 3}
             {upcoming ? ` · ${upcoming.stars - total(progress.stars)} more ★ for ${upcoming.name}` : " · Every reward unlocked!"}
-            {" · "}{title.coop ? "" : <><b>{pilot.name}</b>: </>}{title.menu.hint}
+            {" · "}{title.coop ? "" : duel ? <><b>{match[0]!.name} vs {match[1]!.name}</b>: </> : <><b>{pilot.name}</b>: </>}{title.menu.hint}
           </p>
         </div>
       )}
@@ -383,27 +407,30 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
           {atlas && <SpriteImg atlas={atlas} id={title.story.heroSprite} size={140} />}
           <h2>{world.name}</h2>
           <p>{world.text}</p>
-          <p className="grid-hint">{title.story.heroName} is counting on you, {title.coop ? "both of you" : pilot.name}. Tap ▶ to start.</p>
+          <p className="grid-hint">{title.story.heroName} is counting on you, {title.coop ? "both of you" : duel ? `${match[0]!.name} and ${match[1]!.name}` : pilot.name}. Tap ▶ to start.</p>
         </div>
       )}
 
       {phase === "result" && result && (
         <div className="grid-overlay grid-result">
-          <h2>{result.outcome.won ? "Level clear!" : "So close!"}</h2>
-          <div className="grid-big-stars"><Stars n={result.outcome.stars} /></div>
+          <h2>{result.outcome.headline ?? (result.outcome.won ? "Level clear!" : "So close!")}</h2>
+          {!duel && <div className="grid-big-stars"><Stars n={result.outcome.stars} /></div>}
           <ul className="grid-checks">
             {result.outcome.checks.map((c, i) => (
               <li key={i} className={c.ok ? "ok" : ""}>{c.ok ? "★" : "☆"} {c.text}</li>
             ))}
           </ul>
-          <p className="grid-score-line">{title.coop ? "Together you" : name(pilot.id)} scored <b>{result.outcome.score.toLocaleString("en")}</b>{result.best ? " · new best!" : ""}</p>
+          {!duel && <p className="grid-score-line">{title.coop ? "Together you" : name(pilot.id)} scored <b>{result.outcome.score.toLocaleString("en")}</b>{result.best ? " · new best!" : ""}</p>}
           {result.fresh.length > 0 && (
             <div className="grid-unlocked">
               <span>Unlocked:</span>
               {result.fresh.map((r) => <RewardChip key={r.id} r={r} owned atlas={atlas} />)}
             </div>
           )}
-          <p className="grid-hint">{title.coop ? "" : <>Next up: <b>{ids[(turn + 1) % ids.length]!.name}</b> · </>}▶ next level · ◀ map</p>
+          <p className="grid-hint">
+            {duel ? <>Next match: <b>{ids[(turn + 1) % ids.length]!.name} vs {ids[(turn + 2) % ids.length]!.name}</b> · ▶ play · ◀ map</>
+              : <>{title.coop ? "" : <>Next up: <b>{ids[(turn + 1) % ids.length]!.name}</b> · </>}▶ next level · ◀ map</>}
+          </p>
         </div>
       )}
     </div>

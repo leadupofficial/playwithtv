@@ -7,6 +7,12 @@
  * Co-op titles (`coop: true`, the couples shelf) are played by every phone at once instead of in turns:
  * each player's stick/tilt reaches the sim every frame (Sim.steer) and taps say who tapped (Sim.act's
  * `player`); stars and points are shared.
+ *
+ * Versus titles (`versus: true`, board games) are played by two phones against each other: each level is an
+ * AI opponent on a ladder when one phone plays alone, and with two or more phones a pair plays each other on
+ * that level's board (every level open, no stars: it's for bragging rights), swapping sides and handing over
+ * to the next pair after every match. The sim gets one colour per player in the match and reports the
+ * winner in Outcome.winner.
  */
 import type { ControlSpec } from "@playwithtv/protocol";
 import type { Draw } from "./draw";
@@ -33,6 +39,10 @@ export interface Outcome {
   score: number;
   /** One line per star rule, true when earned (shown on the results card). */
   checks: Array<{ text: string; ok: boolean }>;
+  /** Versus: index of the winning player in the match (-1 for a draw). */
+  winner?: number;
+  /** Replaces "Level clear!" / "So close!" on the result card. */
+  headline?: string;
 }
 
 export interface Hud {
@@ -104,9 +114,11 @@ export interface GridTitle {
   practice: string[];
   /** Everyone plays at once (see the top of this file). */
   coop?: boolean;
+  /** Two phones play each other (see the top of this file). */
+  versus?: boolean;
   /** Actions only used in the menus (level picker), hidden from the phone while a level is being played. */
   menuOnly?: string[];
   /** Builds a level. `skin` and `theme` are the reward ids the household picked (or ""); co-op titles also
    * get the players' colours (one per phone, in join order). */
-  create(level: number, seed: number, opts: { skin: string; theme: string; quick: boolean; colors: string[] }): Sim;
+  create(level: number, seed: number, opts: { skin: string; theme: string; quick: boolean; colors: string[]; names?: string[] }): Sim;
 }
