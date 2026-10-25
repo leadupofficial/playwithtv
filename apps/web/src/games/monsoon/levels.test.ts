@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { runBot, validateAll } from "../kitplat/testkit";
+import { fightBoss, runBot, validateAll } from "../kitplat/testkit";
 import { DEF } from "./index";
 
 describe("Monsoon Courier levels", () => {
@@ -17,5 +17,11 @@ describe("Monsoon Courier levels", () => {
       expect(w.heroes.some((h) => h.finished), `phase ${phase}`).toBe(true);
       expect(w.done).toBe(true);
     }
+  });
+  it("the Mango Bandit can be beaten (stomped while it is open) and the level then clears", () => {
+    const w = fightBoss(DEF.spec, 2);
+    expect(w.boss!.dead).toBe(true);
+    expect(w.done).toBe(true);
+    expect(w.heroes.reduce((n, h) => n + h.stats.bossHits, 0)).toBe(DEF.spec.bosses[0]!.hp);
   });
 });

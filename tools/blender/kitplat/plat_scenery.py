@@ -217,7 +217,7 @@ def stepwell_mid():
         P.cyl(P.mat("#5a4a2a", 0.9), (x, 1.25, H - 2.2), 0.02, 4.4, verts=6)
         for i in range(16):
             P.sphere(leaf, (x + math.sin(i * 1.7) * 0.22, 1.2, H - 0.3 - i * 0.26), (0.16, 0.05, 0.07), rot=(0, 35 * math.sin(i * 2.3), 0), r=1, seg=8)
-    rep(vines, [3.5, 15.5, 22.0])
+    # (hanging vines live in the foreground layer, so this layer stays short and the TV can trim its empty top)
 
 
 # ---------------------------------------------------------------------------------------------------------------

@@ -36,3 +36,36 @@ export function runBot(spec: GameSpec, levelIdx: number, quick: boolean, players
   }
   return w;
 }
+
+/**
+ * Plays a game's boss level with heroes that wait beside the arena and drop onto the boss whenever it is
+ * vulnerable (the way players learn to): returns the world when the boss is down and the level cleared, or at
+ * the time limit.
+ */
+export function fightBoss(spec: GameSpec, levelIdx: number, maxS = 240): World {
+  const def = spec.levels[levelIdx]!;
+  const w = createWorld(spec, def, ["p0", "p1"], "coop", 5);
+  const inputs: PadInput[] = w.heroes.map(() => ({ ...NO_INPUT }));
+  for (let i = 0; i < maxS / DT && !w.done; i++) {
+    const b = w.boss!;
+    for (const h of w.heroes) {
+      if (h.down) continue;
+      h.inv = Math.max(h.inv, 0.5); // the test is about the boss pattern, not dodging
+      if (!b.awake && !b.dead) { h.body.x = b.arena[0] + 3; h.body.y = b.floorY; }
+      else if (!b.dead && h.body.grounded && b.hurtT <= 0 && (b.def.pattern.some((m) => m.vulnerable) ? bossOpen(w) : true)) {
+        h.body.x = b.body.x;
+        h.body.y = b.body.y + b.body.h + 1.2;
+        h.body.vy = -1;
+        h.body.grounded = false;
+      }
+    }
+    stepWorld(w, inputs, DT);
+  }
+  return w;
+}
+
+function bossOpen(w: World): boolean {
+  const b = w.boss!;
+  const list = b.hp * 2 <= b.def.hp && b.def.angry ? b.def.angry : b.def.pattern;
+  return list[b.move % list.length]!.vulnerable === true;
+}
