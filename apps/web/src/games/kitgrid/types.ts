@@ -78,6 +78,8 @@ export interface LevelInfo {
   name: string;
   /** One line under the name on the level map: the goal and any twist. */
   brief: string;
+  /** Versus titles: what this level is called in a two-player match (e.g. "Park table"), instead of the AI's name. */
+  table?: string;
   /** World index into GridTitle.story.worlds. */
   world: number;
 }

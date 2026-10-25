@@ -357,7 +357,7 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
     <div ref={root} className="tv grid-bg" style={{ background: bg }} data-grid="{}">
       <div className="grid-top">
         <span className="grid-title">{title.emoji} {title.name}</span>
-        <span className="grid-level">Level {cursor + 1} · {level.name}</span>
+        <span className="grid-level">{duel ? `Match ${turn + 1} · ${level.table ?? level.name}` : `Level ${cursor + 1} · ${level.name}`}</span>
         <span className="grid-pilot">🎮 {title.coop ? ids.map((p) => p.name).join(" + ") : duel ? `${match[0]!.name} vs ${match[1]!.name}` : pilot.name}</span>
         {hud && (
           <>
@@ -382,7 +382,7 @@ function Campaign({ title, ids, kit, bridge, paused, onFinish }: {
               return (
                 <div key={i} className={`grid-level-card ${i === cursor ? "cur" : ""} ${open ? "" : "locked"}`}>
                   <span className="no">{open ? i + 1 : "🔒"}</span>
-                  <span className="nm">{l.name}</span>
+                  <span className="nm">{duel ? l.table ?? l.name : l.name}</span>
                   <Stars n={progress.stars[i] ?? 0} />
                 </div>
               );

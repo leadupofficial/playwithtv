@@ -27,6 +27,7 @@ const CarryHomeGame = lazy(() => import("./carry-home").then((m) => ({ default: 
 const KitchenRushGame = lazy(() => import("./kitchen-rush").then((m) => ({ default: m.KitchenRushGame })));
 const TandemRideGame = lazy(() => import("./tandem-ride").then((m) => ({ default: m.TandemRideGame })));
 const KingsRowGame = lazy(() => import("./kings-row").then((m) => ({ default: m.KingsRowGame })));
+const DropFourGame = lazy(() => import("./drop-four").then((m) => ({ default: m.DropFourGame })));
 const GlowwormGame = lazy(() => import("./glowworm").then((m) => ({ default: m.GlowwormGame })));
 const SkylineGame = lazy(() => import("./skyline").then((m) => ({ default: m.SkylineGame })));
 const CometKittyGame = lazy(() => import("./comet-kitty").then((m) => ({ default: m.CometKittyGame })));
@@ -66,6 +67,7 @@ export const GAMES: Record<string, GameComponent> = {
   "kitchen-rush": KitchenRushGame,
   "tandem-ride": TandemRideGame,
   "kings-row": KingsRowGame,
+  "drop-four": DropFourGame,
   "skyline-stacker": SkylineGame,
   "comet-kitty": CometKittyGame,
   "buzz-field": BuzzFieldGame,

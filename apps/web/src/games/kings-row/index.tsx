@@ -41,7 +41,10 @@ export const KINGS: GridTitle = {
     "theme-hall": "linear-gradient(#2a1f3a, #120d1c)",
   },
   story: { heroSprite: "", heroName: "The Kings Row club", worlds: WORLDS },
-  levels: LEVELS.map((o) => ({ name: `${o.emoji} ${o.name}`, world: o.world, brief: `${o.blurb}. With two phones: play each other at the ${o.table === "park" ? "park table" : o.table === "cafe" ? "café table" : "Grand Hall table"}` })),
+  levels: LEVELS.map((o, i) => {
+    const table = `${o.table === "park" ? "Park table" : o.table === "cafe" ? "Café table" : "Grand Hall table"} ${(i % 2) + 1}`;
+    return { name: `${o.emoji} ${o.name}`, world: o.world, table, brief: `${o.blurb}. With two phones: play each other at ${table}` };
+  }),
   rewards: [
     { stars: 3, id: "pieces-marble", name: "Marble pieces", kind: "skin", emoji: "⚪" },
     { stars: 7, id: "theme-hall", name: "Grand Hall night", kind: "theme", emoji: "🏛️" },

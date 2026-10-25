@@ -28,16 +28,23 @@ test("Kings Row: two phones take turns moving pieces, then one resigns", async (
   await expect.poll(async () => (await g()).phase, { timeout: 5_000 }).toBe("play");
   await expect(ana.getByRole("button", { name: /Prev/ })).toHaveCount(0);
 
-  const tap = async (p: typeof ana, arrow: string) => { await hold(p, `.arrow-${arrow}`, 60); await p.waitForTimeout(80); };
+  const tap = async (p: typeof ana, arrow: string) => { await hold(p, `.arrow-${arrow}`, 90); await p.waitForTimeout(80); };
+  /** Steps a cursor to a square (re-reading where it is, so a missed tap is just retried). */
+  const goTo = async (p: typeof ana, who: number, sq: number) => {
+    for (let i = 0; i < 16; i++) {
+      const at = (await g()).cursors[who] as number;
+      if (at === sq) return;
+      await tap(p, (at >> 3) > (sq >> 3) ? "up" : (at >> 3) < (sq >> 3) ? "down" : (at & 7) < (sq & 7) ? "right" : "left");
+    }
+    expect((await g()).cursors[who]).toBe(sq);
+  };
   // Ana (red, bottom) moves the corner man up one: a6 → b5. Her cursor starts on it.
   expect((await g()).cursors[0]).toBe(40);
   await press(ben, /Pick/); // not Ben's turn: nothing happens
   expect((await g()).turn).toBe(0);
   await press(ana, /Pick/);
   await expect.poll(async () => (await g()).sel, { timeout: 2_000 }).toEqual([40]);
-  await tap(ana, "up");
-  await tap(ana, "right");
-  await expect.poll(async () => (await g()).cursors[0], { timeout: 2_000 }).toBe(33);
+  await goTo(ana, 0, 33);
   await press(ana, /Pick/);
   await expect.poll(async () => (await g()).turn, { timeout: 2_000 }).toBe(1);
   expect((await g()).board[4]).toBe(".o......");
@@ -45,8 +52,7 @@ test("Kings Row: two phones take turns moving pieces, then one resigns", async (
   // Ben (dark, top): b3 → a4
   expect((await g()).cursors[1]).toBe(17);
   await press(ben, /Pick/);
-  await tap(ben, "down");
-  await tap(ben, "left");
+  await goTo(ben, 1, 24);
   await press(ben, /Pick/);
   await expect.poll(async () => (await g()).turn, { timeout: 2_000 }).toBe(0);
   expect((await g()).board[3]).toBe("x.......");
