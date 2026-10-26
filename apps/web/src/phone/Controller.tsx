@@ -90,7 +90,7 @@ export function Controller({ session, onLeave }: { session: PhoneSession; onLeav
       }
       if (m.type === "tv.event") setLastEvent({ event: m.event, data: m.data, at: Date.now() });
       if (m.type === "room.expired") setFatal("This game session has ended. Scan the TV code to join again.");
-      if (m.type === "error" && (m.code === "unauthorized" || m.code === "room_not_found" || m.code === "removed")) setFatal(m.message);
+      if (m.type === "error" && (m.code === "unauthorized" || m.code === "room_not_found" || m.code === "removed")) setFatal((f) => f ?? m.message); // the first reason is the real one
       else if (m.type === "error") setNotice({ text: m.message, at: Date.now() }); // e.g. "needs 2 players"
     });
     const lat = setInterval(() => setLatency(link.mode === "direct" ? { ms: link.rttMs, direct: true } : { ms: s.latencyMs, direct: false }), 2000);

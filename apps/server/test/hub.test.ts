@@ -166,6 +166,29 @@ describe("sockets and input", () => {
     expect((await d.next("error")).code).toBe("unsupported_version");
   });
 
+  it("a hello to a room that has ended closes with that reason, so queued messages cannot bury it under 'say hello first'", async () => {
+    await start();
+    const c = new Client();
+    await c.open();
+    // what a phone does on reconnect: hello, then whatever it queued while offline
+    c.send({ type: "hello", v: 1, role: "controller", roomId: "gone-room", playerToken: "old" });
+    c.send({ type: "player.ready", ready: true });
+    const err = await c.next("error");
+    expect(err.code).toBe("room_not_found");
+    expect(err.message).toBe("This room has ended.");
+    expect(await Promise.race([c.closed, new Promise((r) => setTimeout(() => r("open"), 1000))])).toBe(4400);
+    expect(c.msgs.filter((m) => m.type === "error")).toEqual([]); // nothing after the real reason
+  });
+
+  it("a second hello on a working connection is refused without dropping it", async () => {
+    await start();
+    const { room, c: t } = await tv();
+    t.send({ type: "hello", v: 1, role: "tv", roomId: room.roomId, hostToken: room.hostToken });
+    expect((await t.next("error")).code).toBe("not_allowed");
+    t.send({ type: "ping", t: 1 });
+    await t.next("pong");
+  });
+
   it("relays controller state to the TV, drops stale frames and invalid values", async () => {
     await start();
     const { room, c: t } = await tv();

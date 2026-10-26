@@ -98,5 +98,16 @@ results was added again (so: duplicate podium entries, results for a player show
 phase is `race` (`ghat/race.ts`). Test `race.test.ts` "not placed twice" (old code: 9 entries). Kart Knockout, Racer and
 kitplat checked: each guards its finish already.
 
+**Real devices** (Mi TV AXFU0, Android 14, PlayWithTV app; vivo I2304, Android 16, Chrome) against production:
+- TV lobby renders, join code and QR; the phone joins over a direct link (12–24 ms).
+- Drop Four vs Benny (L1), a full game on buttons: TV 1,567 frames, median 17 ms, p99 24 ms, 0.57% janky; every tap landed.
+- **Bug**: Chrome reopened an old controller tab and showed "Session ended / say hello first" instead of "This room has ended".
+  The hub answered the failed hello (`room_not_found`), but left the socket open, so the phone's queued messages each
+  drew `unauthorized` "say hello first", and the phone showed the last error. The hub now closes the socket after a hello
+  that fails, and the phone keeps the first fatal reason. Test `hub.test.ts` (fails on the old hub).
+- Known, seen again: the lobby promo covers the "Join from…" tip.
+- Questions for design: a lost Level 1 still scores 260 and offers "► next level".
+- Not yet run on the devices: dropping the TV's Wi-Fi (also drops wireless adb), Gully motion swing.
+
 Next: flagship design plans (§4), starting with Pillow Fort Brawl's no-GPU frame rate. Open: games that ignore `paused` (Beat Blade #13) still animate while
 input is held; captain pause button; Memory Wave local flick failure.

@@ -167,10 +167,13 @@ export class Hub {
         }
         return this.fail(ws, "bad_message", msg.error.issues[0]?.message ?? "invalid message");
       }
+      const fresh = !this.conns.get(ws)?.role;
       try {
         this.handle(ws, msg.data);
       } catch (e) {
-        if (e instanceof HubError) this.fail(ws, e.code, e.message);
+        // A hello that fails (room ended, bad token) ends the connection with its reason. Left open, the client's
+        // queued messages each drew "say hello first", which buried the real reason on the phone.
+        if (e instanceof HubError) this.fail(ws, e.code, e.message, msg.data.type === "hello" && fresh);
         else {
           this.log({ err: String(e) }, "handler error");
           this.fail(ws, "bad_message", "internal error");
