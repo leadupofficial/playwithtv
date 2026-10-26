@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildApp, isPhonePage, type App } from "../src/app.js";
 import { loadConfig, productionProblems } from "../src/config.js";
 import { MemoryPersistence } from "../src/persistence.js";
@@ -162,6 +162,10 @@ describe("join-code guessing can't be turned against everyone", () => {
 describe("site-wide slow-down only reaches networks that guessed wrong", () => {
   it("during a global flood, a clean network's right code still gets in at once", async () => {
     await start();
+    // the budgets refill with time, so the clock only moves when the test says so (a slow CI runner would
+    // otherwise refill the site budget while the flood below is still being sent)
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
     const room = await (await fetch(`${base}/api/rooms`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" })).json();
     const join = (body: object, ip: string) => fetch(`${base}/api/join`, {
       method: "POST", headers: { "content-type": "application/json", "x-forwarded-for": ip },
@@ -170,11 +174,14 @@ describe("site-wide slow-down only reaches networks that guessed wrong", () => {
     // 320 wrong codes from many networks (one each), draining the site-wide budget
     for (let i = 0; i < 320; i++) await join({ joinCode: "ZZZZZ" }, `10.${i >> 8}.${i & 255}.1`);
     expect(await join({ joinCode: "ZZZZZ" }, "10.0.5.9")).toBe(429);           // a guessing network: slowed
-    await new Promise((r) => setTimeout(r, 2500));                                 // its own budget refills (2 s)…
+    vi.setSystemTime(Date.now() + 2500);                                            // its own budget refills (2 s)…
     for (let i = 0; i < 20; i++) await join({ joinCode: "ZZZZZ" }, `10.200.${i}.1`); // the flood drains the site budget again
     expect(await join({ joinCode: "ZZZZZ" }, "10.0.5.9")).toBe(429);           // …but it is still marked as a guesser
     expect(await join({ joinCode: room.joinCode }, "203.0.113.51")).toBe(200);  // and clean networks still get in
     expect(await join({ joinCode: room.joinCode }, "203.0.113.50")).toBe(200);  // a clean network: straight in
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("keys one client as its IPv4 address or IPv6 /64", () => {

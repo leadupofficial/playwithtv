@@ -9,7 +9,7 @@
  * Budgets: docs/performance.md. The game's manifest says which class it is in (perfClass).
  */
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { appendFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { CATALOG } from "../packages/protocol/src/catalog";
 import { overBudget, perfClassOf, type PerfClass } from "../packages/protocol/src/perfBudget";
 import { joinPhone, tvCode, type Mode } from "./helpers";
@@ -20,7 +20,7 @@ const ONLY = process.env.PERF_GAME;
 const REPORT_ONLY = process.env.PERF_REPORT === "1";
 const games = CATALOG.filter((g) => g.playable && (!ONLY || g.id === ONLY));
 
-test.describe.configure({ mode: "serial" });
+// one game per test: a game over budget fails on its own and every other game is still measured
 test.afterEach(async ({ browser }) => {
   for (const c of browser.contexts()) await c.close().catch(() => undefined);
 });
@@ -60,9 +60,12 @@ for (const g of games) {
     await tv.waitForTimeout(2500); // let the opening camera move / first textures settle
     // the phone holds ▶ so the scene is not just idle (pads without arrows ignore it)
     await phone.locator(".game-pad .arrow-right").first().dispatchEvent("pointerdown", { pointerId: 3 }, { timeout: 1000 }).catch(() => undefined);
-    const s: PerfSample & { game: string; perfClass: PerfClass; loadMs: number } = {
-      game: g.id, perfClass: cls, loadMs, ...(await perfSample(tv, 6000, await perfDownloadKB(tv))),
-    };
+    const kb = await perfDownloadKB(tv);
+    let sample = await perfSample(tv, 6000, kb);
+    // a cold start (shaders compiling in the software renderer CI uses) can stall the first seconds:
+    // a TV warms up the same way, so a slow first window is measured once more before it counts
+    if (sample.frames <= 30) sample = await perfSample(tv, 6000, kb);
+    const s: PerfSample & { game: string; perfClass: PerfClass; loadMs: number } = { game: g.id, perfClass: cls, loadMs, ...sample };
     mkdirSync(OUT, { recursive: true });
     writeFileSync(`${OUT}/${g.id}.json`, JSON.stringify(s, null, 2));
     console.log(`perf ${g.id}: ${JSON.stringify(s)}`);
@@ -80,9 +83,8 @@ test.afterAll(() => {
   const cols = ["game", "perfClass", "loadMs", "downloadKB", "fps", "calls", "callsP95", "tris", "trisP95", "texPeakMB", "scriptMs", "scriptMsP95", "heapMB"];
   const line = (v: Array<string | number>) => v.map((x, i) => String(x).padEnd(i === 0 ? 22 : 10)).join("");
   console.log("\n" + line(cols) + "\n" + rows.map((r) => line(cols.map((c) => r[c] ?? ""))).join("\n"));
-  // on GitHub, the same table on the run's summary page
-  if (process.env.GITHUB_STEP_SUMMARY) {
-    const md = [`| ${cols.join(" | ")} |`, `|${cols.map(() => "---").join("|")}|`, ...rows.map((r) => `| ${cols.map((c) => r[c] ?? "").join(" | ")} |`)];
-    appendFileSync(process.env.GITHUB_STEP_SUMMARY, `### Game performance (lite tier)\n\n${md.join("\n")}\n`);
-  }
+  // the same table as markdown; CI copies it to the run's summary page once at the end (after a failed game
+  // the test worker restarts, so this hook can run more than once: overwrite, never append)
+  const md = [`| ${cols.join(" | ")} |`, `|${cols.map(() => "---").join("|")}|`, ...rows.map((r) => `| ${cols.map((c) => r[c] ?? "").join(" | ")} |`)];
+  writeFileSync(`${OUT}/summary.md`, `### Game performance (lite tier)\n\n${md.join("\n")}\n`);
 });

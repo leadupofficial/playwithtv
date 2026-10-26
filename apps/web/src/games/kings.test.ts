@@ -110,7 +110,9 @@ describe("Kings Row rules", () => {
       if (!m) break;
       bd = play(bd, m);
     }
-    expect(worst).toBeLessThan(150); // a weak TV is ~5x slower than this machine: still under a second
+    // a weak TV is ~5x slower than a developer laptop: still under a second. Shared CI runners are ~2-3x slower
+    // than a laptop and noisy, so they get a matching allowance.
+    expect(worst).toBeLessThan(process.env.CI ? 400 : 150);
   });
 });
 
