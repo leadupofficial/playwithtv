@@ -166,7 +166,7 @@ export function Controller({ session, onLeave }: { session: PhoneSession; onLeav
               {me ? `${AVATARS[me.avatar].emoji} ${me.name}` : "…"}
             </span>
             <span className="row" style={{ gap: 8 }}>
-              {layout.type === "game" && room?.captainId === session.playerId && (
+              {(room?.status === "playing" || room?.status === "paused") && room?.captainId === session.playerId && ( /* also during the practice screen: there must always be a way out */
                 <button className="chip" onClick={() => setConfirmEnd(true)} aria-label="End the game">⏹ End</button>
               )}
               {mode && modes.length > 1 && <button className="chip mode-chip" onClick={() => nextMode()} aria-label="Change controls">{MODE_LABEL[mode]} ⇄</button>}

@@ -110,6 +110,18 @@ describe("hub capacity guards and static headers (live server)", () => {
     expect(await cc("/tv")).toBe(REVALIDATE); // client-side route → index.html
   });
 
+  it("answers a missing build file with a real 404, never the app page (a stale game chunk would open blank)", async () => {
+    await start();
+    for (const p of ["/assets/KingsRow-Old12345.js", "/assets/game/gone.webp", "/vendor/x-1.0/a.wasm", "/nope.js"]) {
+      const res = await fetch(base + p);
+      expect(res.status, p).toBe(404);
+      expect(res.headers.get("content-type"), p).not.toMatch(/html/);
+    }
+    const page = await fetch(base + "/tv/showroom");
+    expect(page.status).toBe(200);
+    expect(page.headers.get("content-type")).toMatch(/html/);
+  });
+
   it("answers 503 server_busy once the room cap is reached", async () => {
     await start({ maxRooms: 2 });
     const post = () => fetch(base + "/api/rooms", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });

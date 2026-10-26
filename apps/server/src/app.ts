@@ -191,7 +191,13 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
       setHeaders: (reply, filePath) => reply.header("cache-control", cacheControlFor("/" + relative(cfg.webDist!, filePath).split(sep).join("/"))),
     });
     http.setNotFoundHandler((req, reply) => {
-      if (req.method === "GET" && !req.url.startsWith("/api")) return reply.header("cache-control", REVALIDATE).sendFile("index.html");
+      // A missing build file (e.g. a game chunk from before the last deploy, asked for by a TV that has been
+      // open since) must be a real 404: answering with index.html makes the browser fail to run it as a script
+      // and the game opens to a blank screen. Only page routes (/tv, /join, ...) fall back to the app.
+      const path = req.url.split("?")[0]!;
+      const isFile = path.startsWith("/assets/") || path.startsWith("/vendor/") || /\.[a-z0-9]{1,8}$/i.test(path);
+      if (req.method === "GET" && !path.startsWith("/api") && !isFile) return reply.header("cache-control", REVALIDATE).sendFile("index.html");
+      if (isFile) return reply.status(404).header("cache-control", "no-store").type("text/plain").send("Not found");
       return reply.status(404).send({ error: "not_found", message: "Not found" });
     });
   }

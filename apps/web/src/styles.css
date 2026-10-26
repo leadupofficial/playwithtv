@@ -293,4 +293,5 @@ button { font-family: inherit; color: inherit; }
 .lobby-extras { display: flex; flex-direction: column; gap: 10px; }
 .captain .lobby-extras { flex-direction: row; align-items: center; }
 .captain .lobby-extras .btn { width: auto; }
-.end-confirm { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 14px; background: var(--bg-1); border: 1px solid var(--line); }
+/* floats above the pad: in the flow it got squeezed and the pad's own content painted over the End button */
+.end-confirm { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 50; width: min(440px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 14px; background: var(--bg-1); border: 1px solid var(--line); box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.6); }

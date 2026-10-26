@@ -15,6 +15,7 @@ import { TvInputs } from "../rtc";
 import { TvInstallChip } from "../InstallBanner";
 import { MODE_ICON } from "../games/controlKit";
 import { GraphicsChip } from "../quality/GraphicsChip";
+import { GameBoundary } from "../GameBoundary";
 
 const ROOM_KEY = "pwtv.tv.room";
 
@@ -182,6 +183,7 @@ export function TvApp() {
   if (playing) {
     return (
       <div className="tv" style={{ padding: 0 }}>
+        <GameBoundary key={room!.gameId} onExit={() => socket?.send({ type: "game.exit" })}>
         <Suspense fallback={<div className="center-screen"><p className="hint">Loading game…</p></div>}>
           <Game
             players={room!.players /* everyone in the room; games show who is disconnected */}
@@ -191,6 +193,7 @@ export function TvApp() {
             sponsor={inGame ? { name: inGame.advertiser } : null}
           />
         </Suspense>
+        </GameBoundary>
         {presenter && <PresentedBy key={startedAt.current} ad={presenter} />}
         {status !== "open" && <div className="chip" style={{ position: "absolute", top: 32, right: 58 }}><span className="dot" />Reconnecting…</div>}
         {notice && <div className="notice" role="alert" style={{ position: "absolute", bottom: 43, left: 96, right: 96 }}>{notice}</div>}

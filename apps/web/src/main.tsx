@@ -10,6 +10,10 @@ import { Stage } from "./tv/Stage";
 import { SensorLab } from "./phone/SensorLab";
 import { HostingHelp } from "./quality/HostingHelp";
 import "./install"; // catches the browser's one-time install event as early as possible
+import { GameBoundary, reloadForNewVersion } from "./GameBoundary";
+
+// a lazily loaded file (a game, the showroom) that vanished in a deploy: reload once to get the new build
+window.addEventListener("vite:preloadError", (e) => { if (reloadForNewVersion()) e.preventDefault(); });
 
 // the showroom pulls in three.js and the 3D kits: loaded only when opened
 const Showroom = lazy(() => import("./showroom/Showroom"));
@@ -43,6 +47,7 @@ if (import.meta.env.PROD && "serviceWorker" in navigator) {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
+      <GameBoundary what="this page">
       <Routes>
         <Route path="/" element={<Stage><Home /></Stage>} />
         <Route path="/tv" element={<Stage><TvApp /></Stage>} />
@@ -54,6 +59,7 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/admin" element={<AdminApp />} />
         <Route path="/sensors" element={<SensorLab />} />
       </Routes>
+      </GameBoundary>
     </BrowserRouter>
   </StrictMode>,
 );
