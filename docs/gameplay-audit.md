@@ -68,5 +68,15 @@ reproduced locally in 20 runs; watch it).
 **Fixes 5, 4, 7**: unit 58 + 104 + 713 passed, typecheck clean, build OK; e2e boxing, kalari-clash, gully-super-over 8 passed,
 9 skipped (tier-gated). Each new test failed on the old code (boxing 3, kalari 2, gully 2).
 
+**40c4473** CI: 75 passed, 0 failed, 5 flaky (Tiffin ultra, Pillow Fort buttons, Gully buttons, Tilt Jumper motion,
+tv-reconnect), 39 skipped. Deployed (`.deployed-commit` 40c4473, hub healthy); live `/api/games` lists 17 games, none of
+the 4 held back.
+
+tv-reconnect's CI flake was the join code never appearing: the routed TV socket's hello went unanswered and the client
+waited forever. That is a real gap (any half-open socket strands a TV on "····" or mid-game), so `net.ts` now drops a
+socket that hears nothing for `SILENCE_MS` (7 s; pings go every 2 s) and reconnects, ignoring hidden-tab timer throttling.
+Tests `net.test.ts` (4; the two silence cases fail on the old client). Memory Wave's two motion/touchpad e2e tests fail
+on this Mac with or without the change and pass in CI: still unresolved locally.
+
 Next: flagship design plans (§4), starting with Pillow Fort Brawl's no-GPU frame rate. Open: games that ignore `paused` (Beat Blade #13) still animate while
 input is held; captain pause button; Memory Wave local flick failure.

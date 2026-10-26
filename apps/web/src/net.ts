@@ -7,6 +7,12 @@ type Handler = (m: ServerMessage) => void;
 const FINAL_CLOSE = new Set([4400, 4401, 4409, 4410]);
 
 /**
+ * An open socket that hears nothing for this long (no welcome after hello, no pong to the 2 s pings) is dead
+ * even if the browser has not noticed (half-open connection, lost hello): drop it and reconnect.
+ */
+export const SILENCE_MS = 7000;
+
+/**
  * One WebSocket to the hub with automatic reconnection (exponential backoff), re-sent hello,
  * and a 2 s ping that measures round-trip latency.
  */
@@ -17,6 +23,7 @@ export class HubSocket {
   private retry = 0;
   private stopped = false;
   private pinger?: ReturnType<typeof setInterval>;
+  private heardAt = 0;
   /** Lifecycle messages sent while reconnecting; delivered right after the next hello. */
   private outbox: ClientMessage[] = [];
   latencyMs = 0;
@@ -41,9 +48,18 @@ export class HubSocket {
       for (const m of this.outbox.splice(0)) ws.send(JSON.stringify(m));
       this.setStatus("open");
       clearInterval(this.pinger);
-      this.pinger = setInterval(() => this.send({ type: "ping", t: Date.now() }), 2000);
+      this.heardAt = Date.now();
+      let tick = Date.now();
+      this.pinger = setInterval(() => {
+        const now = Date.now(), steady = now - tick < 4000; // a hidden tab's throttled timer proves nothing
+        tick = now;
+        if (steady && now - this.heardAt > SILENCE_MS) return this.drop(ws);
+        if (!steady) this.heardAt = now; // give the ping sent now a fair chance
+        this.send({ type: "ping", t: now });
+      }, 2000);
     };
     ws.onmessage = (e) => {
+      this.heardAt = Date.now();
       const m = JSON.parse(String(e.data)) as ServerMessage;
       if (m.type === "pong") this.latencyMs = Date.now() - m.t;
       this.handlers.forEach((h) => h(m));
@@ -51,9 +67,21 @@ export class HubSocket {
     ws.onclose = (e) => {
       clearInterval(this.pinger);
       if (this.stopped || FINAL_CLOSE.has(e.code)) return this.setStatus("closed");
-      this.setStatus("reconnecting");
-      setTimeout(() => this.connect(), Math.min(5000, 300 * 2 ** this.retry++));
+      this.reconnect();
     };
+  }
+
+  private reconnect() {
+    this.setStatus("reconnecting");
+    setTimeout(() => this.connect(), Math.min(5000, 300 * 2 ** this.retry++));
+  }
+
+  /** Gives up on a silent socket without waiting for the browser's close (which can take minutes when half-open). */
+  private drop(ws: WebSocket) {
+    clearInterval(this.pinger);
+    ws.onopen = ws.onmessage = ws.onclose = null;
+    try { ws.close(4000, "silent"); } catch { /* already closing */ }
+    if (this.ws === ws && !this.stopped) this.reconnect();
   }
 
   send(m: ClientMessage) {
