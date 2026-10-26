@@ -114,8 +114,9 @@ flowchart LR
 4. The **game runs entirely on the TV**: physics, rules, music, drawing. The phone only sends small input messages,
    such as a stick position or "punch at 12:00:01.234".
 
-**Why the server stays light:** it never runs games, streams video or stores gameplay. A room costs a few kilobytes
-and the input stays inside your home. That's how a single small server can handle thousands of living rooms.
+**Why the server stays light:** it never runs games or streams video. A room costs a few kilobytes, and once the
+direct link is up the input stays inside your home and never touches the server. Rooms, connections per address and
+relay traffic are capped, so one small server can host many living rooms at once.
 
 ### Motion, done on the phone
 
