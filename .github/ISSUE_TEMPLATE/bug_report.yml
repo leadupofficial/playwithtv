@@ -1,0 +1,24 @@
+name: 🐛 Bug report
+description: Something doesn't work or feels wrong
+labels: [bug]
+body:
+  - type: input
+    id: game
+    attributes: { label: Game, placeholder: "e.g. Beat Blade, or the lobby" }
+    validations: { required: true }
+  - type: textarea
+    id: what
+    attributes: { label: What happened, description: "And what you expected instead. Screenshots or a short video help a lot." }
+    validations: { required: true }
+  - type: dropdown
+    id: mode
+    attributes: { label: Control mode, options: [Buttons, Touchpad, Motion, Hybrid, Camera, Not relevant] }
+  - type: input
+    id: phone
+    attributes: { label: Phone and browser, placeholder: "e.g. Pixel 7, Chrome 140 / iPhone 15, Safari" }
+  - type: input
+    id: tv
+    attributes: { label: TV or display, placeholder: "e.g. Mi TV with the TV app / laptop Chrome" }
+  - type: textarea
+    id: steps
+    attributes: { label: Steps to reproduce }

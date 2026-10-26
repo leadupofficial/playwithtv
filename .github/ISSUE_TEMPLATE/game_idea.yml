@@ -1,0 +1,20 @@
+name: 🎮 Game or content idea
+description: Propose a new game, song, dance, level or trivia pack
+labels: [idea]
+body:
+  - type: input
+    id: name
+    attributes: { label: Name }
+    validations: { required: true }
+  - type: textarea
+    id: pitch
+    attributes: { label: The idea, description: "What do players do? How many players? What does the phone do in each control mode?" }
+    validations: { required: true }
+  - type: checkboxes
+    id: rules
+    attributes:
+      label: Checks
+      options:
+        - label: It can be played with plain buttons too
+        - label: All art and music would be original or CC0
+        - label: I'd like to build it myself
