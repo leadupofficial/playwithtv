@@ -100,11 +100,15 @@ async function finishAndCheck(tv: Page, phones: Page[], end: Dbg, shots: string)
 
 /** The real-time tiers need a real GPU (the default headless Chromium renders WebGL in software, SwiftShader). */
 const GPU_ARGS = ["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist"];
+// GitHub's Linux runners have no GPU (and no Metal): the high/ultra tiers would be drawn in software and time
+// out, so on CI the two-phone match runs on the lite tier and the ultra screenshot tour is skipped.
+const CI = !!process.env.CI;
+const MATCH_TIER = CI ? "lite" : "high";
 
 test("Gully Super Over: two phones play a quick match — swing-batting (motion) and touchpad bowling — to the result (high)", async ({ playwright }) => {
   test.setTimeout(300_000);
-  const browser = await playwright.chromium.launch({ args: GPU_ARGS });
-  const { tv, code } = await gullyTv(browser, "high");
+  const browser = await playwright.chromium.launch({ args: CI ? [] : GPU_ARGS });
+  const { tv, code } = await gullyTv(browser, MATCH_TIER);
   const modes = { [BAT]: "motion", [BOWL]: "touchpad" } as Record<string, Mode>;
   const a = await joinPhone(browser, code, "Asha", modes);
   const b = await joinPhone(browser, code, "Ravi", modes);
@@ -113,8 +117,8 @@ test("Gully Super Over: two phones play a quick match — swing-batting (motion)
   const s = stateOf(tv);
   await expect.poll(async () => (await s()).phase, { timeout: 30_000 }).toMatch(/intro|innings|aim/);
   await shot(tv, "high-intro");
-  const { end, fps } = await playMatch(tv, { Asha: { page: a, bat: "motion", bowl: "touchpad" }, Ravi: { page: b, bat: "motion", bowl: "touchpad" } }, "high");
-  console.log(`gully high: fps min ${Math.min(...fps)} median ${fps.sort((x, y) => x - y)[Math.floor(fps.length / 2)]}, calls ${end.calls}, tris ${end.tris}; results ${end.results.join(",")}; timing ${end.timing}`);
+  const { end, fps } = await playMatch(tv, { Asha: { page: a, bat: "motion", bowl: "touchpad" }, Ravi: { page: b, bat: "motion", bowl: "touchpad" } }, MATCH_TIER);
+  console.log(`gully ${MATCH_TIER}: fps min ${Math.min(...fps)} median ${fps.sort((x, y) => x - y)[Math.floor(fps.length / 2)]}, calls ${end.calls}, tris ${end.tris}; results ${end.results.join(",")}; timing ${end.timing}`);
   // both teams batted their 3 balls (or the chase ended early), swings and bowls reached the TV
   // the first innings ends after its 3 balls or when both batters are out; then the chase
   expect(end.teams[0]!.balls === 3 || end.teams[0]!.wickets === 2).toBe(true);
@@ -125,12 +129,13 @@ test("Gully Super Over: two phones play a quick match — swing-batting (motion)
   expect(bowls).toBeGreaterThanOrEqual(2);
   expect(end.results.length).toBeGreaterThanOrEqual(3);
   expect(end.results.some((r) => !["bowled", "dot", "miss", "wide"].includes(r))).toBe(true); // bat met ball
-  await finishAndCheck(tv, [a, b], end, "high");
+  await finishAndCheck(tv, [a, b], end, MATCH_TIER);
   await shot(a, "phone-bat");
   await browser.close();
 });
 
 test("Gully Super Over solo on ultra: one phone and CPU kids, screenshots of every camera", async ({ playwright }) => {
+  test.skip(CI, "the ultra tier needs a real GPU");
   test.setTimeout(240_000);
   const browser = await playwright.chromium.launch({ args: GPU_ARGS });
   const { tv, code } = await gullyTv(browser, "ultra");

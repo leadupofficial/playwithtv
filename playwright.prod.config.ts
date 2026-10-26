@@ -12,6 +12,9 @@ export default defineConfig({
   timeout: 120_000,
   fullyParallel: false,
   workers: 1,
+  // GitHub's shared runners are slow and noisy: one retry there, and a test that only passes on the retry is
+  // reported as flaky (never silently green). Locally a failure is a failure.
+  retries: process.env.CI ? 1 : 0,
   reporter: [["list"]],
   use: { baseURL: `http://localhost:${PORT}`, trace: "retain-on-failure", actionTimeout: 10_000 },
   webServer: {
