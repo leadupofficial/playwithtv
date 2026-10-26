@@ -7,6 +7,7 @@ import { Stick } from "./pad/Stick";
 import { Touchpad } from "./pad/Touchpad";
 import { ActionButtons } from "./pad/ActionButtons";
 import { resolver } from "./gestureMap";
+import { buzz } from "./haptics";
 import { PRACTICE_GAIN, PRACTICE_MOVES, gainFrom, needsPractice, practiceAction, practised } from "./practice";
 import { t } from "../i18n";
 
@@ -71,7 +72,7 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
       if ((f.still && Date.now() - started > 700) || Date.now() - started > 4000) {
         motion.calibrate();
         setTimeout(() => input.tap("calibrated"), 120);
-        navigator.vibrate?.(40);
+        buzz(40);
         setPhase("ready");
         if (drill && needsPractice(spec, drill)) setPractising(true);
       }
@@ -100,14 +101,14 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
       practised(spec, drill);
       if (gain === null) return setPractising(false);
       setTuned(true);
-      navigator.vibrate?.([40, 60, 40]);
+      buzz([40, 60, 40]);
       setTimeout(() => setPractising(false), 1200);
     };
     const off = motion.onGesture((ev) => {
       if (done || map.gesture(ev.kind, 0)?.id !== drill.id) return; // strength 0: the move itself, never its power version
       got.push(ev.strength);
       setMoves([...got]);
-      navigator.vibrate?.(25);
+      buzz(25);
       if (got.length >= PRACTICE_MOVES) finish(false);
     });
     const timeout = setTimeout(() => finish(got.length === 0), 15000);
@@ -154,7 +155,7 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
     const tv = input.tvClock(g.t);
     input.axes({ gs: g.strength / GESTURE_SCALE, pk: tv === null ? 0 : encodeStamp(tv), pv: tv === null ? 0 : 1 });
     fire(a);
-    navigator.vibrate?.(g.strength >= STRONG ? 35 : 12);
+    buzz(g.strength >= STRONG ? 35 : 12);
   }), [motion, mode, phase, map]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // what the TV tells this phone
@@ -164,7 +165,7 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
     if (lastEvent.event === "status") setStatus(d as Status);
     if (lastEvent.event === "toast") setToast({ text: String(d.text ?? ""), tone: String(d.tone ?? "info"), at: lastEvent.at });
     if (lastEvent.event === "outcome") setOutcome({ text: String(d.text ?? ""), emoji: d.emoji as string | undefined });
-    if (lastEvent.event === "vibrate") navigator.vibrate?.(Number(d.ms ?? 50));
+    if (lastEvent.event === "vibrate") buzz(Number(d.ms ?? 50), mode === "motion");
   }, [lastEvent]);
 
   const fresh = (x: { at: number } | null, ms: number) => !!x && Date.now() - x.at < ms;

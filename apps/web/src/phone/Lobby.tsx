@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { ClientMessage, GameManifest, GameResult, PlayerView, RoomView } from "@playwithtv/protocol";
 import type { PhoneMotion } from "./motion";
 import { savedSensitivity } from "./motion";
+import { buzz, hapticsOn, setHaptics } from "./haptics";
 import { InstallBanner } from "../InstallBanner";
 import { api } from "../net";
 import { t } from "../i18n";
@@ -27,6 +28,7 @@ export function Lobby({ room, me, data, motion, notice, send }: {
   const captainName = room?.players.find((p) => p.id === room.captainId)?.name;
   const [games, setGames] = useState<GameManifest[]>([]);
   const [sens, setSens] = useState(savedSensitivity);
+  const [haptics, setHapticsState] = useState(hapticsOn);
   useEffect(() => {
     if (captain && !games.length) api<GameManifest[]>("/api/games").then(setGames).catch(() => undefined);
   }, [captain]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -54,6 +56,14 @@ export function Lobby({ room, me, data, motion, notice, send }: {
           setSens(v);
           motion.setSensitivity(v);
         }} />
+      </label>
+      <label className="haptics">
+        <input type="checkbox" checked={haptics} onChange={(e) => {
+          setHaptics(e.target.checked);
+          setHapticsState(e.target.checked);
+          if (e.target.checked) buzz(40);
+        }} />
+        {t("ctl.vibration")}
       </label>
     </div>
   );

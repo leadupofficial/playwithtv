@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { capture } from "./capture";
 import type { ControlAction } from "@playwithtv/protocol";
+import { buzz } from "../haptics";
 
 /** A game's action buttons. Tap actions fire on touch-down (no click delay); hold actions report press and release. */
 export function ActionButtons({ actions, onTap, onHold }: {
@@ -25,7 +26,7 @@ export function ActionButtons({ actions, onTap, onHold }: {
               onHold(a.id, true);
             } else {
               onTap(a.id);
-              navigator.vibrate?.(12);
+              buzz(12);
             }
           }}
           onPointerUp={() => {

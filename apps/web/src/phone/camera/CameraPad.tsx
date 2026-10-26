@@ -6,6 +6,7 @@ import { BONES, PoseTracker, type PoseOutput } from "./poseActions";
 import { CameraRunner, type CamStatus } from "./cameraRunner";
 import { CameraSetup, INTENSITY_CODE, JUMP_RISE, loadSettings, saveSettings, type CamSettings } from "./CameraSetup";
 import "./camera.css";
+import { buzz } from "../haptics";
 
 type Status = { text?: string; bars?: Array<{ label: string; value: number; color?: string }> };
 type View = Pick<PoseOutput, "state" | "message" | "calib">;
@@ -70,7 +71,7 @@ export function CameraPad({ input, spec, lastEvent, color, onFallback }: {
       input.tap(a.id);
       setCounts((c) => ({ ...c, [a.id]: (c[a.id] ?? 0) + 1 }));
       try {
-        navigator.vibrate?.(a.id === pauseAction?.id ? [40, 60, 40] : 25);
+        buzz(a.id === pauseAction?.id ? [40, 60, 40] : 25);
       } catch { /* iPhone: no vibration */ }
       const perfect = mv === "squat" && o.quality >= 0.8;
       setFlash({ text: perfect ? "PERFECT form!" : mv === "squat" && o.quality < 0.5 ? `${a.label} · sit a little deeper` : a.label, at: Date.now() });
@@ -123,7 +124,7 @@ export function CameraPad({ input, spec, lastEvent, color, onFallback }: {
       setOutcome({ text: String(d.text ?? ""), emoji: d.emoji as string | undefined });
       runner.current?.stop(); // the game is over: camera off
     }
-    if (lastEvent.event === "vibrate") try { navigator.vibrate?.(Number(d.ms ?? 50)); } catch { /* unsupported */ }
+    if (lastEvent.event === "vibrate") buzz(Number(d.ms ?? 50), true); // the camera reads the body: keep it short
   }, [lastEvent]);
 
   const change = (s: CamSettings) => {

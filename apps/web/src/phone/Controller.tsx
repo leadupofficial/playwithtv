@@ -34,13 +34,6 @@ function savePicks(p: Record<string, ControlMode>) {
   }
 }
 
-export function buzz(ms: number | number[]) {
-  try {
-    navigator.vibrate?.(ms);
-  } catch {
-    /* not supported (iPhone Safari) */
-  }
-}
 
 /**
  * The phone in a room. Setup uses taps (join, allow motion, ready); once a game starts the phone becomes the
