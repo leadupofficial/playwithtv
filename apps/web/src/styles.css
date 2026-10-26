@@ -152,6 +152,10 @@ button { font-family: inherit; color: inherit; }
 .mini > div { height: 100%; transition: width 0.2s; }
 .pad-panel { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; border: 3px solid; border-radius: 22px; padding: 12px; text-align: center; }
 .calib { display: flex; flex-direction: column; align-items: center; gap: 14px; font-size: 20px; }
+.practice-title { font-size: 15px; opacity: .75; text-transform: uppercase; letter-spacing: .08em; }
+.practice-move { font-size: 34px; }
+.practice-dots { display: flex; gap: 12px; }
+.practice-dots i { width: 18px; height: 18px; border-radius: 50%; background: rgba(255,255,255,.18); transition: background .15s; }
 .calib-ring { width: 64px; height: 64px; border-radius: 50%; border: 6px solid; border-right-color: transparent; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .mp-watch { font-size: 30px; font-weight: 800; }

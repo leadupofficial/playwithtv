@@ -7,6 +7,7 @@
 import { DEFAULT_SETTINGS, MotionEngine, RateOrderDetector, rotationOf, type Gesture, type MotionFrame, type MotionTrace, type RawSample, toScreen, v } from "@playwithtv/motion";
 
 const SENS_KEY = "pwtv.motion.sensitivity";
+const GAIN_KEY = "pwtv.motion.gestureGain";
 const IOS = typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent);
 
 export function motionSupported(): boolean {
@@ -35,8 +36,14 @@ export function savedSensitivity(): number {
   return n >= 0.5 && n <= 2 ? n : DEFAULT_SETTINGS.sensitivity;
 }
 
+/** How easily this player's moves fire, from their last "practice your move" (undefined until they practise). */
+export function savedGestureGain(): number | undefined {
+  const n = Number(localStorage.getItem(GAIN_KEY));
+  return n >= 0.5 && n <= 2.5 ? n : undefined;
+}
+
 export class PhoneMotion {
-  readonly engine = new MotionEngine({ sensitivity: savedSensitivity() });
+  readonly engine = new MotionEngine({ sensitivity: savedSensitivity(), gestureGain: savedGestureGain() });
   // Chrome on Android reports rotationRate as x, y, z (measured); the spec order is kept as the guess elsewhere.
   // Either way it is checked against gravity while the phone turns, and corrected.
   readonly rateOrder = new RateOrderDetector(IOS ? "spec" : "xyz");
@@ -62,6 +69,12 @@ export class PhoneMotion {
   setSensitivity(s: number) {
     this.engine.settings.sensitivity = s;
     localStorage.setItem(SENS_KEY, String(s));
+  }
+
+  /** `save` false: a temporary gain (practice uses a high one so weak moves still register). */
+  setGestureGain(g: number | undefined, save = true) {
+    this.engine.settings.gestureGain = g;
+    if (save && g !== undefined) localStorage.setItem(GAIN_KEY, String(g));
   }
 
   frame(): MotionFrame {

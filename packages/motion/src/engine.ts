@@ -23,6 +23,11 @@ export interface MotionSettings {
   twistThreshold: number;
   /** After a gesture, nothing new for this long; the phone must also settle before the next one. */
   cooldownMs: number;
+  /**
+   * How easily gestures fire, set from the player's own moves ("practice your move"): every gesture threshold is
+   * divided by it. Unset, the sensitivity is used.
+   */
+  gestureGain?: number;
   /** Also detect "swing" (a bat swing in any direction, see swing.ts). Off unless a game maps it. */
   swing?: boolean;
   /** Saber cuts (rhythm games, see saber.ts): flicks come from the gyroscope and are reported at their peak. */
@@ -99,7 +104,7 @@ export class MotionEngine {
   /** The next sample defines "neutral" (call while the player holds the phone the way they will play). */
   /** Sensitivity as it applies to gestures: higher means a gentler move counts. */
   private get gain() {
-    return clamp(this.settings.sensitivity, 0.5, 2) || 1;
+    return clamp(this.settings.gestureGain ?? this.settings.sensitivity, 0.5, 2.5) || 1;
   }
 
   calibrate() {

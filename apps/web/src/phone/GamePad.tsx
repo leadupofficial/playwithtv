@@ -7,6 +7,7 @@ import { Stick } from "./pad/Stick";
 import { Touchpad } from "./pad/Touchpad";
 import { ActionButtons } from "./pad/ActionButtons";
 import { resolver } from "./gestureMap";
+import { PRACTICE_GAIN, PRACTICE_MOVES, gainFrom, needsPractice, practiceAction, practised } from "./practice";
 import { t } from "../i18n";
 
 export interface PadEvent { event: string; data?: Record<string, unknown>; at: number }
@@ -30,7 +31,7 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
   recentre: number;
 }) {
   const tilted = mode === "motion" || mode === "hybrid";
-  const [phase, setPhase] = useState<"calibrating" | "ready">(!tilted || (spec.calibrate === false && motion.engine.isCalibrated) ? "ready" : "calibrating");
+  const [phase, setPhase] = useState<"calibrating" | "practice" | "ready">(!tilted || (spec.calibrate === false && motion.engine.isCalibrated) ? "ready" : "calibrating");
   const [flash, setFlash] = useState<{ text: string; at: number } | null>(null);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [stale, setStale] = useState(false);
@@ -40,6 +41,10 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
   const pad = useRef({ x: 0, y: 0 });
   const firstRecentre = useRef(recentre);
   const map = useMemo(() => resolver(spec), [spec]);
+  const drill = useMemo(() => (mode === "motion" ? practiceAction(spec) : null), [spec, mode]);
+  const [moves, setMoves] = useState<number[]>([]);
+  const [tuned, setTuned] = useState(false);
+  const skipPractice = useRef(() => {});
   // a label of "" hides that button for now (e.g. a 2-answer question on a 4-button pad)
   const buttons = buttonsFor(spec, mode)
     .filter((b) => status?.labels?.[b.id] !== "")
@@ -63,11 +68,48 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
         motion.calibrate();
         setTimeout(() => input.tap("calibrated"), 120);
         navigator.vibrate?.(40);
-        setPhase("ready");
+        setPhase(drill && needsPractice(spec, drill) ? "practice" : "ready");
       }
     }, 100);
     return () => clearInterval(id);
-  }, [phase, motion, input]);
+  }, [phase, motion, input]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // practice your move: the thresholds drop while the player does the main move a few times, then this player's
+  // gain is set from how hard they actually move (see practice.ts)
+  useEffect(() => {
+    if (phase !== "practice" || !drill) return;
+    const before = motion.engine.settings.gestureGain;
+    motion.setGestureGain(PRACTICE_GAIN, false);
+    setMoves([]);
+    setTuned(false);
+    const got: number[] = [];
+    let done = false;
+    const finish = (skip: boolean) => {
+      if (done) return;
+      done = true;
+      const gain = skip ? null : gainFrom(got);
+      motion.setGestureGain(gain ?? before, gain !== null);
+      practised(spec, drill);
+      if (gain === null) return setPhase("ready");
+      setTuned(true);
+      navigator.vibrate?.([40, 60, 40]);
+      setTimeout(() => setPhase("ready"), 1200);
+    };
+    const off = motion.onGesture((ev) => {
+      if (done || map.gesture(ev.kind, 0)?.id !== drill.id) return; // strength 0: the move itself, never its power version
+      got.push(ev.strength);
+      setMoves([...got]);
+      navigator.vibrate?.(25);
+      if (got.length >= PRACTICE_MOVES) finish(false);
+    });
+    const timeout = setTimeout(() => finish(got.length === 0), 15000);
+    skipPractice.current = () => finish(true);
+    return () => {
+      off();
+      clearTimeout(timeout);
+      if (!done) motion.setGestureGain(before, false);
+    };
+  }, [phase, drill]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // movement out, 20 times a second (the sender throttles), plus sensor health in tilt modes
   useEffect(() => {
@@ -125,6 +167,19 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
   }
   if (outcome) {
     return <div className="pad-panel calib" style={{ borderColor: color }}><span style={{ fontSize: 64 }}>{outcome.emoji ?? "🏁"}</span><b>{outcome.text}</b></div>;
+  }
+  if (phase === "practice" && drill) {
+    return (
+      <div className="pad-panel calib practice" style={{ borderColor: color }}>
+        <span className="practice-title">{t("ctl.practice")}</span>
+        <b className="practice-move" style={{ color }}>{drill.label}</b>
+        <span>{tuned ? t("ctl.practiceDone") : t("ctl.practiceDo", { n: PRACTICE_MOVES })}</span>
+        <span className="practice-dots">
+          {Array.from({ length: PRACTICE_MOVES }, (_, i) => <i key={i} style={i < moves.length ? { background: color } : undefined} />)}
+        </span>
+        {!tuned && <button className="btn secondary" onClick={() => skipPractice.current()}>{t("ctl.practiceSkip")}</button>}
+      </div>
+    );
   }
   if (phase === "calibrating") {
     return <div className="pad-panel calib" style={{ borderColor: color }}><div className="calib-ring" style={{ borderColor: color }} /><b>{t("ctl.calibrate")}</b></div>;
