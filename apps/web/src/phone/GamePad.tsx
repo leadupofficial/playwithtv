@@ -45,6 +45,9 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
   const [moves, setMoves] = useState<number[]>([]);
   const [tuned, setTuned] = useState(false);
   const [practising, setPractising] = useState(false);
+  // while practising the thresholds are low, so every move reads PRACTICE_GAIN / gain times stronger than it is:
+  // the game gets it rescaled (else every push would land as the hard "smash" version)
+  const practiceScale = useRef(1);
   const skipPractice = useRef(() => {});
   // a label of "" hides that button for now (e.g. a 2-answer question on a 4-button pad)
   const buttons = buttonsFor(spec, mode)
@@ -82,6 +85,7 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
   useEffect(() => {
     if (!practising || !drill) return;
     const before = motion.engine.settings.gestureGain;
+    practiceScale.current = Math.min(2.5, Math.max(0.5, before ?? motion.engine.settings.sensitivity)) / PRACTICE_GAIN;
     motion.setGestureGain(PRACTICE_GAIN, false);
     setMoves([]);
     setTuned(false);
@@ -92,6 +96,7 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
       done = true;
       const gain = skip ? null : gainFrom(got);
       motion.setGestureGain(gain ?? before, gain !== null);
+      practiceScale.current = 1;
       practised(spec, drill);
       if (gain === null) return setPractising(false);
       setTuned(true);
@@ -110,6 +115,7 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
     return () => {
       off();
       clearTimeout(timeout);
+      practiceScale.current = 1;
       if (!done) motion.setGestureGain(before, false);
     };
   }, [practising, drill]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -140,6 +146,8 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
   // gestures → actions (motion mode only: in hybrid the buttons do the actions, so a bump can't fire one)
   useEffect(() => motion.onGesture((g) => {
     if (mode !== "motion" || phase !== "ready") return;
+    // a gentle move still counts while practising (that is the point), but never as the power version
+    if (practiceScale.current !== 1) g = { ...g, strength: Math.max(1, g.strength * practiceScale.current) };
     const a = map.gesture(g.kind, g.strength);
     if (!a) return;
     // the strength and the moment of the swing (in TV time, for rhythm games) ride along with the tap
@@ -171,19 +179,6 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
   }
   if (outcome) {
     return <div className="pad-panel calib" style={{ borderColor: color }}><span style={{ fontSize: 64 }}>{outcome.emoji ?? "🏁"}</span><b>{outcome.text}</b></div>;
-  }
-  if (practising && drill && phase === "ready") {
-    return (
-      <div className="pad-panel calib practice" style={{ borderColor: color }}>
-        <span className="practice-title">{t("ctl.practice")}</span>
-        <b className="practice-move" style={{ color }}>{drill.label}</b>
-        <span>{tuned ? t("ctl.practiceDone") : t("ctl.practiceDo", { n: PRACTICE_MOVES })}</span>
-        <span className="practice-dots">
-          {Array.from({ length: PRACTICE_MOVES }, (_, i) => <i key={i} style={i < moves.length ? { background: color } : undefined} />)}
-        </span>
-        {!tuned && <button className="btn secondary" onClick={() => skipPractice.current()}>{t("ctl.practiceSkip")}</button>}
-      </div>
-    );
   }
   if (phase === "calibrating") {
     return <div className="pad-panel calib" style={{ borderColor: color }}><div className="calib-ring" style={{ borderColor: color }} /><b>{t("ctl.calibrate")}</b></div>;
@@ -232,7 +227,18 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
           <div className="pad-motion">
             <div className="mp-watch">👀 {t("ctl.watchTv")}</div>
             {tiltDot}
-            {hint && <span className="hint">{hint}</span>}
+            {practising && drill ? (
+              // shown inside the normal motion view, never instead of it: the game (and its get-ready screen) keeps going
+              <div className="practice" data-practice={drill.id}>
+                <span className="practice-title">{t("ctl.practice")}</span>
+                <b className="practice-move" style={{ color }}>{drill.label}</b>
+                <span>{tuned ? t("ctl.practiceDone") : t("ctl.practiceDo", { n: PRACTICE_MOVES })}</span>
+                <span className="practice-dots">
+                  {Array.from({ length: PRACTICE_MOVES }, (_, i) => <i key={i} style={i < moves.length ? { background: color } : undefined} />)}
+                </span>
+                {!tuned && <button className="btn secondary" onClick={() => skipPractice.current()}>{t("ctl.practiceSkip")}</button>}
+              </div>
+            ) : hint && <span className="hint">{hint}</span>}
           </div>
         )}
         {mode === "touchpad" && (
