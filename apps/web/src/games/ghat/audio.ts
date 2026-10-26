@@ -24,7 +24,7 @@ export class GhatAudio {
   private engines: Array<{ osc: OscillatorNode; sub: OscillatorNode; gain: GainNode; filter: BiquadFilterNode }> = [];
   private rainGain: GainNode | null = null;
 
-  constructor(players: number) {
+  constructor(players: number, opts: { rain?: boolean } = {}) {
     try {
       const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!AC) return;
@@ -58,7 +58,7 @@ export class GhatAudio {
       bp.frequency.value = 2400;
       bp.Q.value = 0.5;
       this.rainGain = ctx.createGain();
-      this.rainGain.gain.value = 0.06;
+      this.rainGain.gain.value = opts.rain === false ? 0 : 0.06;
       src.connect(bp);
       bp.connect(this.rainGain);
       this.rainGain.connect(this.master);

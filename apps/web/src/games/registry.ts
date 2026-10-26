@@ -18,6 +18,7 @@ const SquatRocketGame = lazy(() => import("./squat-rocket/SquatRocketGame").then
 const DhamakaGame = lazy(() => import("./dhamaka/DhamakaGame").then((m) => ({ default: m.DhamakaGame })));
 const BrawlGame = lazy(() => import("./brawl/BrawlGame").then((m) => ({ default: m.BrawlGame })));
 const GhatRushGame = lazy(() => import("./ghat/GhatRushGame").then((m) => ({ default: m.GhatRushGame })));
+const CityRivalsGame = lazy(() => import("./city/CityRivalsGame").then((m) => ({ default: m.CityRivalsGame })));
 const GullyGame = lazy(() => import("./gully/GullyGame").then((m) => ({ default: m.GullyGame })));
 const KalariGame = lazy(() => import("./kalari/KalariGame").then((m) => ({ default: m.KalariGame })));
 const TiffinGame = lazy(() => import("./tiffin/TiffinGame").then((m) => ({ default: m.TiffinGame })));
@@ -57,6 +58,7 @@ export const GAMES: Record<string, GameComponent> = {
   "emoji-dhamaka": DhamakaGame,
   "pillow-fort-brawl": BrawlGame,
   "ghat-rush": GhatRushGame,
+  "city-rivals": CityRivalsGame,
   "gully-super-over": GullyGame,
   "kalari-clash": KalariGame,
   "tiffin-tornado": TiffinGame,
