@@ -20,6 +20,7 @@ const CONTROLS: ControlSpec = {
   modes: ["motion", "buttons", "touchpad"],
   stick: "joystick",
   tilt: "tray",
+  grip: "any",
   actions: [],
   hints: {
     motion: "Hold the phone flat like a tray and tilt it",

@@ -31,7 +31,7 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
   recentre: number;
 }) {
   const tilted = mode === "motion" || mode === "hybrid";
-  const [phase, setPhase] = useState<"calibrating" | "practice" | "ready">(!tilted || (spec.calibrate === false && motion.engine.isCalibrated) ? "ready" : "calibrating");
+  const [phase, setPhase] = useState<"calibrating" | "ready">(!tilted || (spec.calibrate === false && motion.engine.isCalibrated) ? "ready" : "calibrating");
   const [flash, setFlash] = useState<{ text: string; at: number } | null>(null);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [stale, setStale] = useState(false);
@@ -44,6 +44,7 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
   const drill = useMemo(() => (mode === "motion" ? practiceAction(spec) : null), [spec, mode]);
   const [moves, setMoves] = useState<number[]>([]);
   const [tuned, setTuned] = useState(false);
+  const [practising, setPractising] = useState(false);
   const skipPractice = useRef(() => {});
   // a label of "" hides that button for now (e.g. a 2-answer question on a 4-button pad)
   const buttons = buttonsFor(spec, mode)
@@ -68,16 +69,18 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
         motion.calibrate();
         setTimeout(() => input.tap("calibrated"), 120);
         navigator.vibrate?.(40);
-        setPhase(drill && needsPractice(spec, drill) ? "practice" : "ready");
+        setPhase("ready");
+        if (drill && needsPractice(spec, drill)) setPractising(true);
       }
     }, 100);
     return () => clearInterval(id);
   }, [phase, motion, input]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // practice your move: the thresholds drop while the player does the main move a few times, then this player's
-  // gain is set from how hard they actually move (see practice.ts)
+  // gain is set from how hard they actually move (see practice.ts). It never blocks: the moves still reach the TV
+  // (its get-ready screen counts them too), the phone just shows the practice and measures them.
   useEffect(() => {
-    if (phase !== "practice" || !drill) return;
+    if (!practising || !drill) return;
     const before = motion.engine.settings.gestureGain;
     motion.setGestureGain(PRACTICE_GAIN, false);
     setMoves([]);
@@ -90,10 +93,10 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
       const gain = skip ? null : gainFrom(got);
       motion.setGestureGain(gain ?? before, gain !== null);
       practised(spec, drill);
-      if (gain === null) return setPhase("ready");
+      if (gain === null) return setPractising(false);
       setTuned(true);
       navigator.vibrate?.([40, 60, 40]);
-      setTimeout(() => setPhase("ready"), 1200);
+      setTimeout(() => setPractising(false), 1200);
     };
     const off = motion.onGesture((ev) => {
       if (done || map.gesture(ev.kind, 0)?.id !== drill.id) return; // strength 0: the move itself, never its power version
@@ -109,7 +112,8 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
       clearTimeout(timeout);
       if (!done) motion.setGestureGain(before, false);
     };
-  }, [phase, drill]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [practising, drill]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (mode !== "motion") setPractising(false); }, [mode]);
 
   // movement out, 20 times a second (the sender throttles), plus sensor health in tilt modes
   useEffect(() => {
@@ -168,7 +172,7 @@ export function GamePad({ input, motion, spec, mode, lastEvent, color, recentre 
   if (outcome) {
     return <div className="pad-panel calib" style={{ borderColor: color }}><span style={{ fontSize: 64 }}>{outcome.emoji ?? "🏁"}</span><b>{outcome.text}</b></div>;
   }
-  if (phase === "practice" && drill) {
+  if (practising && drill && phase === "ready") {
     return (
       <div className="pad-panel calib practice" style={{ borderColor: color }}>
         <span className="practice-title">{t("ctl.practice")}</span>

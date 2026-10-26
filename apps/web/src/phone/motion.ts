@@ -113,6 +113,15 @@ export class PhoneMotion {
   };
 }
 
+/** Lift the landscape lock (games held any way up in motion mode); goLandscape puts it back. */
+export function anyOrientation() {
+  try {
+    (screen.orientation as unknown as { unlock?: () => void })?.unlock?.();
+  } catch {
+    /* not locked, or not supported */
+  }
+}
+
 /** Full screen + landscape lock where the browser allows it (Android Chrome); silently ignored elsewhere. */
 export async function goLandscape() {
   try {

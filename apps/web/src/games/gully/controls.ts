@@ -17,6 +17,7 @@ export const BAT_TITLE = "Gully Super Over · Bat";
 export const BOWL_TITLE = "Gully Super Over · Bowl";
 
 export const BAT_SPEC: ControlSpec = {
+  grip: "any",
   title: BAT_TITLE,
   modes: ["motion", "buttons"],
   stick: "joystick",
@@ -36,6 +37,7 @@ export const BAT_SPEC: ControlSpec = {
 export const TUTORIAL_SPEC: ControlSpec = { ...BAT_SPEC, calibrate: true };
 
 export const BOWL_SPEC: ControlSpec = {
+  grip: "any",
   title: BOWL_TITLE,
   modes: ["touchpad", "buttons", "motion"],
   stick: "joystick",
@@ -54,6 +56,7 @@ export const BOWL_SPEC: ControlSpec = {
 };
 
 export const WATCH_SPEC: ControlSpec = {
+  grip: "any",
   title: "Gully Super Over · Watch",
   modes: ["buttons", "touchpad", "motion"],
   stick: "none",

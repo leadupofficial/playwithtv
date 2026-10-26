@@ -72,6 +72,12 @@ export interface ControlSpec {
   calibrate?: boolean;
   /** Motion mode reads flicks as saber cuts: from the gyroscope, timed at their peak (rhythm games). */
   saber?: boolean;
+  /**
+   * "any": in motion mode the phone may be held any way up. For one-handed games where the phone is the object
+   * (a saber hilt, a bat, a dance partner, a tray) and the player watches the TV, upright is the natural hold, so
+   * the controller drops its landscape lock and rotate prompt. Buttons and hybrid modes stay landscape (two thumbs).
+   */
+  grip?: "any";
 }
 
 /** Which actions a mode shows as buttons. */

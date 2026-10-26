@@ -4,7 +4,7 @@ import { HubSocket, type SocketStatus } from "../net";
 import { AVATARS } from "../avatars";
 import type { PhoneSession } from "./JoinApp";
 import { InputSender } from "./inputSender";
-import { PhoneMotion, goLandscape, motionSupported, requestMotionPermission } from "./motion";
+import { PhoneMotion, anyOrientation, goLandscape, motionSupported, requestMotionPermission } from "./motion";
 import { GamePad, type PadEvent } from "./GamePad";
 import { t } from "../i18n";
 import { PhoneLink } from "../rtc";
@@ -139,6 +139,22 @@ export function Controller({ session, onLeave }: { session: PhoneSession; onLeav
     input.current?.release();
   };
 
+  // One-handed motion games (a saber hilt, a bat, a tray: ControlSpec.grip "any") may be held any way up, so the
+  // landscape lock and rotate prompt come off for them; everything else stays landscape (two thumbs, or a wheel).
+  const anyGrip = spec?.grip === "any" && mode === "motion";
+  useEffect(() => {
+    if (!started) return;
+    if (anyGrip) anyOrientation();
+    else void goLandscape();
+  }, [anyGrip, started]);
+  // turning the phone round swaps its screen axes, so the old calibration no longer fits: calibrate again
+  useEffect(() => {
+    if (!anyGrip) return;
+    const on = () => setRecentre((n) => n + 1);
+    screen.orientation?.addEventListener?.("change", on);
+    return () => screen.orientation?.removeEventListener?.("change", on);
+  }, [anyGrip]);
+
   if (fatal) {
     return (
       <div className="phone">
@@ -149,7 +165,7 @@ export function Controller({ session, onLeave }: { session: PhoneSession; onLeav
   }
 
   return (
-    <div className="phone controller" data-wake={wakeState}>
+    <div className="phone controller" data-wake={wakeState} data-grip={anyGrip ? "any" : undefined}>
       <div className="rotate-hint"><div style={{ fontSize: 72 }}>📱↻</div><h1>{t("ctl.rotate")}</h1><p>{t("ctl.rotateHint")}</p></div>
 
       {!started ? (

@@ -31,6 +31,7 @@ const QUICK_ROUTINE = "intro: . . . .\nA: up - down - | left - right - | punch -
 const MAX_DANCERS = 8;
 
 export const CONTROLS: ControlSpec = {
+  grip: "any",
   title: "Groove Party",
   modes: ["motion", "buttons", "touchpad"],
   stick: "none",

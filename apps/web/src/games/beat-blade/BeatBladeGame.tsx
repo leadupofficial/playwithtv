@@ -37,6 +37,7 @@ export const CONTROLS: ControlSpec = {
   stick: "joystick",
   tilt: "aim",
   saber: true,
+  grip: "any",
   actions: [
     { id: "cu", label: "⬆ Cut up", color: "#29d3ff", gestures: ["flick-up"], swipes: ["swipe-up"] },
     { id: "cd", label: "⬇ Cut down", color: "#ff4fd8", gestures: ["flick-down"], swipes: ["swipe-down"] },

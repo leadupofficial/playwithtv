@@ -16,6 +16,7 @@ export const CONTROLS: ControlSpec = {
   modes: ["motion", "buttons", "touchpad"],
   stick: "joystick",
   tilt: "tray",
+  grip: "any",
   actions: [
     { id: "prev", label: "◀ Prev", gestures: ["flick-left"], swipes: ["swipe-left"] },
     { id: "ok", label: "▶ Go", gestures: ["flick-up"], swipes: ["swipe-up"] },
