@@ -1,39 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GESTURE_SCALE, STRONG, encodeStamp, frameAxes } from "@playwithtv/motion";
-import { MODE_CODE, MODE_DIVISOR, buttonsFor, type ControlAction, type ControlMode, type ControlSpec, type GestureName, type SwipeName } from "@playwithtv/protocol";
+import { MODE_CODE, MODE_DIVISOR, buttonsFor, type ControlAction, type ControlMode, type ControlSpec } from "@playwithtv/protocol";
 import type { InputSender } from "./inputSender";
 import type { PhoneMotion } from "./motion";
 import { Stick } from "./pad/Stick";
 import { Touchpad } from "./pad/Touchpad";
 import { ActionButtons } from "./pad/ActionButtons";
+import { resolver } from "./gestureMap";
 import { t } from "../i18n";
 
 export interface PadEvent { event: string; data?: Record<string, unknown>; at: number }
 
 /** `labels` lets a game relabel its buttons live (e.g. a context icon on one ACTION button). */
 type Status = { text?: string; bars?: Array<{ label: string; value: number; color?: string }>; labels?: Record<string, string> };
-
-/** Which action a gesture or swipe means for this game (a strong gesture may mean a power move). */
-function resolver(spec: ControlSpec) {
-  const byGesture = new Map<string, ControlAction>();
-  const bySwipe = new Map<string, ControlAction>();
-  const strong = new Map<string, ControlAction>();
-  for (const a of spec.actions) {
-    for (const g of a.gestures ?? []) if (!byGesture.has(g)) byGesture.set(g, a);
-    for (const s of a.swipes ?? []) if (!bySwipe.has(s)) bySwipe.set(s, a);
-    if (a.strongOf) strong.set(a.strongOf, a);
-  }
-  return {
-    gesture(kind: GestureName, strength: number) {
-      const a = byGesture.get(kind);
-      if (!a) return null;
-      return strength >= STRONG ? (strong.get(a.id) ?? a) : a;
-    },
-    swipe(s: SwipeName | "tap") {
-      return bySwipe.get(s) ?? null;
-    },
-  };
-}
 
 /**
  * The one in-game controller. The game's ControlSpec says which modes it offers; the player's chosen mode
