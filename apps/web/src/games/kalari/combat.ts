@@ -4,7 +4,7 @@
  */
 import {
   ACCEL, BUFFER, CREDIT_WINDOW, DOWN_TIME, FRICTION, GRAVITY, GUARD_ARC, GUARD_BREAK_STUN, GUARD_CHIP, GUARD_SPEED, LAUNCH_KB,
-  MAX_HEALTH, METER_MAX, MOVES, PARRY_STUN, PARRY_WINDOW, RADIUS, RING_MARGIN, ROLL_COOLDOWN, ROLL_IFRAMES, ROLL_SPEED, ROLL_TIME,
+  MAX_HEALTH, METER_MAX, MOVES, PARRY_LOCKOUT, PARRY_STUN, PARRY_WINDOW, RADIUS, RING_MARGIN, ROLL_COOLDOWN, ROLL_IFRAMES, ROLL_SPEED, ROLL_TIME,
   SECOND_WIND_AT, SOFT_LOCK, WALL_SPLAT_KB, angleDiff, character,
   type FState, type Fighter, type KalariEvent, type KalariInput, type Match, type MoveId,
 } from "./rules";
@@ -73,6 +73,7 @@ function applyHit(m: Match, by: Fighter, on: Fighter, o: { move: MoveId | "speci
   if (on.state === "guard" && facingHit && !o.unblockable) {
     if (on.guardT <= PARRY_WINDOW && o.move !== "special") {
       on.stats.parries++;
+      on.parryLock = 0; // a read that pays off may be tried again straight away
       addStyle(m, on, 50);
       gainMeter(m, on, 18, ev);
       setState(by, "stagger");
@@ -196,8 +197,14 @@ export function updateFighter(m: Match, f: Fighter, inp: KalariInput, dt: number
   f.rollCd = Math.max(0, f.rollCd - dt);
   f.comboT = Math.max(0, f.comboT - dt);
   if (f.comboT === 0) f.combo = 0;
+  f.parryLock = Math.max(0, f.parryLock - dt);
+  const pressed = inp.guard && !Number.isFinite(f.guardT);
   f.guardT = inp.guard ? f.guardT + dt : Infinity;
-  if (inp.guard && !Number.isFinite(f.guardT)) f.guardT = 0;
+  if (pressed) {
+    // a fresh press opens the parry window unless one just went unused: then it only blocks (no parry spam)
+    f.guardT = f.parryLock > 0 ? PARRY_WINDOW + 1 : 0;
+    if (f.parryLock === 0) f.parryLock = PARRY_LOCKOUT;
+  }
   const mag = Math.hypot(inp.x, inp.z);
   const mx = mag > 1 ? inp.x / mag : inp.x, mz = mag > 1 ? inp.z / mag : inp.z;
 

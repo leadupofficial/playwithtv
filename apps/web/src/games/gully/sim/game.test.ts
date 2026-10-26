@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { QUICK, newGame, step, type Game, type GameEvent, type Inputs, type Phase } from "./game";
+import { SWING_LAG } from "../controls";
+import { LATEST_SWING, QUICK, newGame, step, type Game, type GameEvent, type Inputs, type Phase } from "./game";
 import { makeTeams } from "./match";
 
 const DT = 1 / 60;
@@ -83,6 +84,58 @@ describe("the director", () => {
     });
     const sw = ev.find((e) => e.kind === "swing") as Extract<GameEvent, { kind: "swing" }>;
     expect(sw.timing).toBe("perfect");
+  });
+
+  it("a perfectly timed motion swing still counts when it reaches the TV after the late window, even on a ball at the stumps", () => {
+    // motion swings arrive SWING_LAG.motion (0.12 s) after they were made, plus Wi-Fi jitter: past the 85 ms late window
+    for (const extra of [0, 0.06]) {
+      let tested = 0;
+      for (let seed = 1; seed < 40 && tested < 3; seed++) {
+        const g = game(1, seed);
+        until(g, "delivery");
+        const d = g.ball!.delivery!;
+        if (!d.hitsStumps) continue; // the hard case: without the swing this ball is bowled
+        tested++;
+        const arrive = d.tContact + SWING_LAG.motion + extra;
+        let swung = false;
+        const ev = until(g, "result", (s) => {
+          if (!swung && s.phase === "delivery" && s.ball!.t >= arrive) {
+            swung = true;
+            return { swing: { dtMs: 0, power: 0.8, aim: 0, loft: 0, lag: SWING_LAG.motion + extra } };
+          }
+          return {};
+        });
+        const sw = ev.find((e) => e.kind === "swing") as Extract<GameEvent, { kind: "swing" }>;
+        expect(sw.timing, `seed ${seed} +${extra}s`).toBe("perfect");
+        expect(sw.contact).toBe(true);
+        expect(ev.some((e) => e.kind === "stumps")).toBe(false);
+        expect(g.ball!.result!.wicket).not.toBe("bowled");
+      }
+      expect(tested).toBe(3);
+    }
+    expect(SWING_LAG.motion + 0.06).toBeLessThanOrEqual(LATEST_SWING);
+  });
+
+  it("a swing really made too late is still a miss: the ball goes on to the stumps", () => {
+    for (let seed = 1; seed < 40; seed++) {
+      const g = game(1, seed);
+      until(g, "delivery");
+      const d = g.ball!.delivery!;
+      if (!d.hitsStumps) continue;
+      let swung = false;
+      const ev = until(g, "result", (s) => {
+        // made 0.15 s after the ball passed the bat (well past the 85 ms late window), delivered with no lag
+        if (!swung && s.phase === "delivery" && s.ball!.t >= d.tContact + 0.15) {
+          swung = true;
+          return { swing: { dtMs: 0, power: 0.8, lag: 0 } };
+        }
+        return {};
+      });
+      expect((ev.find((e) => e.kind === "swing") as Extract<GameEvent, { kind: "swing" }>).contact).toBe(false);
+      expect(g.ball!.result!.wicket).toBe("bowled");
+      return;
+    }
+    throw new Error("no delivery hit the stumps");
   });
 
   it("no swing at a ball on the stumps: bowled", () => {

@@ -44,6 +44,7 @@ test("TV connection drop mid-game pauses the game and resumes it where it stoppe
   await live!.page.close({ code: 4000, reason: "drop" });
   await expect(tv.getByText("Reconnecting…")).toBeVisible();
   await expect(ana.locator("[data-paused=tv]")).toBeVisible();
+  await tv.waitForTimeout(400); // the HUD attribute refreshes every 150 ms: let the last running value settle
   const frozen = await clock();
   await tv.waitForTimeout(3500);
   expect(await clock()).toBe(frozen); // the game did not run on without the hub

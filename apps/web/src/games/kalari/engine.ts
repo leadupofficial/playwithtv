@@ -41,7 +41,7 @@ export function spawnPoints(hx: number, hz: number): Array<[number, number]> {
 function makeFighter(e: Entrant, slot: number, mode: Mode): Fighter {
   return {
     id: e.id, cpu: e.cpu, slot, char: e.char, team: mode === "guardians" ? (e.foe ? -1 : 0) : slot + 1, foe: !!e.foe, maxHealth: MAX_HEALTH, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, face: 0, state: "ok", t: 0,
-    move: null, struck: [], specialHit: 0, chainQueued: false, buffer: null, bufferT: 0, guardT: Infinity, stun: 0, rollCd: 0,
+    move: null, struck: [], specialHit: 0, chainQueued: false, buffer: null, bufferT: 0, guardT: Infinity, parryLock: 0, stun: 0, rollCd: 0,
     rollX: 0, rollZ: 1, health: MAX_HEALTH, meter: 0, secondWind: false, combo: 0, comboT: 0, lastHitBy: null, lastHitAt: -99,
     alive: true, underdog: false, stats: newStats(),
   };
@@ -73,7 +73,7 @@ function resetWave(m: Match) {
   const guards = m.fighters.filter((f) => !f.foe), foes = m.fighters.filter((f) => f.foe);
   const fresh = (f: Fighter, x: number, z: number, face: number) => Object.assign(f, {
     x, z, y: 0, vx: 0, vy: 0, vz: 0, face, state: "ok", t: 0, move: null, struck: [], specialHit: 0, chainQueued: false,
-    buffer: null, bufferT: 0, guardT: Infinity, stun: 0, rollCd: 0, secondWind: false, combo: 0, comboT: 0, lastHitBy: null,
+    buffer: null, bufferT: 0, guardT: Infinity, parryLock: 0, stun: 0, rollCd: 0, secondWind: false, combo: 0, comboT: 0, lastHitBy: null,
     lastHitAt: -99, alive: true, underdog: false,
   });
   guards.forEach((f, i) => {
@@ -104,7 +104,7 @@ function resetRound(m: Match) {
     const [x, z] = spots[i]!;
     Object.assign(f, {
       x, z, y: 0, vx: 0, vy: 0, vz: 0, face: Math.atan2(-x, -z), state: "ok", t: 0, move: null, struck: [], specialHit: 0,
-      chainQueued: false, buffer: null, bufferT: 0, guardT: Infinity, stun: 0, rollCd: 0, health: MAX_HEALTH,
+      chainQueued: false, buffer: null, bufferT: 0, guardT: Infinity, parryLock: 0, stun: 0, rollCd: 0, health: MAX_HEALTH,
       meter: Math.min(60, f.meter), secondWind: false, combo: 0, comboT: 0, lastHitBy: null, lastHitAt: -99, alive: true,
       underdog: best > 0 && f.stats.roundWins < best,
     });

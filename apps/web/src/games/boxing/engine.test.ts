@@ -121,4 +121,50 @@ describe("boxing engine", () => {
     expect(f.b.thrown).toBeGreaterThan(5);
     expect(f.a.hp).toBeLessThan(100);
   });
+
+  it("a landed jab leaves the attacker no frame advantage: the victim recovers first and can answer", () => {
+    const f = fight(180);
+    const dt = 1 / 60;
+    let hitAt = -1, victimFree = -1, attackerFree = -1;
+    for (let t = 0, i = 0; t < 1; t += dt, i++) {
+      for (const e of step(f, dt, C({ jab: i === 0 }), C())) if (e.kind === "hit") hitAt = t;
+      if (hitAt >= 0 && victimFree < 0 && f.b.state === "idle") victimFree = t;
+      if (hitAt >= 0 && attackerFree < 0 && f.a.state === "idle") attackerFree = t;
+    }
+    expect(hitAt).toBeGreaterThan(0);
+    expect(victimFree).toBeLessThanOrEqual(attackerFree);
+  });
+
+  it("mirror jab spam is a trade, not a loop: the fighter hit first still lands punches back", () => {
+    for (const gap of [170, 200, 230]) {
+      const f = fight(gap);
+      f.roundSeconds = f.clock = 20;
+      const dt = 1 / 60;
+      const landed = { a: 0, b: 0 };
+      for (let t = 0; t < 15 && f.phase === "fight"; t += dt) {
+        // both mash jab every frame (A gets the first press in)
+        for (const e of step(f, dt, C({ jab: true }), C({ jab: t > dt }))) if (e.kind === "hit") landed[e.by as "a" | "b"]++;
+        f.a.stamina = f.b.stamina = 100; // isolate the timing from tiredness
+      }
+      expect(landed.a, `gap ${gap}`).toBeGreaterThan(3);
+      expect(landed.b, `gap ${gap}: ${landed.a}-${landed.b}`).toBeGreaterThanOrEqual(landed.a * 0.5);
+    }
+  });
+
+  it("the CPU gets up at a human tapping rate, the same at any frame rate", () => {
+    for (const fps of [30, 60, 120]) {
+      const f = fight(180);
+      f.b.cpu = true;
+      f.b.hp = 3;
+      run(f, 0.6, { jab: true });
+      expect(f.b.state).toBe("down");
+      const brain = newBrain();
+      let r = 1;
+      const rand = () => ((r = (r * 16807) % 2147483647) / 2147483647);
+      let taps = 0;
+      for (let t = 0; t < 1; t += 1 / fps) taps += cpuControls(f, f.b, brain, 1 / fps, rand).mash;
+      expect(taps, `${fps} fps`).toBeGreaterThanOrEqual(4);
+      expect(taps, `${fps} fps`).toBeLessThanOrEqual(10); // a quick human thumb: no 33 taps a second
+    }
+  });
 });

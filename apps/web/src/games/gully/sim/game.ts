@@ -200,12 +200,14 @@ function delivery(g: Game, dt: number, input: Inputs, ev: GameEvent[]) {
   if (input.swing) takeSwing(g, input.swing);
   if (!b.swing && b.cpu && b.t >= b.cpu.at) b.swing = b.cpu;
   const late = WINDOW.late / 1000;
+  const decideBy = d.tContact + late + LATEST_SWING;
   if (b.swing && b.timing === null && b.t >= Math.max(b.swing.at, d.tContact)) resolveSwing(g, ev);
-  if (b.timing === null && b.t >= d.tContact + late) {
+  if (b.timing === null && b.t >= (b.swing ? d.tContact + late : decideBy)) {
     b.timing = "miss"; // no swing in time
     if (b.swing) ev.push({ kind: "swing", timing: "miss", batter: b.batter!, contact: false });
   }
   if (b.shot?.contact) return;
+  if (b.timing === null) return; // a swing may still be on its way: nothing is out or past the bat yet
   // missed (or left): the bricks, or the keeper
   if (b.t >= d.tStumps && b.result === null && d.hitsStumps) {
     ev.push({ kind: "stumps", ball: b });
@@ -219,6 +221,14 @@ function delivery(g: Game, dt: number, input: Inputs, ev: GameEvent[]) {
 }
 
 const FIELD_KEEPER_Z = 2.3;
+
+/**
+ * Seconds past the late window that the ball waits for a swing still on its way: the slowest controller's lag
+ * (motion: 0.12 s, controls.ts SWING_LAG) plus 0.08 s of Wi-Fi jitter. A swing made in time but delivered late
+ * is judged at the moment it was made; only after this does a ball with no swing count as missed, bowled or
+ * taken by the keeper.
+ */
+export const LATEST_SWING = 0.2;
 
 function resolveSwing(g: Game, ev: GameEvent[]) {
   const b = g.ball!;

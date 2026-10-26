@@ -120,6 +120,44 @@ describe("guard, parry, roll", () => {
     expect(b.stats.parries).toBe(1);
   });
 
+  it("tapping GUARD over and over cannot parry nearly every attack: unused presses lock the parry out", () => {
+    const m = two();
+    toFight(m);
+    const { a, b } = faceOff(m);
+    let attacks = 0, last = -1;
+    const ev = run(m, 8, (_m, t) => {
+      const i = Math.round(t / DT);
+      faceOff(m); // keep them toe to toe, facing
+      const strike = a.state === "ok" && t - last >= 0.5;
+      if (strike) { attacks++; last = t; }
+      return new Map([["a", { ...IDLE, strike }], ["b", { ...IDLE, guard: i % 4 < 2 }]]); // guard mashed ~15 times a second
+    });
+    const parries = ev.filter((e) => e.kind === "parry").length;
+    expect(attacks).toBeGreaterThan(8);
+    expect(parries, `${parries} parries of ${attacks} attacks`).toBeLessThanOrEqual(Math.ceil(attacks * 0.25));
+    expect(b.stats.blocks + ev.filter((e) => e.kind === "hit" && e.on === "b").length).toBeGreaterThan(0);
+  });
+
+  it("a guard press that parried nothing only blocks for a moment, then a well-timed press parries again", () => {
+    const m = two();
+    toFight(m);
+    const { a } = faceOff(m);
+    run(m, 0.05, () => once("b", press("guard"))); // an early, unused press
+    run(m, 0.05); // released
+    step(m, DT, once("a", press("strike")));
+    run(m, MOVES.jab.startup - PARRY_WINDOW / 2);
+    let ev = run(m, 0.3, () => once("b", press("guard")));
+    expect(ev.some((e) => e.kind === "parry")).toBe(false); // too soon after the unused press: a block
+    expect(ev.some((e) => e.kind === "block")).toBe(true);
+    run(m, 1.2); // lockout long gone
+    faceOff(m);
+    expect(a.state).toBe("ok");
+    step(m, DT, once("a", press("strike")));
+    run(m, MOVES.jab.startup - PARRY_WINDOW / 2);
+    ev = run(m, 0.3, () => once("b", press("guard")));
+    expect(ev.some((e) => e.kind === "parry" && e.by === "b")).toBe(true);
+  });
+
   it("a heavy breaks a guard", () => {
     const m = two();
     toFight(m);

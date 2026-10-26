@@ -93,6 +93,7 @@ export const GUARD_ARC = 1.75;        // radians either side of facing that the 
 export const GUARD_CHIP = 0.15;       // share of damage that gets through a guard
 export const PARRY_WINDOW = 0.15;     // pressing GUARD this close before a hit lands = parry
 export const PARRY_STUN = 0.75;       // attacker reels this long after being parried
+export const PARRY_LOCKOUT = 0.5;     // after a GUARD press that parried nothing, presses this soon only block
 export const GUARD_BREAK_STUN = 0.55;
 export const ROLL_TIME = 0.42;
 export const ROLL_SPEED = 8.5;
@@ -142,6 +143,7 @@ export interface Fighter {
   buffer: "strike" | "heavy" | "roll" | null;
   bufferT: number;
   guardT: number;          // seconds since GUARD was pressed (for the parry window); Infinity if not held
+  parryLock: number;       // seconds until a fresh GUARD press can parry again (no parry spam)
   stun: number;
   rollCd: number;
   rollX: number; rollZ: number;

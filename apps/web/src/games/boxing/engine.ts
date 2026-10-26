@@ -15,7 +15,9 @@ export interface PunchSpec {
 }
 
 export const PUNCHES: Record<PunchType, PunchSpec> = {
-  jab: { dur: 0.3, activeAt: 0.12, range: 235, dmg: 5, stamina: 6, stun: 0.22 },
+  // a landed jab reels the victim for less than the jab's own recovery (0.12 + 0.14 < 0.3), so jabbing is not a
+  // loop: the one hit is free first and can block, slip or punch back. Heavier punches still buy an opening.
+  jab: { dur: 0.3, activeAt: 0.12, range: 235, dmg: 5, stamina: 6, stun: 0.14 },
   hook: { dur: 0.46, activeAt: 0.24, range: 205, dmg: 9, stamina: 11, stun: 0.34 },
   upper: { dur: 0.56, activeAt: 0.3, range: 190, dmg: 13, stamina: 15, stun: 0.5 },
   super: { dur: 0.72, activeAt: 0.38, range: 230, dmg: 22, stamina: 0, stun: 0.9 },
@@ -334,10 +336,12 @@ export interface Brain {
   next: number;      // seconds until the next decision
   hold: Partial<Controls>;
   holdFor: number;
+  /** seconds to the CPU's next GET UP tap while down: a human thumb, whatever the frame rate */
+  mashIn: number;
 }
 
 export function newBrain(): Brain {
-  return { next: 0.6, hold: {}, holdFor: 0 };
+  return { next: 0.6, hold: {}, holdFor: 0, mashIn: 0.3 };
 }
 
 /** A simple, readable opponent: closes distance, mixes punches, sometimes blocks or slips; harder each round. */
@@ -345,7 +349,12 @@ export function cpuControls(f: Fight, me: Fighter, brain: Brain, dt: number, ran
   const c: Controls = { ...NO_CONTROLS };
   const opp = other(f, me);
   if (me.state === "down") {
-    c.mash = rand() < 0.55 + 0.05 * f.round ? 1 : 0;
+    // about 5-8 taps a second (faster in later rounds), like a determined player; once per decision, not per frame
+    brain.mashIn -= dt;
+    if (brain.mashIn <= 0) {
+      c.mash = 1;
+      brain.mashIn = (0.8 + 0.4 * rand()) / (5 + f.round);
+    }
     return c;
   }
   brain.holdFor -= dt;
