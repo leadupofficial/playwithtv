@@ -299,7 +299,7 @@ export class Hub {
     switch (m.type) {
       case "game.select": {
         const g = findGame(m.gameId);
-        if (!g || !g.playable) throw new HubError("unknown_game", "That game is not available.");
+        if (!g || !g.playable || (g.heldBack && !this.cfg.previewGames)) throw new HubError("unknown_game", "That game is not available.");
         room.gameId = g.id;
         room.status = "lobby";
         this.broadcast(room, { type: "game.selected", gameId: g.id });

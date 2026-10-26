@@ -270,7 +270,7 @@ describe("game lifecycle", () => {
     expect((await t.next("error")).code).toBe("unknown_game");
     t.send({ type: "game.select", gameId: "neon-drift-arena" }); // not playable yet
     expect((await t.next("error")).code).toBe("unknown_game");
-    t.send({ type: "game.select", gameId: "tamil-trivia-royale" });
+    t.send({ type: "game.select", gameId: "memory-wave" });
     await t.next("game.selected");
     t.send({ type: "game.start" });
     const started = await t.next("game.started");
@@ -295,12 +295,13 @@ describe("game lifecycle", () => {
     const a = await phone({ inviteToken: room.inviteToken }, "Ana");
     const b = await phone({ inviteToken: room.inviteToken }, "Bala");
     const c = await phone({ inviteToken: room.inviteToken }, "Chitra");
-    t.send({ type: "game.select", gameId: "tamil-trivia-royale" });
+    t.send({ type: "game.select", gameId: "memory-wave" });
     await t.next("game.selected");
     t.send({ type: "game.start" });
     await t.next("game.started");
     b.c.send({ type: "player.leave" });
-    await t.next("room.state", (m) => m.room.players.length === 2);
+    // (an earlier room.state from before Chitra joined also lists two players: wait for the one without Bala)
+    await t.next("room.state", (m) => m.room.players.length === 2 && !m.room.players.some((x) => x.id === b.playerId));
     // the game still reports everyone it started with: Bala won, Ana and Chitra tied second
     t.send({
       type: "game.finished",
@@ -324,10 +325,27 @@ describe("game lifecycle", () => {
     expect((await t.next("error")).code).toBe("bad_message");
   });
 
+  it("keeps held-back games off the public list and refuses to start them, unless the hub previews them", async () => {
+    await start();
+    const list = (await (await fetch(`http://${base}/api/games`)).json()) as Array<{ id: string }>;
+    for (const id of ["tamil-trivia-royale", "two-paths", "mind-match", "lantern-truths"]) expect(list.some((g) => g.id === id)).toBe(false);
+    expect(list.some((g) => g.id === "memory-wave")).toBe(true);
+    const { c: t } = await tv();
+    t.send({ type: "game.select", gameId: "two-paths" });
+    expect((await t.next("error")).code).toBe("unknown_game");
+    await app!.close();
+
+    await start({ previewGames: true });
+    expect(((await (await fetch(`http://${base}/api/games`)).json()) as Array<{ id: string }>).some((g) => g.id === "two-paths")).toBe(true);
+    const { c: t2 } = await tv();
+    t2.send({ type: "game.select", gameId: "two-paths" });
+    expect((await t2.next("game.selected")).gameId).toBe("two-paths");
+  });
+
   it("enforces the game's player count", async () => {
     await start();
     const { c: t } = await tv();
-    t.send({ type: "game.select", gameId: "tamil-trivia-royale" });
+    t.send({ type: "game.select", gameId: "memory-wave" });
     await t.next("game.selected");
     t.send({ type: "game.start" }); // nobody connected
     expect((await t.next("error")).code).toBe("player_count");
@@ -375,10 +393,10 @@ describe("cleanup, limits and admin", () => {
     expect((await fetch(`http://${base}/api/admin/overview`)).status).toBe(401);
     const ok = await fetch(`http://${base}/api/admin/overview`, { headers: { authorization: "Bearer admin-secret" } });
     expect(ok.status).toBe(200);
-    const off = await post("/api/admin/games/tamil-trivia-royale", { enabled: false }, { authorization: "Bearer admin-secret" });
+    const off = await post("/api/admin/games/memory-wave", { enabled: false }, { authorization: "Bearer admin-secret" });
     expect(off.status).toBe(200);
     const list = await (await fetch(`http://${base}/api/games`)).json();
-    expect(list.find((g: { id: string }) => g.id === "tamil-trivia-royale")).toBeUndefined();
+    expect(list.find((g: { id: string }) => g.id === "memory-wave")).toBeUndefined();
   });
 
   it("reports health", async () => {
@@ -393,7 +411,7 @@ describe("TV reconnects mid-game", () => {
     await start();
     const { room, c: t } = await tv();
     const p = await phone({ inviteToken: room.inviteToken });
-    t.send({ type: "game.select", gameId: "tamil-trivia-royale" });
+    t.send({ type: "game.select", gameId: "memory-wave" });
     await t.next("game.selected");
     t.send({ type: "game.start" });
     await t.next("game.started");
@@ -416,7 +434,7 @@ describe("TV reconnects mid-game", () => {
     await start();
     const { room, c: t } = await tv();
     const p = await phone({ inviteToken: room.inviteToken });
-    t.send({ type: "game.select", gameId: "tamil-trivia-royale" });
+    t.send({ type: "game.select", gameId: "memory-wave" });
     await t.next("game.selected");
     t.send({ type: "game.start" });
     await t.next("game.started");
@@ -528,11 +546,11 @@ describe("the captain's phone runs the game menu", () => {
     const state = await t.next("room.state", (m) => m.room.players.length === 2);
     expect(state.room.captainId).toBe(cap.playerId);
 
-    other.c.send({ type: "game.select", gameId: "tamil-trivia-royale" });
+    other.c.send({ type: "game.select", gameId: "memory-wave" });
     expect((await other.c.next("error")).code).toBe("not_allowed");
 
-    cap.c.send({ type: "game.select", gameId: "tamil-trivia-royale" });
-    expect((await t.next("game.selected")).gameId).toBe("tamil-trivia-royale");
+    cap.c.send({ type: "game.select", gameId: "memory-wave" });
+    expect((await t.next("game.selected")).gameId).toBe("memory-wave");
     cap.c.send({ type: "game.start" });
     await t.next("game.started");
     cap.c.send({ type: "game.start" });                       // no restarting a running game

@@ -7,7 +7,10 @@ import type { Draw } from "../kitgrid/draw";
 import { rng } from "../kitgrid/rng";
 import type { Hud, Outcome, Sim, SimEvent } from "../kitgrid/types";
 import type { Opponent } from "./levels";
-import { type Board, count, DRAW_PLIES, moves, type Move, play, side, startBoard, think } from "./rules";
+import { type Board, count, DRAW_PLIES, moves, type Move, play, side, startBoard, thinking } from "./rules";
+
+/** Slices of computer reading per frame (rules.ts SLICE positions each): the rest waits for the next frame. */
+export const STEP_SLICES = 4;
 
 const BX = 4; // board's left column
 const BY = 1;
@@ -37,6 +40,10 @@ export class KingsSim implements Sim {
   private plies = 0;
   private quiet = 0; // plies without a capture or a man moving
   private aiAt = -1;
+  /** Most search slices any one frame has run (tests: the TV never stalls on the computer's turn). */
+  private aiPeak = 0;
+  /** The computer's search in progress (started as soon as it is its turn, a few slices per frame), then its pick. */
+  private ai: { it: Generator<void, Move | null, void>; pick: Move | null | undefined } | null = null;
   private last: { move: Move; at: number; piece: number } | null = null;
   private fallen: Array<{ sq: number; piece: number; at: number }> = [];
   private crowned = [0, 0];
@@ -156,7 +163,10 @@ export class KingsSim implements Sim {
     this.legal = moves(this.board, this.turn);
     if (!this.legal.length) this.end(s, count(this.board, this.turn).all ? `${this.names[this.turn]} is blocked in` : `${this.names[this.turn]} has no pieces left`);
     else if (this.quiet >= DRAW_PLIES) this.end(-1, "50 moves without a capture");
-    else if (!this.human(this.turn)) this.aiAt = this.ms + (this.quick ? 250 : AI_DELAY);
+    else if (!this.human(this.turn)) {
+      this.aiAt = this.ms + (this.quick ? 250 : AI_DELAY);
+      this.ai = null; // a fresh search of this position
+    }
     else {
       // a friendly start: the cursor jumps to a piece that has to capture, if any
       const c = this.cur[this.turn]!;
@@ -192,9 +202,18 @@ export class KingsSim implements Sim {
   step(ms: number): SimEvent[] {
     this.ms += ms;
     this.fallen = this.fallen.filter((f) => this.ms - f.at < 500);
-    if (this.result || this.aiAt < 0 || this.ms < this.aiAt) return [];
+    if (this.result || this.aiAt < 0) return [];
+    this.ai ??= { it: thinking(this.board, this.turn, this.opp.brain, this.r), pick: undefined };
+    let slices = 0;
+    for (; slices < STEP_SLICES && this.ai.pick === undefined; slices++) {
+      const n = this.ai.it.next();
+      if (n.done) this.ai.pick = n.value;
+    }
+    this.aiPeak = Math.max(this.aiPeak, slices);
+    if (this.ms < this.aiAt || this.ai.pick === undefined) return [];
+    const m = this.ai.pick;
     this.aiAt = -1;
-    const m = think(this.board, this.turn, this.opp.brain, this.r);
+    this.ai = null;
     return m ? this.commit(m) : [];
   }
 
@@ -217,7 +236,7 @@ export class KingsSim implements Sim {
     return {
       board: Array.from({ length: 8 }, (_, y) => Array.from(this.board.slice(y * 8, y * 8 + 8), ch).join("")),
       turn: this.turn, sel: [...this.sel], cursors: this.cur.map((c) => c.sq), plies: this.plies, legal: this.legal.length,
-      forced: !!this.legal[0]?.caps.length, thinking: this.aiAt >= 0, duel: this.duel,
+      forced: !!this.legal[0]?.caps.length, thinking: this.aiAt >= 0, aiPeak: this.aiPeak, duel: this.duel,
     };
   }
 

@@ -78,7 +78,24 @@ export const NODE_CAP = 60_000;
 const ORDER = [3, 2, 4, 1, 5, 0, 6];
 const WIN = 100_000;
 
-export function think(g0: Grid, s: number, brain: Brain, r: () => number): number {
+/** The search pauses after this many positions, so the TV can draw a frame in between (see thinking()). */
+export const SLICE = 250;
+
+/** The computer's whole decision at once (tests, tools): the same answer thinking() reaches frame by frame. */
+export function think(g: Grid, s: number, brain: Brain, r: () => number): number {
+  const it = thinking(g, s, brain, r);
+  for (;;) {
+    const n = it.next();
+    if (n.done) return n.value;
+  }
+}
+
+/**
+ * The computer's decision, one slice of reading at a time: it yields every SLICE positions so the game can
+ * spread the search over several frames instead of stalling the TV. The answer depends only on the board,
+ * the brain and the random numbers, never on how many slices a frame runs.
+ */
+export function* thinking(g0: Grid, s: number, brain: Brain, r: () => number): Generator<void, number, void> {
   const g = new Int8Array(g0);
   const cols = open(g);
   if (!cols.length) return -1;
@@ -101,15 +118,16 @@ export function think(g0: Grid, s: number, brain: Brain, r: () => number): numbe
   }
   let nodes = 0;
   let aborted = false;
-  const search = (me: number, depth: number, alpha: number, beta: number): number => {
+  const search = function* (me: number, depth: number, alpha: number, beta: number): Generator<void, number, void> {
     if (++nodes > NODE_CAP) { aborted = true; return 0; }
+    if (nodes % SLICE === 0) yield;
     if (depth === 0) return evaluate(g, me);
     let best = -Infinity, any = false;
     for (const c of ORDER) {
       const row = drop(g, c, me);
       if (row < 0) continue;
       any = true;
-      const v = four(g, me) ? WIN + depth : -search(1 - me, depth - 1, -beta, -alpha);
+      const v = four(g, me) ? WIN + depth : -(yield* search(1 - me, depth - 1, -beta, -alpha));
       g[row * W + c] = 0;
       if (aborted) return 0;
       if (v > best) best = v;
@@ -126,7 +144,7 @@ export function think(g0: Grid, s: number, brain: Brain, r: () => number): numbe
     for (const c of ORDER) {
       const row = drop(g, c, s);
       if (row < 0) continue;
-      const v = -search(1 - s, d - 1, -Infinity, Infinity);
+      const v = -(yield* search(1 - s, d - 1, -Infinity, Infinity));
       g[row * W + c] = 0;
       if (aborted) break;
       if (v > top) { top = v; choice = c; ties.length = 0; ties.push(c); }

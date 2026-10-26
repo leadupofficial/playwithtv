@@ -10,13 +10,13 @@ No title has been played on a real TV + phone yet (`docs/real-device-test.md` re
 |---|---|---|---|---|---|
 | 1 | high | every game | A player who leaves mid-game makes the TV's results invalid: hub rejects them (`apps/server/src/hub.ts` `finish()`), room stays `playing`, TV stuck until the captain exits. Server probe reproduced. | Hub drops departed players from results and re-places the rest | **fixed** + test |
 | 2 | high | every game | Phone reconnecting before its old socket closes: hub resets `lastSeq` but never sends `controller.clear`, so the TV's `InputMerger` (`apps/web/src/net/rtc.ts`) drops the new socket's input until its seq passes the old one — controls frozen. Probe reproduced. | Send `controller.clear` to the TV when a phone socket is replaced | **fixed** + test |
-| 3 | high | every game | `paused` never becomes true on the TV: no client sends `game.pause`; on TV drop the hub tells only phones. Sim runs while phones show "paused" and hub-relayed input is discarded. | TV pauses itself on socket close; captain pause button | todo |
+| 3 | high | every game | `paused` never becomes true on the TV: no client sends `game.pause`; on TV drop the hub tells only phones. Sim runs while phones show "paused" and hub-relayed input is discarded. | TV pauses itself while its hub socket is down (`TvApp.tsx` `gamePaused`); `tv/pauseGate.ts` holds input during the pause, drops pause-time taps, re-sends each player's latest state on resume; phones say why | **fixed** + tests (unit `rtc.test.ts`, e2e `tv-reconnect.spec.ts`). Captain pause button still todo |
 | 4 | critical | Ring Kings Boxing | Jab loop: attacker recovers before the victim's stun ends (`boxing/engine.ts:18,248`). Mirror probe 15–0, victim never lands a punch. CPU mashes GET UP ~33 taps/s (`engine.ts:348`). | Shorter jab hitstun / pushback; human-rate CPU mash; frame-advantage tests | todo |
 | 5 | high | Gully Super Over | A perfectly timed **motion** swing (120 ms lag) is judged a miss before it arrives (`gully/sim/game.ts:179,203-206`, `shot.ts:24`, `controls.ts:67`). | Settle miss/bowled after late window + max lag | todo |
-| 6 | high | Drop Four, Kings Row | AI search runs synchronously on the render loop: 659 ms / 498 ms worst moves (tests fail under load). Frame hitches on TVs. | Web Worker or time-sliced search with wall-clock cap | todo |
+| 6 | high | Drop Four, Kings Row | AI search runs synchronously on the render loop: 659 ms / 498 ms worst moves (tests fail under load). Frame hitches on TVs. | Time-sliced search: `thinking()` generators yield every 250/150 positions, sims run ≤ 4 slices a frame (≈2 ms here) starting the moment it is the computer's turn; same picks as the one-shot `think()` (test) | **fixed** + tests (`four.test.ts`, `kings.test.ts`) |
 | 7 | high | Kalari Clash | Parry spam: re-pressing guard reopens the 0.15 s parry window with no lockout (`kalari/combat.ts:74,199`); probe 8/14 parries. | Parry lockout after a whiffed guard press | todo |
 | 8 | high | 4 single-pilot kitgrid games | Pilot disconnect freezes the result screen (`kitgrid/Shell.tsx:31,106,223,239-250`); `back` on the map ends the whole session (Kitchen Rush maps it to Chop/shake). | Hand-off to a connected phone; hold-to-confirm finish; input grace on results | todo |
-| 9 | high | Lantern Truths, Mind Match, Two Paths, Tamil Trivia | Card-style read/pick/reveal, static TV; kitcouple stars free, 10-card decks repeat, "pass anything" promised but missing on pick/guess cards, one button does 4 jobs. | **Hide from the live catalogue** (product-owner call) | needs decision |
+| 9 | high | Lantern Truths, Mind Match, Two Paths, Tamil Trivia | Card-style read/pick/reveal, static TV; kitcouple stars free, 10-card decks repeat, "pass anything" promised but missing on pick/guess cards, one button does 4 jobs. | Held back: `heldBack` in `packages/protocol/src/catalog.ts`; hub hides/refuses them unless `PREVIEW_GAMES=1` (dev, e2e); listed under "Held back" in `catalogue.md`. Before return: varied decks, earned stars, Pass on every card, real-player test | **held back** + test |
 | 10 | high | Squat Rocket | Button reps always "perfect" (0.85 ≥ 0.8); mashing hits max rep rate (`engine.ts:184-192`). | Lower non-camera quality; reset gap on too-fast | todo |
 | 11 | high | Tilt Jumper | Rocket chaining doubles score (bot sim 3.2–4.0 km vs 1.7–1.9 km); difficulty saturates at 900 m, half-way through a match. | Rockets skip pickups; stretch the curve | todo |
 | 12 | high | Pillow Fort Brawl | 2–4 fps on software GL (CI log); no quality tiers. | Adaptive tier like GHAT RUSH | todo |
@@ -37,3 +37,28 @@ every racer/sports title has one difficulty, no cup/championship and no saved pr
 ## Lifecycle coverage gaps (no e2e)
 
 Mid-game leave → finish · phone socket replaced before close · TV drop mid-game · host pause · rematch actually replayed with inputs · exit during finish timeout · dedicated specs for Trivia, Buzz Field, Comet Kitty, Glowworm, Skyline, Mind Match, Two Paths, Lantern Truths.
+
+## Release verification log
+
+**754efd9** (fixes 1–2), full Playwright suite (118 tests):
+
+- CI (GitHub, required check), run on 754efd9: **74 passed, 0 failed, 5 flaky, 39 skipped** (perf, unit and all 4 e2e shards green).
+  Flaky (passed on retry): Tiffin Tornado ultra render, wake-lock, Pillow Fort Brawl buttons, Drop Four 2-phone, Gully Super Over buttons.
+- Local production-build run on this Mac, alongside an Android emulator and audit agents (load average 11–16):
+  **72 passed, 11 failed, 35 skipped, 0 flaky** (no retries locally). Re-running the 11 on their own: 8 passed;
+  Gully Super Over buttons then passed 2/2 → **load-flaky**. Two fail every time locally and on a clean checkout of 754efd9,
+  yet pass in CI:
+  - `showroom.spec.ts:31`: locally high/ultra tiers are also checked, and this headless Chromium has no GPU (lite 3 fps,
+    high 1 fps): the ultra screenshot times out. Environment, not 754efd9 (server-only change).
+  - `memory.spec.ts:23`: the motion player's 160 ms simulated flick is not counted on this loaded machine (progress stays 0).
+    Unresolved: re-check on an idle machine and on a real phone.
+- Deployed 754efd9 (`.deployed-commit` = 754efd9, hub healthy). Live checks against https://playwithtv.leadup.in over real
+  WebSockets: a player leaving mid-game → TV's results naming them accepted, the rest re-placed (Ana 1, Chitra 1), room → results;
+  a phone reconnecting before its old socket closed → TV got `controller.clear` and the new socket's seq-0 input.
+
+**Fixes 3 and 6 + held-back games** (next commit): typecheck clean; unit 58 + 104 + 706 passed; build OK;
+e2e `tv-reconnect`, `drop-four`, `kings-row`, `couple`, `smoke-all` 5/5 passed. New tests fail on the old code
+(TV clock ran on 35 → 39 s with the hub gone; AI tests: `thinking` missing, no per-frame bound).
+
+Next: #5 Gully Super Over swing timing, then #4, #7. Open: games that ignore `paused` (Beat Blade #13) still animate while
+input is held; captain pause button; Memory Wave local flick failure.

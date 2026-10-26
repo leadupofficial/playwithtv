@@ -20,6 +20,8 @@ export interface Config {
   maxRooms: number;
   maxSockets: number;
   maxSocketsPerIp: number;
+  /** List and allow games held back from the public catalogue (heldBack in catalog.ts): development and QA only. */
+  previewGames: boolean;
 }
 
 export function loadConfig(env = process.env): Config {
@@ -40,6 +42,7 @@ export function loadConfig(env = process.env): Config {
     // generous: a home is a TV, up to 8 phones and their reconnects, and carrier-grade NAT puts many homes
     // behind one address (common on Indian broadband and mobile data)
     maxSocketsPerIp: positive(env.MAX_SOCKETS_PER_IP, 200),
+    previewGames: env.PREVIEW_GAMES === "1",
   };
 }
 

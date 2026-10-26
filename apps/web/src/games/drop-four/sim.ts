@@ -6,7 +6,10 @@ import type { Draw } from "../kitgrid/draw";
 import { rng } from "../kitgrid/rng";
 import type { Hud, Outcome, Sim, SimEvent } from "../kitgrid/types";
 import type { Opponent } from "./levels";
-import { drop, empty, four, full, type Grid, H, landing, think, W } from "./rules";
+import { drop, empty, four, full, type Grid, H, landing, thinking, W } from "./rules";
+
+/** Slices of computer reading per frame (rules.ts SLICE positions each): the rest waits for the next frame. */
+export const STEP_SLICES = 4;
 
 const RX = 4.5; // rack's left edge (cells)
 const RY = 2.6; // rack's top edge
@@ -32,6 +35,10 @@ export class FourSim implements Sim {
   private cur: Cursor[] = [{ col: 3, dir: 0, next: 0 }, { col: 3, dir: 0, next: 0 }];
   private ms = 0;
   private aiAt = -1;
+  /** Most search slices any one frame has run (tests: the TV never stalls on the computer's turn). */
+  private aiPeak = 0;
+  /** The computer's search in progress (started as soon as it is its turn, a few slices per frame), then its pick. */
+  private ai: { it: Generator<void, number, void>; pick: number | null } | null = null;
   private falling: { col: number; row: number; y: number; vy: number; s: number; bounced: boolean } | null = null;
   private line: number[] | null = null;
   private drops = [0, 0];
@@ -99,7 +106,10 @@ export class FourSim implements Sim {
     } else if (full(this.grid)) this.pendingEnd = () => this.end(-1, "the rack is full");
     else {
       this.turn = 1 - s;
-      if (!this.human(this.turn)) this.aiAt = this.ms + (this.quick ? 250 : AI_DELAY);
+      if (!this.human(this.turn)) {
+        this.aiAt = this.ms + (this.quick ? 250 : AI_DELAY);
+        this.ai = null; // a fresh search of this position
+      }
     }
     return [{ sfx: "drop" }];
   }
@@ -152,11 +162,21 @@ export class FourSim implements Sim {
         }
       }
     }
-    if (!this.result && !this.falling && this.aiAt >= 0 && this.ms >= this.aiAt) {
-      this.aiAt = -1;
-      const c = think(this.grid, this.turn, this.opp.brain, this.r);
-      this.cur[1]!.col = c;
-      ev.push(...this.place(c));
+    if (!this.result && this.aiAt >= 0) {
+      this.ai ??= { it: thinking(this.grid, this.turn, this.opp.brain, this.r), pick: null };
+      let slices = 0;
+      for (; slices < STEP_SLICES && this.ai.pick === null; slices++) {
+        const n = this.ai.it.next();
+        if (n.done) this.ai.pick = n.value;
+      }
+      this.aiPeak = Math.max(this.aiPeak, slices);
+      if (!this.falling && this.ms >= this.aiAt && this.ai.pick !== null) {
+        const c = this.ai.pick;
+        this.aiAt = -1;
+        this.ai = null;
+        this.cur[1]!.col = c;
+        ev.push(...this.place(c));
+      }
     }
     return ev;
   }
@@ -178,7 +198,7 @@ export class FourSim implements Sim {
   debug() {
     return {
       rows: Array.from({ length: H }, (_, i) => Array.from(this.grid.slice((H - 1 - i) * W, (H - i) * W), (v) => ".ox"[v]).join("")),
-      turn: this.turn, cols: this.cur.map((c) => c.col), drops: [...this.drops], falling: !!this.falling, thinking: this.aiAt >= 0, duel: this.duel,
+      turn: this.turn, cols: this.cur.map((c) => c.col), drops: [...this.drops], falling: !!this.falling, thinking: this.aiAt >= 0, aiPeak: this.aiPeak, duel: this.duel,
     };
   }
 

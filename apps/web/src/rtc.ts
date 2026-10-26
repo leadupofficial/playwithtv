@@ -10,6 +10,7 @@
 import { InputState, type RtcSignal } from "@playwithtv/protocol";
 import { ClockSync } from "@playwithtv/motion";
 import type { HubSocket } from "./net";
+import { PauseGate } from "./tv/pauseGate";
 
 const ICE: RTCConfiguration = { iceServers: [] };
 const OPEN_TIMEOUT_MS = 8000;
@@ -265,6 +266,7 @@ export class InputMerger {
 export class TvInputs {
   readonly links: TvLinks;
   private merger = new InputMerger();
+  private gate = new PauseGate();
   /** Players currently in the room (null until the first room state): input from anyone else is ignored. */
   private members: Set<string> | null = null;
   private inputCbs = new Set<(playerId: string, state: InputState) => void>();
@@ -278,6 +280,7 @@ export class TvInputs {
         if (m.type === "controller.input") this.deliver(m.playerId, m.seq, m.state);
         if (m.type === "controller.clear") {
           this.merger.reset(m.playerId);
+          this.gate.reset(m.playerId);
           this.clearCbs.forEach((cb) => cb(m.playerId));
         }
       }),
@@ -300,6 +303,11 @@ export class TvInputs {
     this.links.close();
   }
 
+  /** Holds input back from the game while it is paused; on resume, re-sends each player's latest state. */
+  setPaused(paused: boolean) {
+    for (const [id, state] of this.gate.setPaused(paused)) this.inputCbs.forEach((cb) => cb(id, state));
+  }
+
   /** The room's current players: links of anyone no longer in it are closed, and their input dropped. */
   setMembers(ids: string[]) {
     this.members = new Set(ids);
@@ -308,7 +316,9 @@ export class TvInputs {
 
   private deliver(id: string, seq: number, state: InputState) {
     if (this.members && !this.members.has(id)) return;
-    if (this.merger.accept(id, seq)) this.inputCbs.forEach((cb) => cb(id, state));
+    if (!this.merger.accept(id, seq)) return;
+    const s = this.gate.filter(id, state);
+    if (s) this.inputCbs.forEach((cb) => cb(id, s));
   }
 }
 

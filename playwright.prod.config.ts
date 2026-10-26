@@ -20,7 +20,7 @@ export default defineConfig({
   webServer: {
     command: "pnpm --filter @playwithtv/web build && pnpm --filter @playwithtv/server start",
     url: `http://localhost:${PORT}/healthz`,
-    env: { PORT: String(PORT), PUBLIC_URL: `http://localhost:${PORT}`, ALLOWED_ORIGINS: `http://localhost:${PORT}`, ADMIN_TOKEN: "e2e-admin" },
+    env: { PORT: String(PORT), PUBLIC_URL: `http://localhost:${PORT}`, ALLOWED_ORIGINS: `http://localhost:${PORT}`, ADMIN_TOKEN: "e2e-admin", PREVIEW_GAMES: "1" }, // held-back games stay under test
     reuseExistingServer: false,
     timeout: 120_000,
   },

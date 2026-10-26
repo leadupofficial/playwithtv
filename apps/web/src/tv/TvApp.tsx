@@ -162,6 +162,10 @@ export function TvApp() {
   const connected = room?.players.filter((p) => p.connected) ?? [];
   const Game = room?.gameId ? GAMES[room.gameId] : undefined;
   const playing = (room?.status === "playing" || room?.status === "paused") && Game && bridge;
+  // The game also stops while the TV is cut off from the hub: phones are told it is paused, and anything
+  // they press meanwhile must not land on resume.
+  const gamePaused = paused || status !== "open";
+  useEffect(() => inputs?.setPaused(Boolean(playing) && gamePaused), [inputs, playing, gamePaused]);
 
   const pick = (g: GameManifest) => {
     socket?.send({ type: "game.select", gameId: g.id });
@@ -188,7 +192,7 @@ export function TvApp() {
           <Game
             players={room!.players /* everyone in the room; games show who is disconnected */}
             bridge={bridge!}
-            paused={paused}
+            paused={gamePaused}
             onFinish={(res, ms) => socket?.send({ type: "game.finished", results: res, durationMs: ms })}
             sponsor={inGame ? { name: inGame.advertiser } : null}
           />

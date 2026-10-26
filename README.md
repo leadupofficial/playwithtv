@@ -67,8 +67,8 @@ Up to 8 friends play together with the phones already in their pockets.
 | 🐝 | **Buzz Field** | 1–4 | Minesweeper in a meadow, with forgiving honey jars |
 | ♟️ | **Kings Row** | 1–2 | Draughts / checkers, phone against phone or the AI |
 | 🔴 | **Drop Four** | 1–2 | Four in a row at the travelling fair |
-| 🧠 | **Mind Match** · 🛤️ **Two Paths** · 🏮 **Lantern Truths** | 2 | Games for couples: how well do you know each other? |
 
+The couples games (Mind Match, Two Paths, Lantern Truths) and Tamil Trivia Royale are held back from TVs while they are reworked.
 More are on the way: a **dance game** (Groove Party), motion sports (bowling, boxing, air hockey, penalties, kart racing)
 and camera fitness games where the phone watches your body and **the video never leaves the phone**.
 The full list with status is in [docs/catalogue.md](docs/catalogue.md).

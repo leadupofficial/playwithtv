@@ -243,6 +243,11 @@ export const GameManifest = z.object({
   colors: z.tuple([z.string(), z.string()]),
   emoji: z.string(),
   playable: z.boolean(),
+  /**
+   * Built and tested, but held back from public game selection until it is reworked (the reason is shown in
+   * docs/catalogue.md). Only a hub started with PREVIEW_GAMES=1 (development, QA, e2e) lists and starts it.
+   */
+  heldBack: z.string().optional(),
   // ---- catalogue and motion metadata ----
   /** Number in the 50-game catalogue (docs/catalogue.md); absent for extra originals. */
   catalogueNo: z.number().int().min(1).optional(),

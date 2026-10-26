@@ -100,7 +100,7 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
   // public health check: no usage numbers (those are in the admin overview and /metrics)
   http.get("/healthz", async () => ({ ok: true, db: db.kind, presence: presence.kind }));
 
-  http.get("/api/games", async () => (await db.games()).filter((g) => g.enabled && g.playable));
+  http.get("/api/games", async () => (await db.games()).filter((g) => g.enabled && g.playable && (!g.heldBack || cfg.previewGames)));
 
   http.post("/api/rooms", async (req, reply) => {
     if (!createLimiter.take(req.ip)) {

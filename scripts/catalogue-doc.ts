@@ -14,6 +14,10 @@ const CAT: Record<string, string> = {
 
 const rows = [...CATALOG].sort((a, b) => (a.catalogueNo ?? 99) - (b.catalogueNo ?? 99));
 const built = rows.filter((g) => g.completionStatus !== "concept");
+const heldBack = rows.filter((g) => g.heldBack);
+/** What TVs see: held-back and unplayable games never appear in public game selection. */
+const status = (g: (typeof rows)[number]) =>
+  g.heldBack ? "held back" : !g.playable && g.completionStatus !== "concept" ? `${STATUS[g.completionStatus]} (hidden)` : STATUS[g.completionStatus];
 const lines = [
   "# Game catalogue",
   "",
@@ -21,7 +25,8 @@ const lines = [
   "",
   "Statuses: **concept** = idea only, hidden from TVs · **prototype** = partly playable · **playable** = complete loop",
   "(objective, motion input, rules, scoring, end state, rematch) with automated tests · **released** = also passed the",
-  "real-device controller test ([real-device-test.md](real-device-test.md)).",
+  "real-device controller test ([real-device-test.md](real-device-test.md)) · **held back** = built and tested, but off public",
+  "game selection until reworked (development and QA hubs run with `PREVIEW_GAMES=1`) · **(hidden)** = not offered to TVs.",
   "",
   `Built: ${built.length} · concepts: ${rows.length - built.length}.`,
   "",
@@ -32,8 +37,9 @@ const lines = [
   "",
   "| No | Game | Category | Players | Phase | Status | Modes | Tests |",
   "|---:|---|---|---|---:|---|---|---|",
-  ...rows.map((g) => `| ${g.catalogueNo ?? "–"} | ${g.emoji} ${g.title} | ${CAT[g.category]} | ${g.minPlayers}–${g.maxPlayers} | ${g.phase} | ${STATUS[g.completionStatus]} | ${g.modes.join(", ")} | ${g.automatedTestStatus} |`),
+  ...rows.map((g) => `| ${g.catalogueNo ?? "–"} | ${g.emoji} ${g.title} | ${CAT[g.category]} | ${g.minPlayers}–${g.maxPlayers} | ${g.phase} | ${status(g)} | ${g.modes.join(", ")} | ${g.automatedTestStatus} |`),
   "",
+  ...(heldBack.length ? ["## Held back from public selection", "", ...heldBack.map((g) => `- ${g.emoji} **${g.title}**: ${g.heldBack}`), ""] : []),
   "## Built games: motion mappings",
   "",
   ...built.flatMap((g) => [

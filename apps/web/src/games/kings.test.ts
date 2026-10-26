@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { LEVELS } from "./kings-row/levels";
-import { count, type Move, moves, parseBoard, play, startBoard, think } from "./kings-row/rules";
-import { KingsSim } from "./kings-row/sim";
+import { count, type Move, moves, NODE_CAP, parseBoard, play, SLICE, startBoard, think, thinking } from "./kings-row/rules";
+import { KingsSim, STEP_SLICES } from "./kings-row/sim";
 import { rng } from "./kitgrid/rng";
 
 const sq = (x: number, y: number) => y * 8 + x;
@@ -199,4 +199,34 @@ describe("Kings Row on the TV", () => {
     }
     expect(best).toBe(3);
   }, 30_000);
+
+  it("the strongest computer reads in small slices across frames, so the TV keeps drawing on its turn", () => {
+    expect(STEP_SLICES * SLICE).toBeLessThan(NODE_CAP / 20);
+    const s = new KingsSim(LEVELS[5]!, 7, "", ["#f00"], ["Ana"]);
+    for (let turn = 0; turn < 4 && !s.outcome(); turn++) {
+      const m = s.legalMoves()[0]!;
+      goTo(s, 0, m.path[0]!);
+      s.act("pick", 0);
+      for (const sq of m.path.slice(1)) { goTo(s, 0, sq); s.act("pick", 0); }
+      let frames = 0;
+      while (s.debug().turn === 1 && !s.outcome() && frames < 600) { s.step(16); frames++; }
+      expect(frames).toBeLessThan(600);
+    }
+    expect(s.debug().plies).toBeGreaterThanOrEqual(6);
+    expect(s.debug().aiPeak).toBeGreaterThan(0);
+    expect(s.debug().aiPeak).toBeLessThanOrEqual(STEP_SLICES);
+  });
+
+  it("slicing the search changes nothing: the step-by-step search picks what the whole search picks", () => {
+    let bd = startBoard();
+    for (let ply = 0; ply < 12; ply++) {
+      const a = think(bd, ply % 2, LEVELS[5]!.brain, rng(ply));
+      const it = thinking(bd, ply % 2, LEVELS[5]!.brain, rng(ply));
+      let n = it.next();
+      while (!n.done) n = it.next();
+      expect(n.value).toEqual(a);
+      if (!a) break;
+      bd = play(bd, a);
+    }
+  });
 });

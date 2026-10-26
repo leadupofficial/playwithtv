@@ -33,6 +33,8 @@ const en = {
   "ctl.wake": "This phone may turn its screen off while you play. Set Screen timeout to 10 minutes (Settings → Display) or turn off battery saver.",
   "ctl.wifi": "📶 Slow link ({ms} ms). For lag-free play, connect this phone to the same Wi-Fi as the TV (not mobile data). Already on it? Guest Wi-Fi can block phones from the TV: use the main network.",
   "ctl.wifiOk": "Got it",
+  "ctl.pausedTv": "⏸ Game paused: the TV lost its connection. It carries on when the TV is back.",
+  "ctl.paused": "⏸ Game paused",
   "tut.title": "Get ready: practise the moves",
   "tut.hold": "Hold your phone steady to calibrate",
   "tut.ready": "Calibrated",

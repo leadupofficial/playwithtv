@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { LEVELS } from "./drop-four/levels";
-import { drop, empty, four, full, type Grid, landing, open, think, W } from "./drop-four/rules";
-import { FourSim } from "./drop-four/sim";
+import { drop, empty, four, full, type Grid, landing, NODE_CAP, open, SLICE, think, thinking, W } from "./drop-four/rules";
+import { FourSim, STEP_SLICES } from "./drop-four/sim";
 import { rng } from "./kitgrid/rng";
 
 /** Builds a grid from drops: "3,3,4" = side 0 in col 3, side 1 in col 3, side 0 in col 4. */
@@ -138,4 +138,36 @@ describe("Drop Four on the TV", () => {
       expect(best, LEVELS[lvl]!.name).toBeGreaterThanOrEqual(lvl < 2 ? 3 : 1);
     }
   }, 30_000);
+
+  it("the strongest computer reads in small slices across frames, so the TV keeps drawing on its turn", () => {
+    // the per-frame budget: STEP_SLICES slices of SLICE positions, far below one whole search
+    expect(STEP_SLICES * SLICE).toBeLessThan(NODE_CAP / 20);
+    const s = new FourSim(LEVELS[5]!, 7, "", ["#f00"], ["Ana"]);
+    const steps = (n: number) => { for (let i = 0; i < n; i++) s.step(16); };
+    for (const col of [3, 3, 2, 4, 1]) {
+      if (s.outcome()) break;
+      move(s, 0, col);
+      if (s.debug().turn !== 0 || s.act("drop", 0).length === 0) continue;
+      let frames = 0;
+      while ((s.debug().turn === 1 || s.debug().falling) && !s.outcome() && frames < 600) { s.step(16); frames++; }
+      expect(frames).toBeLessThan(600); // the computer still answers, a second or so later
+      steps(5);
+    }
+    expect(s.debug().drops).not.toEqual([0, 0]);
+    expect(s.debug().aiPeak).toBeGreaterThan(0);
+    expect(s.debug().aiPeak).toBeLessThanOrEqual(STEP_SLICES);
+  });
+
+  it("slicing the search changes nothing: the step-by-step search picks what the whole search picks", () => {
+    const g = empty();
+    for (let ply = 0; ply < 14; ply++) {
+      const a = think(g, ply % 2, LEVELS[5]!.brain, rng(ply));
+      const it = thinking(g, ply % 2, LEVELS[5]!.brain, rng(ply));
+      let n = it.next();
+      while (!n.done) n = it.next();
+      expect(n.value).toBe(a);
+      drop(g, a, ply % 2);
+      if (four(g, ply % 2)) break;
+    }
+  });
 });

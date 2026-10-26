@@ -140,22 +140,41 @@ export interface Brain {
 /** Searches at most this many positions per move, so a slow TV never stalls. */
 export const NODE_CAP = 40_000;
 
+/** The search pauses after this many positions, so the TV can draw a frame in between (see thinking()). */
+export const SLICE = 150;
+
+/** The computer's whole decision at once (tests, tools): the same answer thinking() reaches frame by frame. */
 export function think(b: Board, s: number, brain: Brain, r: () => number): Move | null {
+  const it = thinking(b, s, brain, r);
+  for (;;) {
+    const n = it.next();
+    if (n.done) return n.value;
+  }
+}
+
+/**
+ * The computer's decision, one slice of reading at a time: it yields every SLICE positions so the game can
+ * spread the search over several frames instead of stalling the TV. The answer depends only on the board,
+ * the brain and the random numbers, never on how many slices a frame runs.
+ */
+export function* thinking(b: Board, s: number, brain: Brain, r: () => number): Generator<void, Move | null, void> {
+  let total = 0;
   const all = moves(b, s);
   if (!all.length) return null;
   if (all.length === 1) return all[0]!;
   if (r() < brain.blunder) return all[Math.floor(r() * all.length)]!;
   let nodes = 0;
   const cap = NODE_CAP / all.length; // every first move gets the same share of the reading
-  const search = (bd: Board, me: number, depth: number, alpha: number, beta: number): number => {
+  const search = function* (bd: Board, me: number, depth: number, alpha: number, beta: number): Generator<void, number, void> {
     nodes++;
+    if (++total % SLICE === 0) yield;
     const ms = moves(bd, me);
     if (!ms.length) return -10_000 - depth; // no moves: lost (sooner is worse)
     // at the horizon, keep reading while there are captures (never stop in the middle of an exchange)
     if ((depth <= 0 && !ms[0]!.caps.length) || nodes > cap) return evaluate(bd, me);
     let best = -Infinity;
     for (const m of ms) {
-      const v = -search(play(bd, m), 1 - me, depth - 1, -beta, -alpha);
+      const v = -(yield* search(play(bd, m), 1 - me, depth - 1, -beta, -alpha));
       if (v > best) best = v;
       if (v > alpha) alpha = v;
       if (alpha >= beta) break;
@@ -165,7 +184,7 @@ export function think(b: Board, s: number, brain: Brain, r: () => number): Move 
   let pick = all[0]!, top = -Infinity;
   for (const m of all) {
     nodes = 0;
-    const v = -search(play(b, m), 1 - s, brain.depth - 1, -Infinity, Infinity) + (r() - 0.5) * 2 * brain.noise;
+    const v = -(yield* search(play(b, m), 1 - s, brain.depth - 1, -Infinity, Infinity)) + (r() - 0.5) * 2 * brain.noise;
     if (v > top) { top = v; pick = m; }
   }
   return pick;

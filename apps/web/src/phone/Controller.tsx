@@ -183,6 +183,11 @@ export function Controller({ session, onLeave }: { session: PhoneSession; onLeav
             </span>
           </div>
 
+          {room?.status === "paused" && (
+            <div className="wifi-hint" role="status" data-paused={room.tvConnected ? "host" : "tv"}>
+              <span>{t(room.tvConnected ? "ctl.paused" : "ctl.pausedTv")}</span>
+            </div>
+          )}
           {wakeState !== "on" && <div className="wake-hint" data-wake={wakeState}>{t("ctl.wake")}</div>}
           {slowLink && !wifiDismissed && (
             <div className="wifi-hint" role="status" data-wifi="slow">
