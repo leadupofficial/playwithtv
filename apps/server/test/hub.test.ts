@@ -236,6 +236,21 @@ describe("sockets and input", () => {
     expect(m.state.taps?.push).toBe(1);
   });
 
+  it("tells the TV to forget a phone's input numbers when a newer connection replaces a still-open one", async () => {
+    await start();
+    const { room, c: t } = await tv();
+    const p = await phone({ inviteToken: room.inviteToken });
+    p.c.send({ type: "controller.input", seq: 50, state: { taps: { push: 9 } } });
+    expect((await t.next("controller.input")).seq).toBe(50);
+    const again = new Client(); // reconnects before the old socket closed (Wi-Fi switch, fast reload)
+    await again.open();
+    again.send({ type: "hello", v: 1, role: "controller", roomId: p.roomId, playerToken: p.playerToken });
+    await again.next("welcome");
+    expect((await t.next("controller.clear")).playerId).toBe(p.playerId);
+    again.send({ type: "controller.input", seq: 0, state: { taps: { push: 1 } } });
+    expect((await t.next("controller.input", (x) => x.seq === 0)).state.taps?.push).toBe(1);
+  });
+
   it("rejects WebSockets from origins that are not allowed", async () => {
     await start({ allowedOrigins: ["http://tv.test"] });
     const bad = new Client("http://evil.test");
@@ -272,6 +287,41 @@ describe("game lifecycle", () => {
     await t.next("game.started");
     t.send({ type: "game.exit" });
     await t.next("room.state", (m) => m.room.status === "lobby" && m.room.gameId === null);
+  });
+
+  it("finishes a game whose results still name a player who left mid-game (the TV is not stranded)", async () => {
+    await start();
+    const { room, c: t } = await tv();
+    const a = await phone({ inviteToken: room.inviteToken }, "Ana");
+    const b = await phone({ inviteToken: room.inviteToken }, "Bala");
+    const c = await phone({ inviteToken: room.inviteToken }, "Chitra");
+    t.send({ type: "game.select", gameId: "tamil-trivia-royale" });
+    await t.next("game.selected");
+    t.send({ type: "game.start" });
+    await t.next("game.started");
+    b.c.send({ type: "player.leave" });
+    await t.next("room.state", (m) => m.room.players.length === 2);
+    // the game still reports everyone it started with: Bala won, Ana and Chitra tied second
+    t.send({
+      type: "game.finished",
+      durationMs: 1000,
+      results: [
+        { playerId: b.playerId, score: 9, place: 1 },
+        { playerId: a.playerId, score: 5, place: 2 },
+        { playerId: c.playerId, score: 5, place: 2 },
+      ],
+    });
+    const fin = await a.c.next("game.finished");
+    expect(fin.results).toEqual([
+      { playerId: a.playerId, score: 5, place: 1 },
+      { playerId: c.playerId, score: 5, place: 1 },
+    ]);
+    await t.next("room.state", (m) => m.room.status === "results");
+    // a stranger is still refused
+    t.send({ type: "game.start" });
+    await t.next("game.started");
+    t.send({ type: "game.finished", results: [{ playerId: "someone-else", score: 1, place: 1 }], durationMs: 1 });
+    expect((await t.next("error")).code).toBe("bad_message");
   });
 
   it("enforces the game's player count", async () => {

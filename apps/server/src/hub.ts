@@ -49,6 +49,7 @@ export class Hub {
       status: "lobby",
       gameId: null,
       gameStartedAt: 0,
+      gameRoster: new Set(),
       players: new Map(),
       tvBucket: new Bucket(40, 80),
       lastImpressionsAt: Date.now(),
@@ -315,6 +316,7 @@ export class Hub {
         }
         room.status = "playing";
         room.gameStartedAt = Date.now();
+        room.gameRoster = new Set(room.players.keys());
         room.gamesSinceReport++;
         room.layoutAll = undefined;
         room.layoutFor.clear();
@@ -340,8 +342,15 @@ export class Hub {
     if (!g) throw new HubError("unknown_game", "no game");
     const ids = new Set<string>();
     for (const r of results) {
-      if (!room.players.has(r.playerId) || ids.has(r.playerId)) throw new HubError("bad_message", "results must name each room player once");
+      const known = room.players.has(r.playerId) || room.gameRoster.has(r.playerId);
+      if (!known || ids.has(r.playerId)) throw new HubError("bad_message", "results must name each room player once");
       ids.add(r.playerId);
+    }
+    // Every game reports the players it started with. Someone who left mid-game is dropped (not an error,
+    // which used to strand the TV in the finished game) and the rest are re-placed, keeping ties.
+    const kept = results.filter((r) => room.players.has(r.playerId));
+    if (kept.length !== results.length) {
+      results = kept.map((r) => ({ ...r, place: 1 + kept.filter((o) => o.place < r.place).length }));
     }
     const elapsed = Date.now() - room.gameStartedAt;
     const safeDuration = Math.min(durationMs, elapsed + 1000); // a host cannot claim a longer match than really ran
@@ -380,7 +389,12 @@ export class Hub {
     }
     const p = [...room.players.values()].find((x) => sameToken(x.token, m.playerToken ?? ""));
     if (!p) throw new HubError("unauthorized", "Join again from the TV code.");
-    if (p.socket && p.socket !== ws) p.socket.close(4409, "replaced by a newer connection");
+    if (p.socket && p.socket !== ws) {
+      p.socket.close(4409, "replaced by a newer connection");
+      // The old socket's close no longer clears this player (it is not theirs any more), and the TV still
+      // remembers its last input number: without a clear it drops the new socket's frames, counted from 0.
+      this.sendTv(room, { type: "controller.clear", playerId: p.id });
+    }
     p.socket = ws;
     p.disconnectedAt = undefined;
     p.lastSeq = -1; // a reloaded phone counts its input frames from 0 again

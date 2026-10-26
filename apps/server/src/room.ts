@@ -26,6 +26,8 @@ export interface Room {
   status: RoomStatus;
   gameId: string | null;
   gameStartedAt: number;
+  /** Everyone who was in the room when the running game started: they may still be named in its results after leaving. */
+  gameRoster: Set<string>;
   players: Map<string, Player>;
   tv?: WebSocket;
   tvBucket: Bucket;
