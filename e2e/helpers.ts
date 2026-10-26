@@ -1,6 +1,8 @@
 import { expect, devices, type Browser, type Page } from "@playwright/test";
 
 export const PHONE = devices["Pixel 7 landscape"];
+/** An iPhone for the phone side: Safari's user agent, so the controller takes its iPhone paths. */
+export const IPHONE = devices["iPhone 15 landscape"];
 
 /** Screen-axis vectors (x right, y up, z out of the screen). */
 export type V = { x: number; y: number; z: number };
@@ -16,7 +18,7 @@ export const flat = (roll = 0, pitch = 0): V => ({ x: -Math.sin(rad(roll)) * G, 
  * pose (like a real phone, which never stops reporting), plus short movement bursts for gestures.
  * Vectors are given in screen axes and converted to device axes for the emulated landscape orientation.
  */
-function installSensor() {
+function installSensor(ios = false) {
   type Vec = { x: number; y: number; z: number };
   const toDevice = (v: Vec): Vec => {
     const a = (((screen.orientation?.angle ?? 0) % 360) + 360) % 360;
@@ -27,6 +29,15 @@ function installSensor() {
   };
   const w = window as unknown as { __sensor: { pose: Vec; burst: { dir: Vec; peak: number; t0: number; ms: number } | null } };
   w.__sensor = { pose: { x: 0, y: 9.81, z: 0 }, burst: null };
+  // iPhone Safari: motion needs a permission prompt from a tap, and acceleration comes with the opposite sign
+  const sign = ios ? -1 : 1;
+  if (ios) {
+    (window as unknown as { __askedMotion: number }).__askedMotion = 0;
+    Object.defineProperty(DeviceMotionEvent, "requestPermission", {
+      value: async () => { (window as unknown as { __askedMotion: number }).__askedMotion++; return "granted"; }, configurable: true,
+    });
+  }
+  const flip = (v: Vec): Vec => ({ x: sign * v.x, y: sign * v.y, z: sign * v.z });
   setInterval(() => {
     const s = w.__sensor;
     let lin = { x: 0, y: 0, z: 0 };
@@ -38,8 +49,8 @@ function installSensor() {
         lin = { x: s.burst.dir.x * a, y: s.burst.dir.y * a, z: s.burst.dir.z * a };
       }
     }
-    const g = toDevice({ x: s.pose.x + lin.x, y: s.pose.y + lin.y, z: s.pose.z + lin.z });
-    const l = toDevice(lin);
+    const g = flip(toDevice({ x: s.pose.x + lin.x, y: s.pose.y + lin.y, z: s.pose.z + lin.z }));
+    const l = flip(toDevice(lin));
     window.dispatchEvent(new DeviceMotionEvent("devicemotion", {
       accelerationIncludingGravity: g, acceleration: l, rotationRate: { alpha: 0, beta: 0, gamma: 0 }, interval: 16,
     }));
@@ -49,8 +60,8 @@ function installSensor() {
 export type Mode = "buttons" | "motion" | "hybrid" | "touchpad";
 
 /** Opens a phone with the synthetic sensor, joins with the code and taps the controller's start gate. */
-export async function joinPhone(browser: Browser, code: string, name: string, modes: Record<string, Mode> = {}) {
-  const page = await newPhonePage(browser, modes);
+export async function joinPhone(browser: Browser, code: string, name: string, modes: Record<string, Mode> = {}, opts: { iphone?: boolean } = {}) {
+  const page = await newPhonePage(browser, modes, opts);
   await page.goto("/join");
   await page.getByLabel("TV code").fill(code);
   await page.getByLabel("Your name").fill(name);
@@ -59,10 +70,11 @@ export async function joinPhone(browser: Browser, code: string, name: string, mo
   return page;
 }
 
-export async function newPhonePage(browser: Browser, modes: Record<string, Mode> = {}) {
-  const ctx = await browser.newContext({ ...PHONE, ignoreHTTPSErrors: true });
+export async function newPhonePage(browser: Browser, modes: Record<string, Mode> = {}, opts: { iphone?: boolean } = {}) {
+  const { defaultBrowserType: _, ...device } = opts.iphone ? IPHONE : PHONE;
+  const ctx = await browser.newContext({ ...device, ignoreHTTPSErrors: true });
   await ctx.grantPermissions(["accelerometer", "gyroscope"]); // what the user allows on a real phone
-  await ctx.addInitScript(installSensor);
+  await ctx.addInitScript(installSensor, !!opts.iphone);
   // preset control modes per game title (what a player would pick with the mode chip)
   if (Object.keys(modes).length) await ctx.addInitScript((m) => localStorage.setItem("pwtv.controls", JSON.stringify(m)), modes);
   return ctx.newPage();

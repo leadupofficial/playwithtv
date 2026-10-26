@@ -32,6 +32,7 @@ const GlowwormGame = lazy(() => import("./glowworm").then((m) => ({ default: m.G
 const SkylineGame = lazy(() => import("./skyline").then((m) => ({ default: m.SkylineGame })));
 const CometKittyGame = lazy(() => import("./comet-kitty").then((m) => ({ default: m.CometKittyGame })));
 const BuzzFieldGame = lazy(() => import("./buzz-field").then((m) => ({ default: m.BuzzFieldGame })));
+const GrooveGame = lazy(() => import("./groove/GrooveGame").then((m) => ({ default: m.GrooveGame })));
 const BeatBladeGame = lazy(() => import("./beat-blade/BeatBladeGame").then((m) => ({ default: m.BeatBladeGame })));
 const TwoPathsGame = lazy(() => import("./two-paths").then((m) => ({ default: m.TwoPathsGame })));
 const MindMatchGame = lazy(() => import("./mind-match").then((m) => ({ default: m.MindMatchGame })));
@@ -72,6 +73,7 @@ export const GAMES: Record<string, GameComponent> = {
   "comet-kitty": CometKittyGame,
   "buzz-field": BuzzFieldGame,
   "beat-blade": BeatBladeGame,
+  "groove-party": GrooveGame,
   "two-paths": TwoPathsGame,
   "mind-match": MindMatchGame,
   "lantern-truths": LanternTruthsGame,
