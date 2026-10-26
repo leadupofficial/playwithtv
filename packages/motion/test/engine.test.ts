@@ -75,6 +75,21 @@ describe("gestures", () => {
     expect(kinds(r)).toEqual(["push"]);
   });
 
+  it("sensitivity sets how hard a move must be, for pushes, twists and swings", () => {
+    // measured on a real phone: a player's pushes peaked at 5-11 m/s², swings at 6-8 and twists at 190-250 deg/s
+    const push = new TraceBuilder().hold(UP, 300).burst(UP, v(0, 0, -1), 9).hold(UP, 400).build("a modest push");
+    expect(kinds(replay(push, { sensitivity: 1 }))).toEqual([]);
+    expect(kinds(replay(push, { sensitivity: 1.5 }))).toEqual(["push"]);
+    const hard = new TraceBuilder().hold(UP, 300).burst(UP, v(0, 0, -1), 18).hold(UP, 400).build("a hard push");
+    expect(kinds(replay(hard, { sensitivity: 0.5 }))).toEqual([]);
+    const twist = new TraceBuilder().hold(UP, 300).spin(UP, 210).hold(UP, 300).build("a real player's twist");
+    expect(kinds(replay(twist))).toEqual([]);
+    expect(kinds(replay(twist, { sensitivity: 1.3 }))).toEqual(["twist-left"]);
+    const swing = new TraceBuilder().hold(UP, 300).burst(UP, v(1, 0, 0), 9).hold(UP, 500).build("a gentle swing");
+    expect(kinds(replay(swing, { swing: true, gestureThreshold: 99 }))).not.toContain("swing");
+    expect(kinds(replay(swing, { swing: true, gestureThreshold: 99, sensitivity: 1.6 }))).toContain("swing");
+  });
+
   it("works without the browser's linear acceleration (gravity filtered out instead)", () => {
     const r = replay(new TraceBuilder(60, false).hold(UP, 300).burst(UP, v(0, 0, -1), 20).hold(UP, 400).build("no linear"));
     expect(kinds(r)).toContain("push");

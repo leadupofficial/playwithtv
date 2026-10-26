@@ -13,3 +13,4 @@ export * from "./hold.js";
 export * from "./swing.js";
 export * from "./beat.js";
 export * from "./saber.js";
+export * from "./axes.js";

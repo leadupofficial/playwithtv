@@ -1,6 +1,6 @@
 import { type Vec3, clamp, cross, deg, dot, len, lerp, norm, scale, sub, v } from "./vec.js";
-import { SaberDetector } from "./saber.js";
-import { SwingDetector } from "./swing.js";
+import { SABER_DEFAULTS, SaberDetector } from "./saber.js";
+import { SWING_DEFAULTS, SwingDetector } from "./swing.js";
 
 /**
  * One sensor reading, already in screen axes (see toScreen).
@@ -11,7 +11,7 @@ import { SwingDetector } from "./swing.js";
 export interface RawSample { t: number; gravity: Vec3; linear?: Vec3 | null; rotation?: Vec3 | null }
 
 export interface MotionSettings {
-  /** 0.5 (gentle) … 2 (twitchy); scales tilt output. */
+  /** 0.5 (gentle) … 2 (twitchy); scales tilt output and divides every gesture threshold. */
   sensitivity: number;
   /** Tilt (degrees) ignored around neutral so a resting hand does not drift. */
   deadZoneDeg: number;
@@ -97,6 +97,11 @@ export class MotionEngine {
   }
 
   /** The next sample defines "neutral" (call while the player holds the phone the way they will play). */
+  /** Sensitivity as it applies to gestures: higher means a gentler move counts. */
+  private get gain() {
+    return clamp(this.settings.sensitivity, 0.5, 2) || 1;
+  }
+
   calibrate() {
     this.wantCalibration = true;
   }
@@ -127,6 +132,11 @@ export class MotionEngine {
     const out: Gesture[] = [];
     // project onto the calibrated frame: right, up, towards the TV
     const a = v(dot(lin, this.r), dot(lin, this.n), -dot(lin, this.f));
+    // the player's sensitivity also sets how hard a move must be: arms and phones differ a lot (on a real phone a
+    // player's pushes peaked at 5-11 m/s² and swings at 6-8, against the 11 and 12 the defaults ask for)
+    this.swingDetector.settings.threshold = SWING_DEFAULTS.threshold / this.gain;
+    this.saberDetector.settings.rotThreshold = SABER_DEFAULTS.rotThreshold / this.gain;
+    this.saberDetector.settings.accThreshold = SABER_DEFAULTS.accThreshold / this.gain;
     if (this.settings.saber) {
       // the blade's turn in the calibrated frame: around right, up, towards the player
       const rot = s.rotation ? v(dot(s.rotation, this.r), dot(s.rotation, this.n), dot(s.rotation, this.f)) : null;
@@ -184,7 +194,7 @@ export class MotionEngine {
 
   /** Push / pull / flicks: arm when quiet, take the first strong direction, require a sustained peak. */
   private linear(a: Vec3, t: number): Gesture | null {
-    const th = this.settings.gestureThreshold;
+    const th = this.settings.gestureThreshold / this.gain;
     const st = this.lin;
     const mag = len(a);
     if (!st.armed) {
@@ -220,7 +230,7 @@ export class MotionEngine {
   /** Twists: a quick rotation around the axis through the screen, needs a gyroscope. */
   private twist(rot: Vec3 | null, t: number): Gesture | null {
     if (!rot) return null;
-    const th = this.settings.twistThreshold;
+    const th = this.settings.twistThreshold / this.gain;
     const st = this.tw;
     const mag = Math.abs(rot.z);
     if (!st.armed) {
@@ -249,7 +259,7 @@ export class MotionEngine {
 
   /** Shake: five quick back-and-forth reversals within 0.7 s (used for "mash" style actions). */
   private shaking(a: Vec3, t: number): Gesture | null {
-    const th = this.settings.gestureThreshold * 0.65;
+    const th = (this.settings.gestureThreshold * 0.65) / this.gain;
     const sh = this.shake;
     const ax = Math.abs(a.x), ay = Math.abs(a.y), az = Math.abs(a.z);
     const axis = az >= ax && az >= ay ? "z" : ax >= ay ? "x" : "y";

@@ -111,3 +111,15 @@ kitplat checked: each guards its finish already.
 
 Next: flagship design plans (§4), starting with Pillow Fort Brawl's no-GPU frame rate. Open: games that ignore `paused` (Beat Blade #13) still animate while
 input is held; captain pause button; Memory Wave local flick failure.
+
+
+### Motion on a real phone (vivo I2304, Android 16, Chrome), 2026-10-26
+
+Three recordings from the real phone (a still hold, a 65 s guided routine, and an 84 s routine with on-screen prompts and live gesture readout), replayed through the engine.
+
+- **Fixed: Chrome reports `rotationRate` as alpha = x, beta = y, gamma = z**, not the spec's z, x, y order the adapter assumed. Checked against physics: gravity turning in the phone's frame must equal −ω × g. Chrome's order is off by 0.83, the spec order by 10.2 (across 8 turning windows). Gyro and gravity also agree on steering (right steer: gyro 63°, gravity 83°). Read the old way, twists never fired and saber cuts pointed the wrong way. `RateOrderDetector` (packages/motion/src/axes.ts) now settles the order from gravity on every phone, starting from `xyz` on Android and the spec order on iOS. Tests: test/axes.test.ts uses a real-phone fixture.
+- **Changed: the lobby Sensitivity slider (0.5–2×) now also scales every gesture threshold** (push/flick, twist, swing, saber), not just tilt. The same player's moves on this phone peaked at 5–11 m/s² for pushes and 6–8 for swings, against defaults of 11 and 12. At 1× nothing changes.
+- **Verified: calibration at rest is clean.** Still phone: calibrated at 0.6 s, zero tilt, zero gestures.
+- **Open, not fixed: on this phone pushes often read as pull (production behaviour too).** The detector takes direction from the first sample over the threshold. Real pushes here started with a sharp move towards the player (up to 16 m/s²) or ended with a hard stop (13–16), while the push itself peaked at 10–11. Two fixes were tried on the recordings and rejected: judging along the phone's own axes, and judging by the hand's velocity. Neither turned the recorded pushes into pushes, and it is unknown how the hand actually moved. Affects every game mapping push vs pull (Brawl, Ghat, Kalari, Kitplat, Penalty, Gully, Tiffin). Next: a filmed push test, or a design change (below).
+- **Open: steering fast enough fires twists** (they share the axis through the screen: ~250°/s on a return to centre). Harmless unless a game maps both tilt and twist in the same phase.
+- **Proposal (not built): direction-free "jab"/"swing" for action buttons, keep direction only where it matters.** Fire on "any sharp move" and leave left/right to tilt or on-screen buttons. Swing already works this way and was detected on every recorded swing. Also a 10 s per-player "practice your move" step before motion games: it shows the move it read, sets that player's threshold from their own strength, and replaces a global slider.

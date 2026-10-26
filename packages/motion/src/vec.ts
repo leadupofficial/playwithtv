@@ -3,6 +3,7 @@ export interface Vec3 { x: number; y: number; z: number }
 export const v = (x: number, y: number, z: number): Vec3 => ({ x, y, z });
 export const dot = (a: Vec3, b: Vec3) => a.x * b.x + a.y * b.y + a.z * b.z;
 export const scale = (a: Vec3, s: number): Vec3 => v(a.x * s, a.y * s, a.z * s);
+export const add = (a: Vec3, b: Vec3): Vec3 => v(a.x + b.x, a.y + b.y, a.z + b.z);
 export const sub = (a: Vec3, b: Vec3): Vec3 => v(a.x - b.x, a.y - b.y, a.z - b.z);
 export const len = (a: Vec3) => Math.hypot(a.x, a.y, a.z);
 export const cross = (a: Vec3, b: Vec3): Vec3 => v(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);

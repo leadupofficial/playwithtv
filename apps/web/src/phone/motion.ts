@@ -4,7 +4,7 @@
  * and, on iPhone, a permission prompt triggered by a tap. Only motion sensors are read: never the camera,
  * microphone or location.
  */
-import { DEFAULT_SETTINGS, MotionEngine, type Gesture, type MotionFrame, type MotionTrace, type RawSample, toScreen, v } from "@playwithtv/motion";
+import { DEFAULT_SETTINGS, MotionEngine, RateOrderDetector, rotationOf, type Gesture, type MotionFrame, type MotionTrace, type RawSample, toScreen, v } from "@playwithtv/motion";
 
 const SENS_KEY = "pwtv.motion.sensitivity";
 const IOS = typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -37,6 +37,9 @@ export function savedSensitivity(): number {
 
 export class PhoneMotion {
   readonly engine = new MotionEngine({ sensitivity: savedSensitivity() });
+  // Chrome on Android reports rotationRate as x, y, z (measured); the spec order is kept as the guess elsewhere.
+  // Either way it is checked against gravity while the phone turns, and corrected.
+  readonly rateOrder = new RateOrderDetector(IOS ? "spec" : "xyz");
   private cbs = new Set<(g: Gesture) => void>();
   private recording: RawSample[] | null = null;
   active = false;
@@ -89,8 +92,8 @@ export class PhoneMotion {
     const a = e.acceleration;
     const linear = a && a.x !== null ? toScreen(v(sign * (a.x ?? 0), sign * (a.y ?? 0), sign * (a.z ?? 0)), angle) : null;
     const rr = e.rotationRate;
-    // rotationRate: beta around x, gamma around y, alpha around z (deg/s)
-    const rotation = rr && rr.alpha !== null ? toScreen(v(rr.beta ?? 0, rr.gamma ?? 0, rr.alpha ?? 0), angle) : null;
+    const order = this.rateOrder.push(v(ig.x ?? 0, ig.y ?? 0, ig.z ?? 0), a && a.x !== null ? v(a.x ?? 0, a.y ?? 0, a.z ?? 0) : null, rr, performance.now());
+    const rotation = rr && rr.alpha !== null ? toScreen(rotationOf(rr, order), angle) : null;
     const sample: RawSample = { t: performance.now(), gravity, linear, rotation };
     this.recording?.push(sample);
     for (const g of this.engine.push(sample)) this.cbs.forEach((cb) => cb(g));
