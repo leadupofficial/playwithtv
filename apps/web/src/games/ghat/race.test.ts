@@ -36,6 +36,20 @@ describe("a GHAT RUSH race", () => {
     expect(ev.filter((e) => e.kind === "count").map((e) => (e as { n: number }).n)).toEqual([3, 2, 1]);
   });
 
+  it("a racer placed at the end of the race who crosses the line during the results is not placed twice", () => {
+    const race = newRace(field(2), { ...QUICK, seed: 7 });
+    run(race, 200, undefined, (r) => r.phase === "results");
+    expect(race.phase).toBe("results");
+    expect(race.finishOrder).toHaveLength(6);
+    // a racer still out on the course when the race was called (the TV ran slow): it rolls over the line now
+    const late = race.racers.find((r) => r.finishedAt === null);
+    expect(late, "someone was placed without finishing").toBeTruthy();
+    late!.s = QUICK.laps * race.track.length - 0.5;
+    run(race, 4, undefined, (r) => r.phase !== "results");
+    expect(race.finishOrder).toHaveLength(6);
+    expect(new Set(race.finishOrder).size).toBe(6);
+  });
+
   it("CPU racers lap the quick course in a believable time without getting stuck", () => {
     const race = newRace(field(0), { ...QUICK, seed: 3 });
     run(race, 120, undefined, (r) => r.finishOrder.length > 0);

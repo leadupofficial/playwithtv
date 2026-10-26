@@ -89,5 +89,14 @@ the per-IP room limit. `api()` now aborts after `API_TIMEOUT_MS` (8 s) with code
 later. Test in `net.test.ts` (fails on the old code: the request never settles). That the stall is the cause is inferred,
 not proven: watch the next CI runs for "····".
 
+**8d87410** CI: **failed**: GHAT RUSH 2-phone (`ghat-rush.spec.ts:33`) failed both attempts; flaky: Kart Knockout 2-phone,
+Pillow Fort buttons, Gully buttons, Tiffin ultra, tv-reconnect. Not deployed. There were no "····" failures in this run
+(the tv-reconnect flake this time was elsewhere).
+The GHAT RUSH failure is a real bug: `finish` listed a player twice (7 entries for 6 racers). When a race is called, everyone
+still out is placed in `finishOrder` without being marked finished, so one who rolled over the line during the 3 s
+results was added again (so: duplicate podium entries, results for a player shown twice). The line now counts only while the
+phase is `race` (`ghat/race.ts`). Test `race.test.ts` "not placed twice" (old code: 9 entries). Kart Knockout, Racer and
+kitplat checked: each guards its finish already.
+
 Next: flagship design plans (§4), starting with Pillow Fort Brawl's no-GPU frame rate. Open: games that ignore `paused` (Beat Blade #13) still animate while
 input is held; captain pause button; Memory Wave local flick failure.

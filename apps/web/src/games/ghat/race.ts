@@ -367,7 +367,8 @@ export function step(race: Race, dt: number, inputs: Map<string, RacerInput>): R
       r.lapShown = lap;
       if (lap < o.laps) ev.push({ kind: "lap", id: r.id, lap: lap + 1, final: lap + 1 === o.laps });
     }
-    if (r.finishedAt === null && r.s >= o.laps * t.length) {
+    // only while the race is on: once it is called, everyone still out is already placed where they were
+    if (r.finishedAt === null && race.phase === "race" && r.s >= o.laps * t.length) {
       r.finishedAt = race.time;
       race.finishOrder.push(r.id);
       race.firstFinishAt ??= race.time;
