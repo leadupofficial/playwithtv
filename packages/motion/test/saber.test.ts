@@ -31,6 +31,15 @@ describe("SaberDetector (gyroscope)", () => {
     expect(Math.abs(c!.t - 5080)).toBeLessThanOrEqual(10);
     expect(c!.strength).toBeGreaterThan(3);
   });
+  it("sends the cut just past its peak, not when the wrist stops", () => {
+    // a 240 ms cut peaking at 120 ms: it used to arrive at ~230 ms
+    const d = new SaberDetector();
+    const at = cutSamples({ z: -1 }, 600, 0, 240).find((s) => d.push(s.rot, v(0, 0, 0), s.t))!.t;
+    expect(at).toBeLessThanOrEqual(160);
+  });
+  it("reads a relaxed cut (peak 200 deg/s) without a hard swing", () => {
+    expect(run(new SaberDetector(), cutSamples({ x: 1 }, 200, 0, 160)).map((c) => c.dir)).toEqual(["up"]);
+  });
   it("ignores wobbles below the threshold", () => {
     expect(run(new SaberDetector(), cutSamples({ x: 1, z: 1 }, 120, 0))).toHaveLength(0);
   });

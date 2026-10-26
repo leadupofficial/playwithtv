@@ -10,9 +10,11 @@
  * only the onset counts). Some phones without a gyroscope report a rotation rate of exactly zero, so the
  * gyroscope is trusted only once it has been seen moving (any real wrist turn is far above 60 deg/s).
  *
- * A cut is reported at its PEAK (the moment the blade is fastest: where it meets the block), not when it was
- * recognised, which is what rhythm judging needs (beat.ts stamps it in TV time). After a cut the detector
- * re-arms as soon as the wrist slows, so a down-up-down pattern on half beats reads as three cuts.
+ * A cut is stamped at its PEAK (the moment the blade is fastest: where it meets the block), which is what
+ * rhythm judging needs (beat.ts stamps it in TV time). It is also SENT just past the peak, as soon as the
+ * swing starts to slow, not when the wrist has stopped: waiting for the end added 100-250 ms before the TV
+ * could show the slice. After a cut the detector re-arms as soon as the wrist slows, so a down-up-down
+ * pattern on half beats reads as three cuts.
  * Pure (no DOM), tested with synthetic swings in test/saber.test.ts.
  */
 import type { Vec3 } from "./vec.js";
@@ -21,7 +23,7 @@ export type CutDir = "up" | "down" | "left" | "right";
 export interface Cut { dir: CutDir; strength: number; t: number }
 
 export interface SaberSettings {
-  /** deg/s: a deliberate cut. Real cuts peak at 300–1500 deg/s; a wobble stays well under 150. */
+  /** deg/s: a deliberate cut. Real cuts peak at 300–1500 deg/s, a relaxed one at ~200; a wobble stays under 150. */
   rotThreshold: number;
   /** m/s², the accelerometer fallback. */
   accThreshold: number;
@@ -31,7 +33,7 @@ export interface SaberSettings {
   refractoryMs: number;
 }
 
-export const SABER_DEFAULTS: SaberSettings = { rotThreshold: 220, accThreshold: 9, maxMs: 260, refractoryMs: 110 };
+export const SABER_DEFAULTS: SaberSettings = { rotThreshold: 170, accThreshold: 9, maxMs: 260, refractoryMs: 110 };
 
 interface Pending { start: number; peak: number; peakT: number; sx: number; sy: number; hits: number }
 
@@ -69,7 +71,9 @@ export class SaberDetector {
       // with a gyroscope the whole cut points one way; with the accelerometer only its onset does
       if ((rot && this.gyroSeen) || t - p.start < 50) { p.sx += x; p.sy += y; }
       if (mag > th * 0.5) p.hits++;
-      if (mag < th * 0.45 || t - p.start > this.settings.maxMs) {
+      // past the peak (slowing to 80% of it): the cut is decided, send it now rather than at the end
+      const past = p.hits >= 2 && mag < p.peak * 0.8;
+      if (past || mag < th * 0.45 || t - p.start > this.settings.maxMs) {
         this.pending = null;
         this.armed = mag < th * 0.45;
         if (p.hits < 2 && t - p.start < 30) return null; // a lone spike (a knock), not a cut
