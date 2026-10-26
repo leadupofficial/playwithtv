@@ -1,5 +1,9 @@
 /* kitgrid: the shared look of the grid titles (board in the middle, a slim HUD on top, cards over the board). */
-.grid-bg { position: relative; display: flex; flex-direction: column; overflow: hidden; color: #fff; }
+/* .tv already pins the screen (position: absolute, inset: 0); overriding it to relative collapsed the
+   screen to its padding and clipped the practice screen to a blank title bar */
+.grid-bg { display: flex; flex-direction: column; overflow: hidden; color: #fff; }
+/* the practice screen's white text sits on each title's theme, some of which are pale sky: dim it */
+.grid-bg > .tutorial { background: rgba(6, 8, 24, 0.55); }
 .grid-top {
   display: flex; align-items: center; gap: 1.2em; padding: 0.5em 1.2em; font-weight: 800; font-size: 1.05em;
   background: rgba(0, 0, 0, 0.28); backdrop-filter: none; white-space: nowrap; min-height: 2.6em;

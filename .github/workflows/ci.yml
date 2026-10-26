@@ -38,6 +38,12 @@ jobs:
   e2e:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    # Microsoft's Playwright image already holds Chromium and every system library it needs: installing them on
+    # a bare runner spent up to 12 minutes retrying slow Ubuntu font mirrors. Keep the tag in step with
+    # @playwright/test in package.json (pinned by digest, like the actions).
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea
+      options: --ipc=host
     strategy:
       fail-fast: false
       matrix:
@@ -53,7 +59,6 @@ jobs:
           node-version: 26
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: npx playwright install --with-deps chromium
       - run: npx playwright test -c playwright.prod.config.ts --shard=${{ matrix.shard }}/4
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -66,6 +71,12 @@ jobs:
   perf:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    # Microsoft's Playwright image already holds Chromium and every system library it needs: installing them on
+    # a bare runner spent up to 12 minutes retrying slow Ubuntu font mirrors. Keep the tag in step with
+    # @playwright/test in package.json (pinned by digest, like the actions).
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea
+      options: --ipc=host
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -76,7 +87,6 @@ jobs:
           node-version: 26
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: npx playwright install --with-deps chromium
       - run: pnpm perf
       - if: always()
         run: cat test-results/perf/summary.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true

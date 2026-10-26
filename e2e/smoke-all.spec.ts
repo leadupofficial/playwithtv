@@ -45,6 +45,16 @@ test("every game opens without errors or a blank screen", async ({ browser, requ
       r.openMs = Date.now() - t0;
       await tv.waitForTimeout(1500);
       await tv.screenshot({ path: `${OUT}/${g.id}-ready.png` });
+      // the game's screen must fill the TV: a screen that collapses to its padding still "has elements" but
+      // shows the practice screen as a blank title bar (the kitgrid bug)
+      r.screen = await tv.evaluate(() => {
+        // the game's own screen is the innermost .tv (the app shell wraps it in another), and the practice
+        // panel, when there is one, has to fill it too
+        const els = [...document.querySelectorAll("#root .tv"), ...document.querySelectorAll("#root .tutorial")];
+        const pct = (e: Element) => { const b = e.getBoundingClientRect(); return Math.round((b.width * b.height * 100) / (innerWidth * innerHeight)); };
+        return els.length ? Math.min(...els.map(pct)) : -1;
+      });
+      expect(r.screen, `${g.title}: game screen covers ${r.screen}% of the TV`).toBeGreaterThanOrEqual(90);
       // skip the practice screen the way a TV remote does (OK), so the game itself has to draw
       await tv.keyboard.press("Enter");
       await tv.waitForTimeout(4000);
