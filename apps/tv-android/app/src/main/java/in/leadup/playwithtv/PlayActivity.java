@@ -2,8 +2,13 @@ package in.leadup.playwithtv;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Context;
 import android.graphics.Color;
+import android.net.ConnectivityManager;
+import android.net.Network;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.WindowManager;
@@ -27,6 +32,11 @@ public class PlayActivity extends Activity {
     private WebView web;
     private TextView offline;
     private boolean failed; // onPageFinished also fires for a failed load, which must not hide the offline screen
+    private final Handler ui = new Handler(Looper.getMainLooper());
+    private int retries;
+    private ConnectivityManager.NetworkCallback netWatch;
+    /** Tries again by itself (a TV waking up often has no DNS for a few seconds): 3 s, 6 s, 12 s ... at most 30 s. */
+    private final Runnable autoRetry = this::retry;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -67,7 +77,7 @@ public class PlayActivity extends Activity {
 
             @Override
             public void onPageFinished(WebView v, String url) {
-                if (!failed && !url.startsWith("about:")) offline.setVisibility(TextView.GONE);
+                if (!failed && !url.startsWith("about:")) { offline.setVisibility(TextView.GONE); retries = 0; }
             }
         });
         root.addView(web, new FrameLayout.LayoutParams(-1, -1));
@@ -81,23 +91,47 @@ public class PlayActivity extends Activity {
         setContentView(root);
         web.loadUrl(BuildConfig.PLATFORM_URL);
         web.requestFocus();
+        // Wi-Fi (re)connected while the offline screen is up: try at once instead of waiting for the timer
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm != null) {
+            netWatch = new ConnectivityManager.NetworkCallback() {
+                @Override
+                public void onAvailable(Network n) {
+                    ui.post(() -> { if (failed) { retries = 0; ui.removeCallbacks(autoRetry); ui.postDelayed(autoRetry, 1000); } });
+                }
+            };
+            try { cm.registerDefaultNetworkCallback(netWatch); } catch (RuntimeException ignored) { netWatch = null; }
+        }
+    }
+
+    private void retry() {
+        ui.removeCallbacks(autoRetry);
+        offline.setVisibility(TextView.GONE);
+        failed = false;
+        web.loadUrl(BuildConfig.PLATFORM_URL);
     }
 
     private void showOffline(String why) {
-        offline.setText("Can't reach the game server\n" + BuildConfig.PLATFORM_URL + "\n(" + why + ")\n\nPress OK to try again");
+        long wait = Math.min(30_000L, 3_000L << Math.min(retries++, 4));
+        offline.setText("Can't reach the game server\n" + BuildConfig.PLATFORM_URL + "\n(" + why + ")\n\nTrying again in " + (wait / 1000) + " s · press OK to try now");
         offline.setVisibility(TextView.VISIBLE);
+        ui.removeCallbacks(autoRetry);
+        ui.postDelayed(autoRetry, wait);
     }
 
+    /**
+     * Keys go to the focused WebView before onKeyDown would ever see them, so OK on the offline screen did nothing
+     * and the TV stayed stuck. Catch it here, ahead of the WebView.
+     */
     @Override
-    public boolean onKeyDown(int code, KeyEvent e) {
+    public boolean dispatchKeyEvent(KeyEvent e) {
+        int code = e.getKeyCode();
         if (offline.getVisibility() == TextView.VISIBLE
-                && (code == KeyEvent.KEYCODE_DPAD_CENTER || code == KeyEvent.KEYCODE_ENTER)) {
-            offline.setVisibility(TextView.GONE);
-            failed = false;
-            web.loadUrl(BuildConfig.PLATFORM_URL);
+                && (code == KeyEvent.KEYCODE_DPAD_CENTER || code == KeyEvent.KEYCODE_ENTER || code == KeyEvent.KEYCODE_NUMPAD_ENTER)) {
+            if (e.getAction() == KeyEvent.ACTION_UP) { retries = 0; retry(); }
             return true;
         }
-        return super.onKeyDown(code, e);
+        return super.dispatchKeyEvent(e);
     }
 
     @Override
@@ -108,6 +142,11 @@ public class PlayActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        ui.removeCallbacks(autoRetry);
+        if (netWatch != null) {
+            ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            try { if (cm != null) cm.unregisterNetworkCallback(netWatch); } catch (RuntimeException ignored) { }
+        }
         web.destroy();
         super.onDestroy();
     }
