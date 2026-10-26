@@ -107,12 +107,26 @@ export class HubSocket {
   }
 }
 
+/** A request that has not answered by now is treated as failed, so callers retry instead of waiting forever. */
+export const API_TIMEOUT_MS = 8000;
+
 export async function api<T>(path: string, body?: unknown, headers: Record<string, string> = {}): Promise<T> {
-  const r = await fetch(path, {
-    method: body === undefined ? "GET" : "POST",
-    headers: { "content-type": "application/json", ...headers },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), API_TIMEOUT_MS);
+  let r: Response;
+  try {
+    r = await fetch(path, {
+      method: body === undefined ? "GET" : "POST",
+      headers: { "content-type": "application/json", ...headers },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: ctl.signal,
+    });
+  } catch (e) {
+    if (!ctl.signal.aborted) throw e;
+    throw Object.assign(new Error("The server is taking too long to answer. Trying again…"), { code: "timeout", status: 0 });
+  } finally {
+    clearTimeout(timer);
+  }
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw Object.assign(new Error(data.message ?? `HTTP ${r.status}`), { code: data.error, status: r.status });
   return data as T;

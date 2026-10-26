@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { HubSocket, SILENCE_MS } from "./net";
+import { API_TIMEOUT_MS, HubSocket, SILENCE_MS, api } from "./net";
 
 /** A stand-in browser WebSocket: the test decides when it opens, what the hub says, and whether it ever closes. */
 class FakeSocket {
@@ -98,5 +98,29 @@ describe("hub socket: a connection that goes silent is replaced", () => {
     }
     expect(ws.closed).toBe(false);
     s.close();
+  });
+});
+
+describe("api: a request that never answers", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("fails after API_TIMEOUT_MS instead of hanging, so the TV retries room creation rather than showing '····' forever", async () => {
+    vi.useFakeTimers();
+    // a stalled connection: the request is never answered, only aborted
+    vi.stubGlobal("fetch", (_: string, init: RequestInit) => new Promise((_ok, fail) => {
+      init.signal!.addEventListener("abort", () => fail(new DOMException("aborted", "AbortError")));
+    }));
+    const p = api("/api/rooms", {});
+    const seen = p.then(() => "answered", (e: { code?: string }) => e.code ?? "error");
+    await vi.advanceTimersByTimeAsync(API_TIMEOUT_MS + 10);
+    await expect(Promise.race([seen, Promise.resolve("still waiting")])).resolves.toBe("timeout");
+  });
+
+  it("an ordinary answer comes back unchanged", async () => {
+    vi.stubGlobal("fetch", async () => new Response(JSON.stringify({ roomId: "r" }), { status: 200 }));
+    await expect(api("/api/rooms", {})).resolves.toEqual({ roomId: "r" });
   });
 });

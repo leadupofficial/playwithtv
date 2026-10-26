@@ -78,5 +78,16 @@ socket that hears nothing for `SILENCE_MS` (7 s; pings go every 2 s) and reconne
 Tests `net.test.ts` (4; the two silence cases fail on the old client). Memory Wave's two motion/touchpad e2e tests fail
 on this Mac with or without the change and pass in CI: still unresolved locally.
 
+**6bb30ba** CI: 76 passed, 0 failed, 4 flaky (Tiffin ultra, tv-reconnect, Beat Blade buttons, Drop Four 2-phone), 39
+skipped. Deployed (`.deployed-commit` 6bb30ba, hub healthy).
+
+tv-reconnect still flaked on "····", so an unanswered hello was not the cause. The join code comes from `POST /api/rooms`,
+before any socket opens, and `api()` had no timeout: a stalled request (CI's dev proxy, or patchy TV Wi-Fi) left the TV
+waiting forever, because its retry runs only on an error. The same "····" timeout appears in each of the last 6 CI runs
+(tv-reconnect ×3, wake-lock ×3, Tiffin ultra ×1), always passing on retry; there are no 429s in the logs, so it is not
+the per-IP room limit. `api()` now aborts after `API_TIMEOUT_MS` (8 s) with code `timeout`, and the TV retries 5 s
+later. Test in `net.test.ts` (fails on the old code: the request never settles). That the stall is the cause is inferred,
+not proven: watch the next CI runs for "····".
+
 Next: flagship design plans (§4), starting with Pillow Fort Brawl's no-GPU frame rate. Open: games that ignore `paused` (Beat Blade #13) still animate while
 input is held; captain pause button; Memory Wave local flick failure.
