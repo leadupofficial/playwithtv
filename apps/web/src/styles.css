@@ -321,7 +321,8 @@ details.admin-card[open] > summary::before { content: "▾ "; }
 .tv-install-help { position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(11, 8, 32, 0.88); text-align: center; }
 .tv-install-help > div { max-width: 1100px; padding: 1.2em 1.6em; border-radius: 1em; background: var(--bg-1); border: 1px solid var(--line); }
 .credit { color: var(--muted); font-size: 13px; text-align: center; }
-.phone-home { justify-content: center; }
+.phone-home > :first-child { margin-top: auto; }
+.phone-home > :last-child { margin-bottom: auto; } /* centred, yet scrolls from the top when taller than the screen */
 .phone-home a.btn { display: block; text-align: center; text-decoration: none; box-sizing: border-box; }
 .how-to { margin: 0; padding: 14px 14px 14px 34px; border-radius: 14px; background: var(--glass); border: 1px solid var(--line); display: grid; gap: 8px; font-size: 15px; line-height: 1.4; }
 .link-quiet { align-self: center; background: none; border: 0; padding: 6px; color: var(--muted); font: inherit; font-size: 14px; text-decoration: underline; cursor: pointer; }
