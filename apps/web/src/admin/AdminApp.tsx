@@ -30,19 +30,32 @@ export function AdminApp() {
     setSignInError(reason);
   }, []);
 
+  const [checking, setChecking] = useState(false);
+
   if (!token) {
     return (
-      <form className="admin admin-login" onSubmit={(e) => {
+      <form className="admin admin-login" onSubmit={async (e) => {
         e.preventDefault();
         const t = (new FormData(e.currentTarget).get("t") as string).trim();
-        sessionStorage.setItem(KEY, t);
+        // one request checks the token: mounting the console with a wrong one would fire every panel's poll at
+        // once, and each counts as a failed attempt towards the server's lockout
+        setChecking(true);
         setSignInError(null);
-        setToken(t);
+        try {
+          await api("/api/admin/overview", undefined, { authorization: `Bearer ${t}` });
+          sessionStorage.setItem(KEY, t);
+          setToken(t);
+        } catch (err) {
+          const status = (err as { status?: number }).status;
+          setSignInError(status === 401 ? "Wrong admin token" : (err as Error).message);
+        } finally {
+          setChecking(false);
+        }
       }}>
         <h1>Admin console</h1>
         {signInError && <div className="notice">{signInError}</div>}
         <input className="input" name="t" type="password" placeholder="Admin token" autoComplete="off" required autoFocus />
-        <button className="btn" type="submit">Sign in</button>
+        <button className="btn" type="submit" disabled={checking}>{checking ? "Checking…" : "Sign in"}</button>
         <p className="hint">The token is the server's ADMIN_TOKEN. It stays in this tab only and is forgotten when you close it.</p>
       </form>
     );

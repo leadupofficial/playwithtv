@@ -108,5 +108,5 @@ test("admin console requires the admin token", async ({ page }) => {
   await expect(page.getByText("Wrong admin token")).toBeVisible();
   await page.getByPlaceholder("Admin token").fill("e2e-admin");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByText("Active rooms")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Live rooms" })).toBeVisible();
 });
