@@ -49,7 +49,8 @@ export class RacerScene {
   private rocks: THREE.Mesh[] = [];
   private time = 0;
 
-  constructor(canvas: HTMLCanvasElement, race: Race, colors: Map<string, string>) {
+  /** `views`: how many of the ships (the players, listed first) get a split-screen view; rivals only fly. */
+  constructor(canvas: HTMLCanvasElement, race: Race, colors: Map<string, string>, private views = race.ships.length) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
     this.renderer.setPixelRatio(1);
     this.renderer.setSize(RENDER_W, RENDER_H, false);
@@ -94,7 +95,7 @@ export class RacerScene {
       this.ships.set(s.id, g);
       this.scene.add(g);
     }
-    for (const vp of viewports(race.ships.length)) {
+    for (const vp of viewports(views)) {
       this.cams.push(new THREE.PerspectiveCamera(65, (vp.w * RENDER_W) / (vp.h * RENDER_H), 0.1, 400));
     }
   }
@@ -112,7 +113,7 @@ export class RacerScene {
       g.visible = s.bumpT <= 0 || Math.floor(this.time * 12) % 2 === 0;
     }
     for (const r of this.rocks) r.rotation.y += dt * 0.6;
-    viewports(race.ships.length).forEach((vp, i) => {
+    viewports(this.views).forEach((vp, i) => {
       const s = race.ships[i]!;
       const cam = this.cams[i]!;
       const back = s.boostT > 0 ? 11.5 : 10;

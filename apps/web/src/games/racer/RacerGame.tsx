@@ -6,13 +6,14 @@ import { ControlPlayers } from "../controlKit";
 import { ControlTutorial } from "../ControlTutorial";
 import { AVATARS } from "../../avatars";
 import { t } from "../../i18n";
-import { makeTrack, newRace, standings, stepRace, type Controls } from "./engine";
+import { makeTrack, newRace, RIVALS, rivalsFor, standings, stepRace, type Controls } from "./engine";
+import { readBest } from "../../bests";
 import { RacerScene, viewports } from "./scene";
 import { Engines } from "./sound";
 import "./racer.css";
 
 const QUICK = typeof location !== "undefined" && new URLSearchParams(location.search).get("quick") === "1";
-const GATES = QUICK ? 6 : 24;
+const GATES = QUICK ? 6 : 48; // about a minute: long enough for a lead to change hands
 const TIME_LIMIT = QUICK ? 60 : 150;
 /** Hybrid first: tilting the phone like a wheel steers best, and a thumb on BOOST never misfires. */
 const CONTROLS: ControlSpec = {
@@ -69,8 +70,10 @@ function Race({ racers, kit, paused, onFinish }: { racers: PlayerView[]; kit: Co
   countRef.current = count;
 
   useEffect(() => {
-    const race = newRace(makeTrack(GATES, Math.floor(Math.random() * 1000)), racers.map((p) => p.id));
-    const scene = new RacerScene(canvas.current!, race, new Map(racers.map((p) => [p.id, p.color])));
+    const race = newRace(makeTrack(GATES, Math.floor(Math.random() * 1000)), racers.map((p) => p.id), rivalsFor(racers.length));
+    const colors = new Map<string, string>(racers.map((p) => [p.id, p.color]));
+    RIVALS.forEach((r, i) => colors.set(`cpu-${i}`, r.color));
+    const scene = new RacerScene(canvas.current!, race, colors, racers.length);
     const sfx = new Engines();
     const boostQueued = new Set<string>();
     const boosts = new Map(racers.map((p) => [p.id, 0]));
@@ -112,8 +115,17 @@ function Race({ racers, kit, paused, onFinish }: { racers: PlayerView[]; kit: Co
         finishedReported = true;
         setOver(true);
         const st = standings(race);
-        for (const r of st) kit.outcome(r.playerId, r.place === 1 ? (racers.length > 1 ? "You won the race!" : "Race complete!") : `You finished #${r.place}`, r.place === 1 ? "🏆" : "🚀");
-        setTimeout(() => onFinish(st, Date.now() - startedAt), 3000);
+        const humans = st.filter((r) => !r.cpu);
+        for (const r of humans) {
+          const p = racers.find((x) => x.id === r.playerId)!;
+          const prev = readBest("sky-gyro-racer", p); // the results screen records it; this only words the phone's line
+          const winner = st[0]!;
+          const line = r.place === 1 ? "You won the race!"
+            : winner.cpu ? `You finished #${r.place} · ${RIVALS[Number(winner.playerId.slice(4))]!.name} won, get them next time` : `You finished #${r.place}`;
+          kit.outcome(r.playerId, prev !== null && r.score > prev ? `${line} ⭐ New best!` : line, r.place === 1 ? "🏆" : "🚀");
+        }
+        // places count the rivals (2nd behind Captain Kite is 2nd); only players go in the results
+        setTimeout(() => onFinish(humans.map(({ playerId, place, score }) => ({ playerId, place, score })), Date.now() - startedAt), 3000);
       }
       if (now - lastHud > 100) {
         lastHud = now;
@@ -134,6 +146,7 @@ function Race({ racers, kit, paused, onFinish }: { racers: PlayerView[]; kit: Co
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const vps = viewports(racers.length);
+  const rivalNames = RIVALS.slice(0, rivalsFor(racers.length)).map((r) => r.name);
   return (
     <div className="racer" data-racer={debug}>
       <canvas ref={canvas} className="racer-canvas" />
@@ -144,7 +157,7 @@ function Race({ racers, kit, paused, onFinish }: { racers: PlayerView[]; kit: Co
           <div key={p.id} className="racer-hud" style={{ left: `${vp.x * 100}%`, top: `${vp.y * 100}%`, width: `${vp.w * 100}%`, height: `${vp.h * 100}%` }}>
             <div className="rh-top">
               <span className="chip" style={{ borderColor: p.color }}>{AVATARS[p.avatar].emoji} {p.name}</span>
-              {racers.length > 1 && h && <span className="rh-place">#{h.place}</span>}
+              {h && <span className="rh-place">#{h.place}</span>}
             </div>
             <div className="rh-bottom">
               <span className="chip">{t("racer.lap", { n: h?.gates ?? 0, total: GATES })}</span>
@@ -155,6 +168,7 @@ function Race({ racers, kit, paused, onFinish }: { racers: PlayerView[]; kit: Co
           </div>
         );
       })}
+      {rivalNames.length > 0 && count > 0 && <div className="racer-rivals">vs {rivalNames.join(" & ")}</div>}
       {count > 0 && <div className="racer-count">{count}</div>}
       {count === 0 && !over && <div className="racer-count go">{t("racer.go")}</div>}
       {paused && <div className="paused-overlay"><div className="big-title">⏸ Paused</div><p className="hint">Reconnecting…</p></div>}

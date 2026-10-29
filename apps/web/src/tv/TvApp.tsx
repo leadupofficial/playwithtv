@@ -6,6 +6,7 @@ import {
 } from "@playwithtv/protocol";
 import { HubSocket, api, type SocketStatus } from "../net";
 import { deviceId, screenForm } from "../device";
+import { recordResults, type BestNote } from "../bests";
 import { AVATARS } from "../avatars";
 import { GAMES } from "../games/registry";
 import type { GameBridge } from "../games/types";
@@ -86,6 +87,9 @@ export function TvApp() {
   const [notice, setNotice] = useState<string | null>(null);
   const [removing, setRemoving] = useState<{ id: string; name: string } | null>(null);
   const [results, setResults] = useState<GameResult[] | null>(null);
+  const [bests, setBests] = useState<Map<string, BestNote>>(new Map());
+  const roomRef = useRef(room);
+  roomRef.current = room;
   const [paused, setPaused] = useState(false);
   const startedAt = useRef(0);
   const sponsors = useSponsors();
@@ -121,7 +125,11 @@ export function TvApp() {
         if (p) countImpression(p, "presented-by");
         if (g) countImpression(g, "in-game");
       }
-      if (m.type === "game.finished") setResults(m.results);
+      if (m.type === "game.finished") {
+        setResults(m.results);
+        const r = roomRef.current;
+        setBests(r?.gameId ? recordResults(r.gameId, m.results, r.players) : new Map());
+      }
       if (m.type === "game.paused") setPaused(m.paused);
       if (m.type === "game.exit") setResults(null);
     });
@@ -236,7 +244,7 @@ export function TvApp() {
       )}
       {room?.status === "results" && results ? (
         <>
-          <Results results={results} room={room} game={selected} onRematch={start} onExit={() => socket?.send({ type: "game.exit" })} />
+          <Results results={results} bests={bests} room={room} game={selected} onRematch={start} onExit={() => socket?.send({ type: "game.exit" })} />
           <AdSlot placement="results-rail" games={games} sponsors={sponsors} />
         </>
       ) : (
@@ -307,8 +315,16 @@ export function TvApp() {
   );
 }
 
-function Results({ results, room, game, onRematch, onExit }: {
-  results: GameResult[]; room: RoomView; game?: GameManifest; onRematch: () => void; onExit: () => void;
+/** Under a score: ⭐ New best, or what to beat next time. Nothing on a first game (every score would be a best). */
+function BestLine({ note, score }: { note?: BestNote; score: number }) {
+  if (!note || note.previous === null) return null;
+  if (note.isNew) return <span className="best new">⭐ New best!</span>;
+  const prev = Math.round(note.previous);
+  return <span className="best">{prev === Math.round(score) ? "Equals your best" : `Your best: ${prev}`}</span>;
+}
+
+function Results({ results, bests, room, game, onRematch, onExit }: {
+  results: GameResult[]; bests: Map<string, BestNote>; room: RoomView; game?: GameManifest; onRematch: () => void; onExit: () => void;
 }) {
   const byId = new Map(room.players.map((p) => [p.id, p]));
   const sorted = [...results].sort((a, b) => a.place - b.place);
@@ -326,7 +342,10 @@ function Results({ results, room, game, onRematch, onExit }: {
                 <span className="place">{medal[r.place - 1] ?? r.place}</span>
                 <span className="avatar" style={{ boxShadow: `0 0 0 0.15em ${p?.color}` }}>{p ? AVATARS[p.avatar].emoji : "❔"}</span>
                 <span className="name" style={{ fontWeight: 700 }}>{p?.name ?? "Left the game"}</span>
-                <span style={{ fontWeight: 800 }}>{Math.round(r.score)}</span>
+                <span className="podium-score">
+                  <b>{Math.round(r.score)}</b>
+                  <BestLine note={bests.get(r.playerId)} score={r.score} />
+                </span>
               </div>
             );
           })}

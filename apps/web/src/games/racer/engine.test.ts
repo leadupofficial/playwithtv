@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GATE_GAP, centreAt, makeTrack, newRace, standings, stepRace, type Controls, type Race, type RaceEvent } from "./engine";
+import { GATE_GAP, centreAt, makeTrack, newRace, rivalsFor, standings, stepRace, type Controls, type Race, type RaceEvent } from "./engine";
 
 const idle: Controls = { steer: 0, climb: 0, boost: false };
 
@@ -77,5 +77,56 @@ describe("sky gyro racer", () => {
     expect(st[0]!.playerId).toBe("fast");
     expect(st[0]!.score).toBeGreaterThan(st[1]!.score);
     expect(r.ships.every((s) => s.finishedAt !== null)).toBe(true);
+  });
+
+  describe("rivals for short-handed races", () => {
+    it("one player races two rivals; two or more race each other", () => {
+      expect([1, 2, 3, 4].map(rivalsFor)).toEqual([2, 0, 0, 0]);
+      const r = newRace(makeTrack(6), ["a"], 2);
+      expect(r.ships.map((s) => s.id)).toEqual(["a", "cpu-0", "cpu-1"]);
+      expect(r.ships[0]!.cpu).toBeUndefined();
+      expect(r.ships[1]!.cpu?.name).toBe("Captain Kite");
+    });
+
+    it("rivals fly the course on their own, hitting most gates but not all", () => {
+      const r = newRace(makeTrack(24, 3), ["a"], 2);
+      fly(r, 120, autopilot);
+      const [kite, rani] = [r.ships[1]!, r.ships[2]!];
+      expect(kite.gatesHit).toBeGreaterThan(12);
+      expect(kite.gatesHit).toBeLessThan(24);
+      expect(rani.gatesHit).toBeGreaterThan(6);
+      expect(kite.gatesHit).toBeGreaterThan(rani.gatesHit); // the stronger rival really is stronger
+    });
+
+    it("a good solo run ends in a close finish with a rival, not a lonely flight", () => {
+      for (const seed of [1, 5, 9]) {
+        const r = newRace(makeTrack(24, seed), ["a"], 2);
+        fly(r, 120, autopilot);
+        const me = r.ships[0]!;
+        expect(me.finishedAt).not.toBeNull();
+        const nearest = Math.min(...r.ships.slice(1).map((s) => Math.abs(s.dist - me.dist)));
+        expect(nearest).toBeLessThan(GATE_GAP * 2); // within about two gates when the player crosses the line
+      }
+    });
+
+    it("the race ends when the players are home, and an idle player still finishes (behind the rivals)", () => {
+      const r = newRace(makeTrack(8), ["a"], 2);
+      fly(r, 120, () => idle);
+      expect(r.over).toBe(true);
+      expect(r.ships[0]!.finishedAt).not.toBeNull();
+      const st = standings(r);
+      expect(st.find((x) => x.playerId === "a")!.cpu).toBe(false);
+      expect(st.filter((x) => x.cpu)).toHaveLength(2);
+    });
+
+    it("a rival home first does not cut the player's race short", () => {
+      const r = newRace(makeTrack(8), ["a"], 1);
+      r.ships[1]!.dist = r.track.length - 1; // the rival is a breath from the line
+      fly(r, 1, () => idle);
+      expect(r.ships[1]!.finishedAt).not.toBeNull();
+      expect(r.firstFinish).toBeNull();
+      fly(r, 60, autopilot);
+      expect(r.ships[0]!.finishedAt).not.toBeNull();
+    });
   });
 });

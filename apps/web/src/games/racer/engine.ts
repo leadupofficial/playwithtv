@@ -29,7 +29,20 @@ export interface Ship {
   gatesHit: number;
   nextGate: number;
   finishedAt: number | null;
+  /** A computer rival: how well it hits gates (0..1). Absent for players. */
+  cpu?: { skill: number; name: string };
 }
+
+/**
+ * Rivals for short-handed races, so one player still has someone to beat: they steer for each gate (missing some,
+ * by skill) and are held near the leading player, close enough to pass or be passed on the last gates.
+ */
+export const RIVALS = [
+  { name: "Captain Kite", skill: 0.85, color: "#38bdf8" },
+  { name: "Rocket Rani", skill: 0.7, color: "#a3e635" },
+] as const;
+const RIVAL_EASE = 0.08;     // a rival far ahead of every player eases off up to 15%, so the race stays in view
+const RIVAL_EASE_GAP = 90;   // ...reaching that this far ahead
 
 export interface Race { track: Track; ships: Ship[]; time: number; firstFinish: number | null; over: boolean }
 export interface Controls { steer: number; climb: number; boost: boolean }
@@ -71,11 +84,48 @@ export function centreAt(t: Track, dist: number) {
   return { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k };
 }
 
-export function newRace(track: Track, ids: string[]): Race {
+/** Players first (their order picks the split-screen views), then `rivals` computer ships from RIVALS. */
+export function newRace(track: Track, ids: string[], rivals = 0): Race {
+  const all = [...ids, ...RIVALS.slice(0, rivals).map((_, i) => `cpu-${i}`)];
   return {
     track, time: 0, firstFinish: null, over: false,
-    ships: ids.map((id, i) => ({ id, dist: 0, x: (i - (ids.length - 1) / 2) * 2.2, y: 0, speed: BASE_SPEED, energy: 2, boostT: 0, bumpT: 0, gatesHit: 0, nextGate: 0, finishedAt: null })),
+    ships: all.map((id, i) => ({
+      id, dist: 0, x: (i - (all.length - 1) / 2) * 2.2, y: 0, speed: BASE_SPEED, energy: 2, boostT: 0, bumpT: 0, gatesHit: 0, nextGate: 0, finishedAt: null,
+      ...(i >= ids.length ? { cpu: { skill: RIVALS[i - ids.length]!.skill, name: RIVALS[i - ids.length]!.name } } : {}),
+    })),
   };
+}
+
+/** Rivals join a solo race only: two or more players have each other, and a computer winner would leave them no 🥇. */
+export const rivalsFor = (players: number) => (players === 1 ? RIVALS.length : 0);
+
+/** Deterministic per ship and gate, so a race replays identically (tests, and no flicker between frames). */
+function hash(a: string, b: number) {
+  let h = 2166136261 ^ b;
+  for (let i = 0; i < a.length; i++) h = Math.imul(h ^ a.charCodeAt(i), 16777619);
+  return ((h >>> 0) % 10000) / 10000;
+}
+
+/** A rival's stick: aim at the next gate, or (on the gates it is fated to miss) beside it; boost when behind. */
+export function rivalControls(race: Race, s: Ship): Controls {
+  const g = race.track.gates[Math.min(s.nextGate, race.track.gates.length - 1)]!;
+  const miss = hash(s.id, s.nextGate) > s.cpu!.skill;
+  const side = hash(s.id, s.nextGate + 999) < 0.5 ? -1 : 1;
+  const tx = g.x + (miss ? side * GATE_R * 1.8 : 0);
+  const ty = g.y;
+  const lead = leadPlayer(race);
+  return {
+    steer: Math.max(-1, Math.min(1, (tx - s.x) / 2.5)),
+    climb: Math.max(-1, Math.min(1, -(ty - s.y) / 2.5)),
+    // rivals play by the players' rules: energy only from gates they hit, spent as soon as a boost is ready
+    boost: s.energy >= 1 && lead !== null && hash(s.id, s.nextGate + 7) < s.cpu!.skill,
+  };
+}
+
+function leadPlayer(race: Race): number | null {
+  let lead: number | null = null;
+  for (const s of race.ships) if (!s.cpu) lead = Math.max(lead ?? -Infinity, s.dist);
+  return lead;
 }
 
 export function stepRace(race: Race, dt: number, controls: Map<string, Controls>, timeLimit = 180): RaceEvent[] {
@@ -83,9 +133,10 @@ export function stepRace(race: Race, dt: number, controls: Map<string, Controls>
   const ev: RaceEvent[] = [];
   race.time += dt;
   const lead = Math.max(...race.ships.map((s) => s.dist));
+  const players = race.ships.filter((s) => !s.cpu);
   for (const s of race.ships) {
     if (s.finishedAt !== null) continue;
-    const c = controls.get(s.id) ?? { steer: 0, climb: 0, boost: false };
+    const c = s.cpu ? rivalControls(race, s) : controls.get(s.id) ?? { steer: 0, climb: 0, boost: false };
     if (c.boost && s.energy >= 1 && s.boostT <= 0) {
       s.energy -= 1;
       s.boostT = BOOST_S;
@@ -93,7 +144,13 @@ export function stepRace(race: Race, dt: number, controls: Map<string, Controls>
     }
     s.boostT = Math.max(0, s.boostT - dt);
     s.bumpT = Math.max(0, s.bumpT - dt);
-    const behind = Math.min(0.3, ((lead - s.dist) / 60) * CATCH_UP);
+    let behind = Math.min(0.3, ((lead - s.dist) / 60) * CATCH_UP);
+    if (s.cpu) {
+      // the usual catch-up when trailing; well ahead of every player, ease off (never below the players' pace)
+      const pl = leadPlayer(race);
+      const ahead = pl === null ? 0 : s.dist - pl;
+      if (ahead > 0) behind = -Math.min(RIVAL_EASE, (ahead / RIVAL_EASE_GAP) * RIVAL_EASE);
+    }
     const target = (BASE_SPEED * (1 + behind) + (s.boostT > 0 ? BOOST_SPEED : 0)) * (s.bumpT > 0 ? 0.45 : 1);
     s.speed += (target - s.speed) * Math.min(1, dt * 3);
     const before = s.dist;
@@ -128,12 +185,13 @@ export function stepRace(race: Race, dt: number, controls: Map<string, Controls>
     }
     if (s.dist >= race.track.length) {
       s.finishedAt = race.time;
-      race.firstFinish ??= race.time;
+      if (!s.cpu) race.firstFinish ??= race.time; // a rival home first does not start the cut-off clock
       ev.push({ kind: "finish", ship: s.id, place: race.ships.filter((x) => x.finishedAt !== null).length });
     }
   }
   const allDone = race.ships.every((s) => s.finishedAt !== null);
-  if (allDone || race.time >= timeLimit || (race.firstFinish !== null && race.time - race.firstFinish > 20)) {
+  const playersDone = players.length > 0 && players.every((s) => s.finishedAt !== null);
+  if (allDone || playersDone || race.time >= timeLimit || (race.firstFinish !== null && race.time - race.firstFinish > 20)) {
     race.over = true;
     ev.push({ kind: "over" });
   }
@@ -150,6 +208,7 @@ export function standings(race: Race) {
   });
   return sorted.map((s, i) => ({
     playerId: s.id,
+    cpu: !!s.cpu,
     place: i + 1,
     score: s.gatesHit * 100 + (s.finishedAt !== null ? [1000, 700, 500, 300][i] ?? 200 : 0),
   }));

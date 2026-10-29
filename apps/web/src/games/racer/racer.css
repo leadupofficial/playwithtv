@@ -10,6 +10,7 @@
 .rh-energy i.on { background: #ffb020; box-shadow: 0 0 10px #ffb020; }
 .rh-boost { font-weight: 800; color: #ffb020; font-size: 34px; text-shadow: 0 0 14px #ff5d00; }
 .rh-finish { position: absolute; inset: 0; display: grid; place-items: center; font-size: 72px; font-weight: 800; color: var(--warn); text-shadow: 0 4px 16px #000; }
+.racer-rivals { position: absolute; left: 0; right: 0; top: 18%; text-align: center; font-size: 44px; font-weight: 800; text-shadow: 0 4px 20px #000; pointer-events: none; }
 .racer-count { position: absolute; inset: 0; display: grid; place-items: center; font-size: 220px; font-weight: 800; text-shadow: 0 8px 30px #000; pointer-events: none; }
 .racer-count.go { color: #7cf29c; animation: gofade 1s ease-out forwards; }
 @keyframes gofade { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(1.4); } }
