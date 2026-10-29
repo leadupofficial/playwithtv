@@ -17,5 +17,7 @@ export default defineConfig({
       "/ws": { target: target.replace(/^http/, "ws"), ws: true },
     },
   },
-  build: { target: "es2020", sourcemap: true },
+  // Old Android TV WebViews are real customers: a 2019 HiDPT set ships Chrome 66, which cannot parse ?. or ??.
+  // Syntax is lowered to it here; the few newer built-ins we use get small polyfills (src/polyfills.ts).
+  build: { target: ["chrome66", "safari12", "firefox68"], cssTarget: ["chrome66", "safari12"], sourcemap: true },
 });

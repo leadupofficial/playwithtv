@@ -8,7 +8,7 @@ import { HubSocket, api, type SocketStatus } from "../net";
 import { deviceId, screenForm } from "../device";
 import { recordResults, type BestNote } from "../bests";
 import { AVATARS } from "../avatars";
-import { GAMES } from "../games/registry";
+import { GAMES, runsHere } from "../games/registry";
 import type { GameBridge } from "../games/types";
 import { installSpatialNav } from "./spatialNav";
 import { AdSlot, PresentedBy, adsEnabled } from "./AdSlot";
@@ -82,6 +82,7 @@ function useRoom() {
 export function TvApp() {
   const { room, invite, status, error, socket } = useRoom();
   const [games, setGames] = useState<GameManifest[]>([]);
+  const [hidden, setHidden] = useState(0);
   const [shelf, setShelf] = useState<Shelf>("all");
   const [qr, setQr] = useState<string>("");
   const [notice, setNotice] = useState<string | null>(null);
@@ -101,7 +102,14 @@ export function TvApp() {
 
   useEffect(() => installSpatialNav(), []);
   useEffect(() => {
-    api<GameManifest[]>("/api/games").then(setGames).catch(() => setNotice("Could not load the game list."));
+    api<GameManifest[]>("/api/games")
+      .then((all) => {
+        // an older TV (WebGL 1 only) lists just the games it can draw; a hidden one picked on a phone gets a notice
+        const here = all.filter((g) => runsHere(g.id));
+        setHidden(all.length - here.length);
+        setGames(here);
+      })
+      .catch(() => setNotice("Could not load the game list."));
   }, []);
   useEffect(() => {
     if (invite) QRCode.toDataURL(invite.joinUrl, { margin: 1, width: 480, errorCorrectionLevel: "M" }).then(setQr);
@@ -169,7 +177,8 @@ export function TvApp() {
 
   const selected = games.find((g) => g.id === room?.gameId);
   const connected = room?.players.filter((p) => p.connected) ?? [];
-  const Game = room?.gameId ? GAMES[room.gameId] : undefined;
+  const tooNew = !!room?.gameId && !runsHere(room.gameId);
+  const Game = room?.gameId && !tooNew ? GAMES[room.gameId] : undefined;
   const playing = (room?.status === "playing" || room?.status === "paused") && Game && bridge;
   // The game also stops while the TV is cut off from the hub: phones are told it is paused, and anything
   // they press meanwhile must not land on resume.
@@ -191,6 +200,10 @@ export function TvApp() {
         <button className="btn" data-nav autoFocus onClick={() => location.reload()}>Try again</button>
       </div></div></div>
     );
+  }
+
+  if (tooNew && (room?.status === "playing" || room?.status === "paused")) {
+    return <TooNew onBack={() => socket?.send({ type: "game.exit" })} />;
   }
 
   if (playing) {
@@ -279,6 +292,8 @@ export function TvApp() {
             <div className="panel" style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
               <div className="section-title">Choose a game</div>
               <ShelfBar games={games} shelf={shelf} onPick={setShelf} />
+              {hidden > 0 && <p className="hint" data-testid="hidden-3d">{hidden} 3D games need a newer TV, so they are not listed here.</p>}
+              {tooNew && <div className="notice" role="alert">That game needs a newer TV (3D graphics). Pick another one.</div>}
               <div className="games">
                 {onShelf(games, shelf).map((g, i) => (
                   <button
@@ -353,6 +368,25 @@ function Results({ results, bests, room, game, onRematch, onExit }: {
         <div className="row">
           <button className="btn" data-nav autoFocus onClick={onRematch}>🔁 Rematch</button>
           <button className="btn secondary" data-nav onClick={onExit}>🎮 Choose another game</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** A phone started a 3D game this TV cannot draw: say so, and go back to the lobby by itself. */
+function TooNew({ onBack }: { onBack: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onBack, 8000);
+    return () => clearTimeout(t);
+  }, [onBack]);
+  return (
+    <div className="tv" role="alert" data-too-new>
+      <div className="center-screen">
+        <div style={{ textAlign: "center" }}>
+          <h1 className="big-title">This TV can't draw that game</h1>
+          <p className="hint">It needs 3D graphics (WebGL 2) that this TV doesn't have. Every game in the list here works.</p>
+          <button className="btn" data-nav autoFocus onClick={onBack}>🎮 Choose another game</button>
         </div>
       </div>
     </div>

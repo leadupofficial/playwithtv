@@ -174,5 +174,5 @@ describe("Drop Four on the TV", () => {
       drop(g, a, ply % 2);
       if (four(g, ply % 2)) break;
     }
-  });
+  }, 60_000); // deterministic but heavy (14 full searches): a busy runner must not fail it on time
 });

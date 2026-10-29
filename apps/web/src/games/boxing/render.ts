@@ -204,7 +204,38 @@ function drawFighter(c: CanvasRenderingContext2D, f: Fight, x: Fighter, t: numbe
 
 // ---- stage ----------------------------------------------------------------------------
 
+/**
+ * The arena (sky, crowd, spotlights, ring, apron) never moves, so it is drawn once into its own canvas and copied in
+ * each frame: redrawing its full-screen gradients every frame held a Mali-450 TV to ~15 fps. Redrawn when the apron
+ * text changes or the web font finishes loading (so the lettering is not stuck in the fallback font).
+ */
+let backdrop: { key: string; canvas: HTMLCanvasElement } | null = null;
+
 function stage(c: CanvasRenderingContext2D, v: View, t: number) {
+  const key = `${v.sponsor ?? ""}|${typeof document !== "undefined" && document.fonts ? document.fonts.status : ""}`;
+  if (backdrop?.key !== key && typeof document !== "undefined") {
+    const canvas = backdrop?.canvas ?? document.createElement("canvas");
+    canvas.width = W;
+    canvas.height = H;
+    const bc = canvas.getContext("2d");
+    if (bc) { arena(bc, v); backdrop = { key, canvas }; }
+  }
+  if (backdrop) c.drawImage(backdrop.canvas, 0, 0);
+  else arena(c, v);
+  for (const fl of v.flashes) {                             // camera flashes in the crowd
+    const a = 1 - fl.t / 0.25;
+    if (a <= 0) continue;
+    const rg = c.createRadialGradient(fl.x, fl.y, 0, fl.x, fl.y, 26);
+    rg.addColorStop(0, `rgba(255,255,255,${a})`);
+    rg.addColorStop(1, "rgba(255,255,255,0)");
+    c.fillStyle = rg;
+    c.fillRect(fl.x - 26, fl.y - 26, 52, 52);
+  }
+  void t;
+}
+
+function arena(c: CanvasRenderingContext2D, v: View) {
+  c.save();
   const g = c.createLinearGradient(0, 0, 0, H);
   g.addColorStop(0, "#07051a");
   g.addColorStop(0.55, "#1b1340");
@@ -215,15 +246,6 @@ function stage(c: CanvasRenderingContext2D, v: View, t: number) {
     c.fillStyle = p.c;
     c.beginPath(); c.arc(p.x, p.y, p.r, 0, Math.PI * 2); c.fill();
     c.fillRect(p.x - p.r, p.y + p.r * 0.6, p.r * 2, p.r * 1.6);
-  }
-  for (const fl of v.flashes) {
-    const a = 1 - fl.t / 0.25;
-    if (a <= 0) continue;
-    const rg = c.createRadialGradient(fl.x, fl.y, 0, fl.x, fl.y, 26);
-    rg.addColorStop(0, `rgba(255,255,255,${a})`);
-    rg.addColorStop(1, "rgba(255,255,255,0)");
-    c.fillStyle = rg;
-    c.fillRect(fl.x - 26, fl.y - 26, 52, 52);
   }
   for (const sx of [300, 640, 980]) {                      // spotlights
     const sg = c.createRadialGradient(sx, -40, 10, sx, 380, 520);
@@ -253,7 +275,7 @@ function stage(c: CanvasRenderingContext2D, v: View, t: number) {
   c.fillStyle = "#2b2b38";
   c.fillRect(140, 300, 20, 175);
   c.fillRect(1120, 300, 20, 175);
-  void t;
+  c.restore();
 }
 
 function frontRopes(c: CanvasRenderingContext2D) {

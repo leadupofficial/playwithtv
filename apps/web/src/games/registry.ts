@@ -41,6 +41,34 @@ const LanternTruthsGame = lazy(() => import("./lantern-truths").then((m) => ({ d
 const StepwellSecretsGame = lazy(() => import("./stepwell").then((m) => ({ default: m.StepwellSecretsGame })));
 
 /** TV-side implementations, keyed by catalogue id. Only games listed here can be started. */
+/**
+ * Games drawn with three.js, which needs WebGL 2. Older TV chips (Mali-450 and the like, common in 2018-19 sets)
+ * only have WebGL 1: there these games are left out of the lobby rather than crash. Kept true by
+ * webgl2.test.ts, which follows each game's imports to "three".
+ */
+export const NEEDS_WEBGL2: ReadonlySet<string> = new Set([
+  "beat-blade", "city-rivals", "ghat-rush", "gravity-maze-3d", "gully-super-over", "kalari-clash", "lantern-lane",
+  "monsoon-courier", "pillow-fort-brawl", "sky-gyro-racer", "squat-rocket", "stepwell-secrets", "tiffin-tornado",
+]);
+
+let webgl2: boolean | undefined;
+/** Whether this screen can create a WebGL 2 context (checked once; the test canvas is released at once). */
+export function hasWebgl2(): boolean {
+  if (webgl2 === undefined) {
+    try {
+      const gl = document.createElement("canvas").getContext("webgl2");
+      webgl2 = !!gl;
+      gl?.getExtension("WEBGL_lose_context")?.loseContext();
+    } catch {
+      webgl2 = false;
+    }
+  }
+  return webgl2;
+}
+
+/** Can this screen run the game? */
+export const runsHere = (id: string) => !NEEDS_WEBGL2.has(id) || hasWebgl2();
+
 export const GAMES: Record<string, GameComponent> = {
   "gravity-maze-3d": MazeGame,
   "sky-gyro-racer": RacerGame,
