@@ -265,6 +265,8 @@ Thanks to everyone who has played, tested on their TV, or sent a song. See all [
 ## 🔒 Security and privacy
 
 - No accounts, emails or phone numbers. The only thing a player gives is a display name, kept with match history.
+- Each browser (phone or TV) keeps a random anonymous install id in localStorage (`pwtv.device`). It is sent when a TV opens a room or a phone joins one, so the admin console can count new and returning devices. No IP address, fingerprint or personal data is attached to it, and clearing site data resets it.
+- The admin console (`/admin`, `ADMIN_TOKEN`) shows live TVs/phones online (updated every 2 s, with a 60-minute graph and the day's peak), daily new/returning users, top games and security events.
 - Camera games process video **on the phone**; frames are never uploaded.
 - Report vulnerabilities privately; see [SECURITY.md](SECURITY.md).
 

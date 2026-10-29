@@ -5,6 +5,7 @@ import {
   type AdServed, CreateRoomResponse, type GameManifest, type GameResult, type InputState, type RoomView, type ServerMessage,
 } from "@playwithtv/protocol";
 import { HubSocket, api, type SocketStatus } from "../net";
+import { deviceId } from "../device";
 import { AVATARS } from "../avatars";
 import { GAMES } from "../games/registry";
 import type { GameBridge } from "../games/types";
@@ -42,7 +43,7 @@ function useRoom() {
       } catch { c = null; }
       if (!c) {
         try {
-          c = await api<CreateRoomResponse>("/api/rooms", {});
+          c = await api<CreateRoomResponse>("/api/rooms", { device: deviceId() });
           sessionStorage.setItem(ROOM_KEY, JSON.stringify(c));
         } catch (e) {
           if (!alive) return;

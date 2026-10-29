@@ -6,7 +6,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import type { IncomingMessage } from "node:http";
 import { relative, sep } from "node:path";
-import { CreateRoomResponse, JoinRequest, MAX_FRAME_BYTES } from "@playwithtv/protocol";
+import { CreateRoomRequest, CreateRoomResponse, JoinRequest, MAX_FRAME_BYTES } from "@playwithtv/protocol";
 import { type Config, originAllowed } from "./config.js";
 import { Hub, HubError, metrics } from "./hub.js";
 import { FailureLock, KeyedLimiter, addressOf, networkOf, sameToken } from "./security.js";
@@ -15,6 +15,7 @@ import type { Presence } from "./presence.js";
 import { type AdStore, MemoryAdStore, todayIST } from "./ads.js";
 import { registerAdRoutes } from "./adRoutes.js";
 import { REVALIDATE, cacheControlFor } from "./caching.js";
+import { LiveTracker, istDay } from "./live.js";
 
 export interface App {
   http: FastifyInstance;
@@ -107,7 +108,7 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
       metrics.rateLimited++;
       return reply.status(429).send({ error: "rate_limited", message: "Too many rooms, wait a moment." });
     }
-    return CreateRoomResponse.parse(hub.createRoom());
+    return CreateRoomResponse.parse(hub.createRoom(CreateRoomRequest.parse(req.body ?? {}).device));
   });
 
   http.post("/api/join", async (req, reply) => {
@@ -140,6 +141,16 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
     }
   });
 
+  // ---- live usage: sampled every 2 s, peaks saved per day ---------------------------------
+  const startedAt = Date.now();
+  const live = new LiveTracker(() => {
+    const s = hub.stats();
+    return { tvs: s.tvs, phones: s.connected, rooms: s.rooms, playing: s.playing };
+  }, (p) => db.raisePeak(p));
+  live.seed(await db.peak(istDay()).catch(() => null));
+  const liveTick = setInterval(() => live.observe(), 2_000);
+  liveTick.unref();
+
   // ---- admin (bearer token) -------------------------------------------------------
   const adminLock = new FailureLock(5, 15 * 60_000);
   const adminGuard: onRequestHookHandler = async (req, reply) => {
@@ -162,6 +173,14 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
       stats: hub.stats(), metrics, rooms: hub.roomsSummary(), storage: { db: db.kind, presence: presence.kind },
       recentMatches: await db.recentMatches(20),
     }));
+    // cheap: polled every 2 s by the console
+    admin.get("/api/admin/live", async () => {
+      const snap = live.snapshot();
+      return { at: Date.now(), startedAt, ...snap, stats: hub.stats(), rooms: hub.roomsSummary() };
+    });
+    admin.get<{ Querystring: { days?: string } }>("/api/admin/usage", async (req) => ({
+      storage: db.kind, ...(await db.usage(Number(req.query.days) || 14)),
+    }));
     admin.get("/api/admin/games", async () => db.games());
     admin.post<{ Params: { id: string }; Body: { enabled: boolean } }>("/api/admin/games/:id", async (req, reply) => {
       const enabled = (req.body as { enabled?: unknown })?.enabled;
@@ -177,7 +196,7 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
 
   http.get("/metrics", { onRequest: adminGuard }, async (req, reply) => {
     const s = hub.stats();
-    const lines = Object.entries({ ...metrics, active_rooms: s.rooms, players: s.players, connected_players: s.connected })
+    const lines = Object.entries({ ...metrics, active_rooms: s.rooms, players: s.players, connected_players: s.connected, tvs_online: s.tvs, rooms_playing: s.playing })
       .map(([k, v]) => `pwtv_${k.replace(/[A-Z]/g, (c) => "_" + c.toLowerCase())} ${v}`);
     reply.type("text/plain").send(lines.join("\n") + "\n");
   });
@@ -252,6 +271,7 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
     hub,
     async close() {
       clearInterval(beat);
+      clearInterval(liveTick);
       for (const ws of wss.clients) ws.terminate();
       wss.close();
       await http.close();

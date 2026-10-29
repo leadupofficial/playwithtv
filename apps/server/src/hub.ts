@@ -7,7 +7,7 @@ import {
 } from "@playwithtv/protocol";
 import type { Config } from "./config.js";
 import { Bucket, joinCode, sameToken, token } from "./security.js";
-import type { Persistence } from "./persistence.js";
+import type { Persistence, PlayOutcome } from "./persistence.js";
 import type { Presence } from "./presence.js";
 import { HubError, metrics } from "./errors.js";
 import { type Conn, relaySignal } from "./rtc.js";
@@ -36,7 +36,7 @@ export class Hub {
 
   // ---- rooms and invitations --------------------------------------------------------
 
-  createRoom() {
+  createRoom(tvDevice?: string) {
     if (this.rooms.size >= this.cfg.maxRooms) {
       metrics.serverBusy++;
       throw new HubError("server_busy", "Lots of people are playing right now. Trying again in a few seconds…", 503);
@@ -61,7 +61,7 @@ export class Hub {
     this.rooms.set(room.id, room);
     this.rotateInvite(room);
     metrics.roomsCreated++;
-    void this.db.sessionStarted(room.id).catch((e) => this.log({ err: String(e) }, "db.sessionStarted failed"));
+    void this.db.sessionStarted(room.id, tvDevice).catch((e) => this.log({ err: String(e) }, "db.sessionStarted failed"));
     return { roomId: room.id, hostToken: room.hostToken, ...this.inviteInfo(room) };
   }
 
@@ -124,7 +124,7 @@ export class Hub {
     room.players.set(p.id, p);
     room.lastActivity = Date.now();
     metrics.joins++;
-    void this.db.playerJoined(room.id, p.id, p.name, p.avatar).catch(() => undefined);
+    void this.db.playerJoined(room.id, p.id, p.name, p.avatar, req.device).catch(() => undefined);
     this.broadcastState(room);
     return { roomId: room.id, playerId: p.id, playerToken: p.token };
   }
@@ -319,6 +319,10 @@ export class Hub {
         }
         room.status = "playing";
         room.gameStartedAt = Date.now();
+        room.play = this.db.playStarted(room.id, g.id, players.length).catch((e) => {
+          this.log({ err: String(e) }, "db.playStarted failed");
+          return null;
+        });
         room.gameRoster = new Set(room.players.keys());
         room.gamesSinceReport++;
         room.layoutAll = undefined;
@@ -329,6 +333,7 @@ export class Hub {
         return this.broadcastState(room);
       }
       case "game.exit":
+        if (room.status === "playing" || room.status === "paused") this.endPlay(room, "quit");
         room.status = "lobby";
         room.layoutAll = undefined;
         room.layoutFor.clear();
@@ -337,6 +342,15 @@ export class Hub {
         this.broadcastController(room, { type: "controller.layout", layout: "lobby" });
         return this.broadcastState(room);
     }
+  }
+
+  /** Records how the running game ended (once). */
+  private endPlay(room: Room, outcome: PlayOutcome) {
+    const play = room.play;
+    room.play = undefined;
+    void play
+      ?.then((id) => (id === null ? undefined : this.db.playEnded(id, outcome)))
+      .catch((e) => this.log({ err: String(e) }, "db.playEnded failed"));
   }
 
   private finish(room: Room, results: GameResult[], durationMs: number) {
@@ -362,6 +376,7 @@ export class Hub {
     room.layoutAll = undefined;
     room.layoutFor.clear();
     metrics.matchesFinished++;
+    this.endPlay(room, "finished");
     this.broadcast(room, { type: "game.finished", gameId: g.id, results });
     this.broadcastController(room, { type: "controller.layout", layout: "lobby", data: { results } });
     this.broadcastState(room);
@@ -459,6 +474,7 @@ export class Hub {
   }
 
   private expire(room: Room, reason: string) {
+    if (room.status === "playing" || room.status === "paused") this.endPlay(room, "abandoned");
     this.broadcast(room, { type: "room.expired" });
     room.tv?.close(4410, "room expired");
     for (const p of room.players.values()) p.socket?.close(4410, "room expired");
@@ -470,18 +486,30 @@ export class Hub {
     void this.db.sessionEnded(room.id, reason).catch(() => undefined);
   }
 
+  /** Live counts for the admin console. `connected` = phones with an open socket right now. */
   stats() {
-    let players = 0, connected = 0;
+    let players = 0, connected = 0, tvs = 0, playing = 0;
+    const byGame: Record<string, { rooms: number; phones: number }> = {};
     for (const r of this.rooms.values()) {
       players += r.players.size;
-      for (const p of r.players.values()) if (p.socket) connected++;
+      let online = 0;
+      for (const p of r.players.values()) if (p.socket) online++;
+      connected += online;
+      if (r.tv) tvs++;
+      if ((r.status === "playing" || r.status === "paused") && r.gameId) {
+        playing++;
+        const g = (byGame[r.gameId] ??= { rooms: 0, phones: 0 });
+        g.rooms++;
+        g.phones += online;
+      }
     }
-    return { rooms: this.rooms.size, players, connected };
+    return { rooms: this.rooms.size, players, connected, tvs, playing, byGame };
   }
 
   roomsSummary() {
     return [...this.rooms.values()].map((r) => ({
       roomId: r.id.slice(0, 8), status: r.status, gameId: r.gameId, players: r.players.size, tv: !!r.tv,
+      online: [...r.players.values()].filter((p) => p.socket).length,
       idleSeconds: Math.round((Date.now() - r.lastActivity) / 1000),
     }));
   }

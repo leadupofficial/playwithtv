@@ -183,6 +183,16 @@ export const CreateRoomResponse = z.object({
 });
 export type CreateRoomResponse = z.infer<typeof CreateRoomResponse>;
 
+/**
+ * Anonymous install id: random, made by the browser and kept in its localStorage. It only lets the operator
+ * count unique and returning phones/TVs; it carries no personal data. A malformed one is dropped, never an error.
+ */
+export const DeviceId = z.string().regex(/^[A-Za-z0-9_-]{16,64}$/);
+const optionalDevice = DeviceId.optional().catch(undefined);
+
+export const CreateRoomRequest = z.object({ device: optionalDevice }).catch({ device: undefined });
+export type CreateRoomRequest = z.infer<typeof CreateRoomRequest>;
+
 export const JoinRequest = z
   .object({
     inviteToken: z.string().max(128).optional(),
@@ -190,6 +200,7 @@ export const JoinRequest = z
     name: PlayerName,
     avatar: Avatar,
     playerToken: z.string().max(128).optional(), // rejoin with the same identity
+    device: optionalDevice,
   })
   .refine((r) => r.inviteToken || r.joinCode, "inviteToken or joinCode is required");
 export type JoinRequest = z.infer<typeof JoinRequest>;

@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { InstallBanner } from "../InstallBanner";
 import { JOIN_CODE_LENGTH, type Avatar, type JoinResponse } from "@playwithtv/protocol";
 import { api } from "../net";
+import { deviceId } from "../device";
 import { AVATARS } from "../avatars";
 import { Controller } from "./Controller";
 
@@ -48,6 +49,7 @@ export function JoinApp() {
         name: name.trim(),
         avatar,
         playerToken: prev?.playerToken,
+        device: deviceId(),
       });
       localStorage.setItem(PROFILE_KEY, JSON.stringify({ name: name.trim(), avatar }));
       localStorage.setItem(SESSION_KEY, JSON.stringify(res));
