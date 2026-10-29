@@ -90,7 +90,7 @@ export class MemoryPersistence implements Persistence {
     }));
   }
   async opsEvent() {}
-  async playStarted(_sessionId: string, _gameId: string, _players: number) {
+  async playStarted(_sessionId: string, _gameId: string, _players: number): Promise<number | null> {
     return null;
   }
   async playEnded(_id: number, _outcome: PlayOutcome) {}

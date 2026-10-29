@@ -9,9 +9,9 @@ import type { ServerMessage } from "@playwithtv/protocol";
 let app: App | undefined;
 let base = "";
 
-async function start(over: Partial<Config> = {}) {
+async function start(over: Partial<Config> = {}, db: MemoryPersistence = new MemoryPersistence()) {
   const cfg = { ...loadConfig({}), publicUrl: "http://tv.test", adminToken: "admin-secret", ...over };
-  app = await buildApp(cfg, new MemoryPersistence(), new MemoryPresence());
+  app = await buildApp(cfg, db, new MemoryPresence());
   await app.http.listen({ port: 0, host: "127.0.0.1" });
   const addr = app.http.server.address();
   base = `127.0.0.1:${typeof addr === "object" && addr ? addr.port : 0}`;
@@ -310,6 +310,38 @@ describe("game lifecycle", () => {
     await t.next("game.started");
     t.send({ type: "game.exit" });
     await t.next("room.state", (m) => m.room.status === "lobby" && m.room.gameId === null);
+  });
+
+  it("records every started game and how it ended: finished, or quit mid-game (the abandon rate per game)", async () => {
+    const log: string[] = [];
+    let next = 0;
+    const db = new (class extends MemoryPersistence {
+      override async playStarted(_s: string, gameId: string, players: number) {
+        log.push(`start ${gameId} ${players}`);
+        return ++next;
+      }
+      override async playEnded(id: number, outcome: string) {
+        log.push(`end ${id} ${outcome}`);
+      }
+    })();
+    await start({}, db);
+    const { room, c: t } = await tv();
+    const p = await phone({ inviteToken: room.inviteToken });
+    t.send({ type: "game.select", gameId: "memory-wave" });
+    await t.next("game.selected");
+    t.send({ type: "game.start" });
+    await t.next("game.started");
+    t.send({ type: "game.finished", results: [{ playerId: p.playerId, score: 4, place: 1 }], durationMs: 1000 });
+    await t.next("game.finished");
+    t.send({ type: "game.exit" });                             // leaving the results screen is not a quit
+    await t.next("game.exit");
+    t.send({ type: "game.select", gameId: "memory-wave" });
+    await t.next("game.selected");
+    t.send({ type: "game.start" });
+    await t.next("game.started");
+    t.send({ type: "game.exit" });                             // walked out mid-game
+    await t.next("game.exit");
+    await vi.waitFor(() => expect(log).toEqual(["start memory-wave 1", "end 1 finished", "start memory-wave 1", "end 2 quit"]));
   });
 
   it("finishes a game whose results still name a player who left mid-game (the TV is not stranded)", async () => {
