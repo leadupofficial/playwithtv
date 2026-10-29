@@ -34,10 +34,10 @@ jobs:
       - run: pnpm -r test
 
   # end-to-end against the production build, with every security header active; split four ways so the
-  # whole suite finishes in about 15 minutes instead of running into the job time limit
+  # whole suite finishes in about 15-23 minutes per shard; 40 leaves room for a few slow retries on a busy runner
   e2e:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 40
     # Microsoft's Playwright image already holds Chromium and every system library it needs: installing them on
     # a bare runner spent up to 12 minutes retrying slow Ubuntu font mirrors. Keep the tag in step with
     # @playwright/test in package.json (pinned by digest, like the actions).
