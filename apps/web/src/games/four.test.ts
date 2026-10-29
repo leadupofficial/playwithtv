@@ -74,15 +74,20 @@ describe("Drop Four rules", () => {
   it("Ringmaster Rex thinks fast enough for a slow TV", () => {
     const g = empty();
     const r = rng(2);
+    // counted in positions read (slices of SLICE), not milliseconds, so a busy test machine cannot fail it: every
+    // move stays inside the NODE_CAP budget, which the sliced search spreads across frames
     let worst = 0;
     for (let ply = 0; ply < 20; ply++) {
-      const t = performance.now();
-      const c = think(g, ply % 2, LEVELS[5]!.brain, r);
-      worst = Math.max(worst, performance.now() - t);
-      drop(g, c, ply % 2);
+      const it = thinking(g, ply % 2, LEVELS[5]!.brain, r);
+      let slices = 0;
+      let n = it.next();
+      while (!n.done) { slices++; n = it.next(); }
+      worst = Math.max(worst, slices);
+      drop(g, n.value, ply % 2);
       if (four(g, ply % 2)) break;
     }
-    expect(worst).toBeLessThan(150);
+    expect(worst).toBeGreaterThan(0);
+    expect(worst * SLICE).toBeLessThanOrEqual(NODE_CAP + SLICE);
   });
 });
 

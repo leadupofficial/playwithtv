@@ -104,15 +104,18 @@ describe("Kings Row rules", () => {
     const r = rng(3);
     let worst = 0;
     for (let ply = 0; ply < 30; ply++) {
-      const t = performance.now();
-      const m = think(bd, ply % 2, LEVELS[5]!.brain, r);
-      worst = Math.max(worst, performance.now() - t);
-      if (!m) break;
-      bd = play(bd, m);
+      const it = thinking(bd, ply % 2, LEVELS[5]!.brain, r);
+      let slices = 0;
+      let n = it.next();
+      while (!n.done) { slices++; n = it.next(); }
+      worst = Math.max(worst, slices);
+      if (!n.value) break;
+      bd = play(bd, n.value);
     }
-    // a weak TV is ~5x slower than a developer laptop: still under a second. Shared CI runners are ~2-3x slower
-    // than a laptop and noisy, so they get a matching allowance.
-    expect(worst).toBeLessThan(process.env.CI ? 400 : 150);
+    // counted in positions read (slices of SLICE), not milliseconds, so a busy test machine cannot fail it: every
+    // move stays inside the NODE_CAP budget, which the sliced search spreads across frames
+    expect(worst).toBeGreaterThan(0);
+    expect(worst * SLICE).toBeLessThanOrEqual(NODE_CAP + SLICE);
   });
 });
 
