@@ -9,6 +9,8 @@ import { AdminApp } from "./admin/AdminApp";
 import { Stage } from "./tv/Stage";
 import { SensorLab } from "./phone/SensorLab";
 import { HostingHelp } from "./quality/HostingHelp";
+import { PhoneGate, PhoneHome } from "./tv/PhoneGate";
+import { screenForm } from "./device";
 import "./install"; // catches the browser's one-time install event as early as possible
 import { GameBoundary, reloadForNewVersion } from "./GameBoundary";
 
@@ -49,11 +51,11 @@ createRoot(document.getElementById("root")!).render(
     <BrowserRouter>
       <GameBoundary what="this page">
       <Routes>
-        <Route path="/" element={<Stage><Home /></Stage>} />
-        <Route path="/tv" element={<Stage><TvApp /></Stage>} />
+        <Route path="/" element={screenForm() === "phone" ? <PhoneHome /> : <Stage><Home /></Stage>} />
+        <Route path="/tv" element={<PhoneGate><Stage><TvApp /></Stage></PhoneGate>} />
         <Route path="/tv/showroom" element={<Stage><Suspense fallback={loading}><Showroom /></Suspense></Stage>} />
         <Route path="/tv/hosting" element={<Stage><HostingHelp /></Stage>} />
-        <Route path="/play" element={<Stage><TvApp /></Stage>} />
+        <Route path="/play" element={<PhoneGate><Stage><TvApp /></Stage></PhoneGate>} />
         <Route path="/join" element={<JoinApp />} />
         <Route path="/controller" element={<JoinApp />} />
         <Route path="/admin" element={<AdminApp />} />

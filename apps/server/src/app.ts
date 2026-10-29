@@ -108,7 +108,8 @@ export async function buildApp(cfg: Config, db: Persistence, presence: Presence,
       metrics.rateLimited++;
       return reply.status(429).send({ error: "rate_limited", message: "Too many rooms, wait a moment." });
     }
-    return CreateRoomResponse.parse(hub.createRoom(CreateRoomRequest.parse(req.body ?? {}).device));
+    const body = CreateRoomRequest.parse(req.body ?? {});
+    return CreateRoomResponse.parse(hub.createRoom(body.device, body.form));
   });
 
   http.post("/api/join", async (req, reply) => {

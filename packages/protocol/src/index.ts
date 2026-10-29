@@ -190,7 +190,10 @@ export type CreateRoomResponse = z.infer<typeof CreateRoomResponse>;
 export const DeviceId = z.string().regex(/^[A-Za-z0-9_-]{16,64}$/);
 const optionalDevice = DeviceId.optional().catch(undefined);
 
-export const CreateRoomRequest = z.object({ device: optionalDevice }).catch({ device: undefined });
+/** What kind of screen opened the TV page (coarse, no fingerprint): tells real TVs from phones that tapped "This is the TV". */
+export const ScreenForm = z.enum(["tv-app", "tv", "desktop", "tablet", "phone"]);
+export type ScreenForm = z.infer<typeof ScreenForm>;
+export const CreateRoomRequest = z.object({ device: optionalDevice, form: ScreenForm.optional().catch(undefined) }).catch({ device: undefined, form: undefined });
 export type CreateRoomRequest = z.infer<typeof CreateRoomRequest>;
 
 export const JoinRequest = z

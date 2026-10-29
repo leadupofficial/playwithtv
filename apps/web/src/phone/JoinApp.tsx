@@ -37,6 +37,9 @@ export function JoinApp() {
     document.title = "Join · Play With TV";
   }, []);
 
+  // no name typed: play as the avatar ("Tiger"), so a name is never what stands between a phone and the game
+  const playerName = name.trim() || AVATARS[avatar].label;
+
   async function join(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -46,7 +49,7 @@ export function JoinApp() {
       const res = await api<JoinResponse>("/api/join", {
         inviteToken: invite,
         joinCode: invite ? undefined : code,
-        name: name.trim(),
+        name: playerName,
         avatar,
         playerToken: prev?.playerToken,
         device: deviceId(),
@@ -79,7 +82,6 @@ export function JoinApp() {
       <h1>🎮 Join the game</h1>
       <InstallBanner />
       <p className="hint" style={{ margin: 0 }}>{invite ? "You scanned a TV code. Pick a name and avatar." : "Type the 5-letter code shown on the TV."}</p>
-      <div className="wifi-hint" style={{ fontSize: 13 }}><span>📶 Connect this phone to the <b>same Wi-Fi as the TV</b> for lag-free play.</span></div>
       {!invite && (
         <div className="field">
           <label htmlFor="code">TV code</label>
@@ -88,8 +90,8 @@ export function JoinApp() {
         </div>
       )}
       <div className="field">
-        <label htmlFor="name">Your name</label>
-        <input id="name" className="input" value={name} maxLength={16} autoComplete="nickname" onChange={(e) => setName(e.target.value)} placeholder="e.g. Priya" required />
+        <label htmlFor="name">Your name <span className="hint">(optional)</span></label>
+        <input id="name" className="input" value={name} maxLength={16} autoComplete="nickname" onChange={(e) => setName(e.target.value)} placeholder={`e.g. Priya, or play as ${AVATARS[avatar].label}`} />
       </div>
       <div className="field">
         <label>Avatar</label>
@@ -102,10 +104,10 @@ export function JoinApp() {
         </div>
       </div>
       {error && <div className="notice" role="alert">{error}</div>}
-      <button className="btn" type="submit" disabled={busy || !name.trim() || (!invite && code.length !== JOIN_CODE_LENGTH)}>
+      <button className="btn" type="submit" disabled={busy || (!invite && code.length !== JOIN_CODE_LENGTH)}>
         {busy ? "Joining…" : "Join as guest"}
       </button>
-      <p className="hint" style={{ margin: 0, fontSize: 13 }}>No account or app needed. Your name is only shown on this TV.</p>
+      <p className="hint" style={{ margin: 0, fontSize: 13 }}>No account or app needed. Your name is only shown on this TV. 📶 Same Wi-Fi as the TV plays smoothest.</p>
       <p className="credit">Play With TV · by <b>Leadup Technologies</b></p>
     </form>
   );

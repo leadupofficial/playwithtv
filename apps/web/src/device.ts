@@ -19,3 +19,15 @@ export function deviceId(): string {
   } catch { /* storage blocked: keep it for this page only */ }
   return memo;
 }
+
+export type ScreenForm = "tv-app" | "tv" | "desktop" | "tablet" | "phone";
+
+/** Coarse kind of screen this is: our TV app, a TV browser, a computer, a tablet or a phone (no fingerprinting). */
+// "coarse" = a touch screen: coarse pointer AND touch points (TV boxes report 0, and a remote is never touch)
+export function screenForm(ua = navigator.userAgent, coarse = matchMedia("(pointer: coarse)").matches && navigator.maxTouchPoints > 0, short = Math.min(screen.width, screen.height)): ScreenForm {
+  if (/PlayWithTV\//.test(ua)) return "tv-app";
+  if (/Android TV|AFT[A-Z]|BRAVIA|SMART-TV|SmartTV|Tizen|Web0S|webOS|CrKey|GoogleTV|HbbTV|Large Screen/i.test(ua)) return "tv";
+  if (!coarse) return "desktop";
+  if (/iPad|Tablet/i.test(ua) || (/Android/i.test(ua) && !/Mobile/i.test(ua)) || short >= 700) return "tablet";
+  return "phone";
+}

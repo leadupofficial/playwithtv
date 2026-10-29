@@ -5,7 +5,7 @@ import {
   type AdServed, CreateRoomResponse, type GameManifest, type GameResult, type InputState, type RoomView, type ServerMessage,
 } from "@playwithtv/protocol";
 import { HubSocket, api, type SocketStatus } from "../net";
-import { deviceId } from "../device";
+import { deviceId, screenForm } from "../device";
 import { AVATARS } from "../avatars";
 import { GAMES } from "../games/registry";
 import type { GameBridge } from "../games/types";
@@ -43,7 +43,7 @@ function useRoom() {
       } catch { c = null; }
       if (!c) {
         try {
-          c = await api<CreateRoomResponse>("/api/rooms", { device: deviceId() });
+          c = await api<CreateRoomResponse>("/api/rooms", { device: deviceId(), form: screenForm() });
           sessionStorage.setItem(ROOM_KEY, JSON.stringify(c));
         } catch (e) {
           if (!alive) return;
@@ -244,11 +244,10 @@ export function TvApp() {
         <div className="lobby">
           <div className="panel pair">
             <div className="section-title" style={{ margin: 0 }}>Scan to join</div>
-            <div className="qr-wrap">{qr ? <img src={qr} alt="QR code to join this TV" /> : <div style={{ width: 330, height: 330 }} />}</div>
+            <div className="qr-wrap">{qr ? <img src={qr} alt="QR code to join this TV" /> : <div style={{ width: 270, height: 270 }} />}</div>
             <div className="hint">or open <strong>{location.origin}/join</strong> and type</div>
             <div className="code" aria-label="Join code">{invite?.joinCode ?? "····"}</div>
-            <div className="hint">No app needed · works on Android and iPhone</div>
-            <div className="wifi-tip">📶 Join from the <b>same Wi-Fi</b> as this TV for lag-free play</div>
+            <div className="wifi-tip">No app needed · Android and iPhone · 📶 <b>same Wi-Fi</b> as this TV plays best</div>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 24, minHeight: 0 }}>

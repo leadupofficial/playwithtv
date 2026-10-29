@@ -54,7 +54,7 @@ button { font-family: inherit; color: inherit; }
 .panel { background: var(--glass); border: 1px solid var(--line); border-radius: 1.4em; padding: 1.1em 1.3em; }
 .pair { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.55em; text-align: center; }
 .qr-wrap { position: relative; padding: 0.7em; border-radius: 1.2em; background: #fff; box-shadow: 0 0 0 0.35em rgba(255,122,89,0.25), 0 0 2em rgba(124,58,237,0.45); }
-.qr-wrap img { display: block; width: 330px; height: 330px; image-rendering: pixelated; }
+.qr-wrap img { display: block; width: 270px; height: 270px; image-rendering: pixelated; }
 .code { font-size: 2.7em; font-weight: 800; letter-spacing: 0.22em; line-height: 1; }
 .hint { color: var(--muted); font-size: 0.9em; }
 .hint strong { color: var(--ink); }
@@ -321,6 +321,10 @@ details.admin-card[open] > summary::before { content: "▾ "; }
 .tv-install-help { position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(11, 8, 32, 0.88); text-align: center; }
 .tv-install-help > div { max-width: 1100px; padding: 1.2em 1.6em; border-radius: 1em; background: var(--bg-1); border: 1px solid var(--line); }
 .credit { color: var(--muted); font-size: 13px; text-align: center; }
+.phone-home { justify-content: center; }
+.phone-home a.btn { display: block; text-align: center; text-decoration: none; box-sizing: border-box; }
+.how-to { margin: 0; padding: 14px 14px 14px 34px; border-radius: 14px; background: var(--glass); border: 1px solid var(--line); display: grid; gap: 8px; font-size: 15px; line-height: 1.4; }
+.link-quiet { align-self: center; background: none; border: 0; padding: 6px; color: var(--muted); font: inherit; font-size: 14px; text-decoration: underline; cursor: pointer; }
 .credit b { color: var(--ink); font-weight: 600; }
 /* captain's game menu on the phone (phone/Lobby.tsx) */
 .captain { flex: 1; display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; }

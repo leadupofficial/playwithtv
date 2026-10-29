@@ -36,7 +36,7 @@ export class Hub {
 
   // ---- rooms and invitations --------------------------------------------------------
 
-  createRoom(tvDevice?: string) {
+  createRoom(tvDevice?: string, form?: string) {
     if (this.rooms.size >= this.cfg.maxRooms) {
       metrics.serverBusy++;
       throw new HubError("server_busy", "Lots of people are playing right now. Trying again in a few seconds…", 503);
@@ -61,7 +61,7 @@ export class Hub {
     this.rooms.set(room.id, room);
     this.rotateInvite(room);
     metrics.roomsCreated++;
-    void this.db.sessionStarted(room.id, tvDevice).catch((e) => this.log({ err: String(e) }, "db.sessionStarted failed"));
+    void this.db.sessionStarted(room.id, tvDevice, form).catch((e) => this.log({ err: String(e) }, "db.sessionStarted failed"));
     return { roomId: room.id, hostToken: room.hostToken, ...this.inviteInfo(room) };
   }
 

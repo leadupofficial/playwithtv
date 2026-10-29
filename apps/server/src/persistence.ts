@@ -46,7 +46,7 @@ export type PlayOutcome = "finished" | "quit" | "abandoned";
 export interface Persistence {
   readonly kind: "postgres" | "memory";
   init(): Promise<void>;
-  sessionStarted(id: string, tvDevice?: string): Promise<void>;
+  sessionStarted(id: string, tvDevice?: string, form?: string): Promise<void>;
   sessionEnded(id: string, reason: string): Promise<void>;
   playerJoined(sessionId: string, playerId: string, name: string, avatar: string, device?: string): Promise<void>;
   matchFinished(m: MatchRecord): Promise<void>;
@@ -69,7 +69,7 @@ export class MemoryPersistence implements Persistence {
   private enabled = new Map(CATALOG.map((g) => [g.id, true]));
   private matches: Array<MatchRecord & { finishedAt: number }> = [];
   async init() {}
-  async sessionStarted(_id: string, _tvDevice?: string) {}
+  async sessionStarted(_id: string, _tvDevice?: string, _form?: string) {}
   async sessionEnded(_id: string, _reason: string) {}
   async playerJoined(_sessionId: string, _playerId: string, _name: string, _avatar: string, _device?: string) {}
   async matchFinished(m: MatchRecord) {
@@ -162,8 +162,8 @@ export class PgPersistence implements Persistence {
     await this.pool.query("UPDATE sessions SET ended_at = now(), end_reason = 'server_restart' WHERE ended_at IS NULL");
   }
 
-  async sessionStarted(id: string, tvDevice?: string) {
-    await this.pool.query("INSERT INTO sessions (id, tv_device) VALUES ($1, $2) ON CONFLICT DO NOTHING", [id, tvDevice ?? null]);
+  async sessionStarted(id: string, tvDevice?: string, form?: string) {
+    await this.pool.query("INSERT INTO sessions (id, tv_device, tv_form) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING", [id, tvDevice ?? null, form ?? null]);
   }
   async sessionEnded(id: string, reason: string) {
     await this.pool.query("UPDATE sessions SET ended_at = now(), end_reason = $2 WHERE id = $1", [id, reason]);
