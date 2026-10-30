@@ -61,8 +61,8 @@ importers:
   apps/web:
     dependencies:
       '@mediapipe/tasks-vision':
-        specifier: 0.10.35
-        version: 0.10.35
+        specifier: 1.1.1
+        version: 1.1.1
       '@playwithtv/motion':
         specifier: workspace:*
         version: link:../../packages/motion
@@ -333,8 +333,8 @@ packages:
     resolution: {integrity: sha512-9I2Zn6+NJLfaGoz9jN3lpwDgAYvfGeNYdbAIjJOqzs4Tpc+VU3Jqq4IofSUBKajiDS8k9fZIg18/z13mpk1bsA==}
     engines: {node: '>=8'}
 
-  '@mediapipe/tasks-vision@0.10.35':
-    resolution: {integrity: sha512-HOvadwVRE6JC+45nyYhmnywnr5h/J8KZvOeUNVOG9q/0875pZgItznFB9bRTvLc264YSJqiZ1NsIpCStJw/egg==}
+  '@mediapipe/tasks-vision@1.1.1':
+    resolution: {integrity: sha512-jwntgT5tzDrKOkqg6xNDNpRcTUnGvmylZE5DFnzPXossiWOIDdZX+C81LI75hlXhsG58YZW+lGzcmjH1qrQE/Q==}
 
   '@oxc-project/types@0.155.0':
     resolution: {integrity: sha512-SeE8JPwW1xs1tHeNycjUtUBdhorRa8o4jlvjwk49R7/Z291i+4DQa7JJIgOm/TaYQZx+QrPQbVJ/9c8dMIZN8Q==}
@@ -1526,7 +1526,7 @@ snapshots:
 
   '@lukeed/ms@2.0.2': {}
 
-  '@mediapipe/tasks-vision@0.10.35': {}
+  '@mediapipe/tasks-vision@1.1.1': {}
 
   '@oxc-project/types@0.155.0': {}
 
